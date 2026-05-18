@@ -1,6 +1,6 @@
 export const DIFFICULTY_RULES = {
-  beginner: { key:'beginner', modeKey:'Beginner', label:'ビギナー', sizes:[[5,5],[5,10]], color:false, min:5, max:10 },
-  easy: { key:'easy', modeKey:'Easy', label:'イージー', sizes:[[10,10],[5,10],[10,5]], color:false, min:5, max:10 },
+  beginner: { key:'beginner', modeKey:'Beginner', label:'ビギナー', sizes:[[5,5],[5,10]], color:true, min:5, max:10 },
+  easy: { key:'easy', modeKey:'Easy', label:'イージー', sizes:[[10,10],[5,10],[10,5]], color:true, min:5, max:10 },
   normal: { key:'normal', modeKey:'Normal', label:'ノーマル', sizes:[[15,10],[10,10],[5,10],[10,5]], color:true, min:5, max:15 },
   hard: { key:'hard', modeKey:'Hard', label:'ハード', sizes:[[20,20],[15,10],[10,10]], color:true, min:10, max:20 },
   endless: { key:'endless', modeKey:'Endless', label:'エンドレス', sizes:[[20,20],[25,25],[30,30],[40,40],[50,50]], color:true, min:20, max:50 },

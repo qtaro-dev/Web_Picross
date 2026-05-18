@@ -1,6 +1,7 @@
 import { isFilledValue, normalizeColorId } from './config.js';
 
-export function makeClues(grid, w, h){
+export function makeClues(grid, w, h, colorMode='mono'){
+  if(colorMode==='color') return makeColorClues(grid,w,h);
   const rows=[], cols=[];
   for(let y=0;y<h;y++){
     const seq=[]; let run=0;
@@ -13,6 +14,32 @@ export function makeClues(grid, w, h){
     if(run) seq.push(run); cols.push(seq.length?seq:[0]);
   }
   return {rows, cols};
+}
+function makeColorClues(grid,w,h){
+  const rows=[], cols=[];
+  for(let y=0;y<h;y++){
+    const seq=[]; let run=0; let color=null;
+    for(let x=0;x<w;x++){
+      const id=normalizeColorId(grid[y]?.[x]);
+      if(isFilledValue(id)){
+        if(color===id) run++;
+        else { if(run) seq.push({count:run,colorId:color}); color=id; run=1; }
+      } else if(run){ seq.push({count:run,colorId:color}); run=0; color=null; }
+    }
+    if(run) seq.push({count:run,colorId:color}); rows.push(seq.length?seq:[0]);
+  }
+  for(let x=0;x<w;x++){
+    const seq=[]; let run=0; let color=null;
+    for(let y=0;y<h;y++){
+      const id=normalizeColorId(grid[y]?.[x]);
+      if(isFilledValue(id)){
+        if(color===id) run++;
+        else { if(run) seq.push({count:run,colorId:color}); color=id; run=1; }
+      } else if(run){ seq.push({count:run,colorId:color}); run=0; color=null; }
+    }
+    if(run) seq.push({count:run,colorId:color}); cols.push(seq.length?seq:[0]);
+  }
+  return {rows,cols};
 }
 export function isSolved(state){
   const {w,h,solution,filled,cellColors,colorMode} = state;

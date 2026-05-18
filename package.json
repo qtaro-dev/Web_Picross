@@ -1,0 +1,27 @@
+{
+  "name": "web_picross_ver2",
+  "version": "1.0.0",
+  "description": "ブラウザで遊べるWeb版ピクロスです。  \r 既存のWebピクロスをポートフォリオ掲載用にリニューアルし、静的Webアプリとして動作するようにしています。",
+  "main": "server.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qtaro-dev/Web_Picross.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/qtaro-dev/Web_Picross/issues"
+  },
+  "homepage": "https://github.com/qtaro-dev/Web_Picross#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
