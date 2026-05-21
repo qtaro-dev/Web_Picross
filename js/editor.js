@@ -1,19 +1,24 @@
 // editor: numeric palette 0..9, 5-grid bold lines
 import { render } from './render.js';
 import { normalizePuzzles as normalizeLoadedPuzzles } from './data.js';
-import { COLOR_MODES, DIFFICULTY_RULES, EDITOR_SAVE_KEY, MC_COLORS, MC_COLOR_MAP, normalizeColorId, normalizeColorMode, normalizeDifficulty, normalizeSizeForDifficulty } from './config.js';
+import { BACKGROUNDS, BOARD_SIZE_OPTIONS_BY_DIFFICULTY, COLOR_MODES, DIFFICULTY_RULES, EDITOR_SAVE_KEY, MC_COLORS, MC_COLOR_MAP, difficultyFromFileName, normalizeColorId, normalizeColorMode, normalizeDifficulty, normalizeSizeForDifficulty } from './config.js';
 import { createPuzzleThumb } from './thumbs.js';
 const MAX_LOADED_SLOTS = 100;
-const DEFAULTS = { w:5, h:5, mode:'mono', difficulty:'beginner', stageNo:1, title:'エディタ作成', active:'1', cells:{}, importMessage:'', loadedPuzzles:[], loadedSelected:'1', loadedFileName:'' };
-const EDITOR_TEXT = { importJson:'JSON読込', importOk:'JSONを読み込みました', importInvalid:'読み込めるパズルデータではありません', importError:'JSONの読み込みに失敗しました', loadedTitle:'読み込み済みJSONスロット', loadedFile:'読込中', notLoaded:'未読込', loadLoaded:'スロット読込', writeLoaded:'スロットへ保存', addLoaded:'空きへ追加', writeOk:'選択中スロットへ保存しました。PC上のJSONを更新するにはJSON出力してください。', addOk:'現在の盤面を空きスロットへ追加しました。', loadedEmpty:'空スロットです', slotOverwriteTitle:'スロット保存確認', slotOverwrite:'選択中スロットを上書きしますか？', slotLimit:'読み込みは最大100スロットまでです。101件目以降は無視しました。', saveNote:'スロット保存は画面内データへの反映です。\nPC上のJSONファイルを更新するにはJSON出力したファイルを保存してください。', editPlay:'エディットプレイ', exportSame:'読込ファイル名でJSON出力', exportAlias:'別名でJSON出力', filePlaceholder:'別名ファイル名', save:'保存', tempSaved:'一時保存', loadSaved:'一時保存読込', deleteSaved:'一時保存削除', saveOk:'保存しました', loadOk:'保存データを読み込みました', noSaved:'一時保存データがありません', overwriteTitle:'保存確認', overwrite:'同じ難易度・面数の保存があります。上書きしますか？', overwriteAction:'上書き' };
+const DEFAULTS = { w:5, h:5, mode:'mono', difficulty:'beginner', stageNo:1, title:'エディタ作成', active:'1', cells:{}, importMessage:'', loadedPuzzles:[], loadedSelected:'1', loadedFileName:'', loadedFileDifficulty:'' };
+const EDITOR_TEXT = { importJson:'JSON読込', importOk:'JSONを読み込みました', importLinked:'難易度と盤面サイズ候補を自動設定しました。', importInvalid:'読み込めるパズルデータではありません', importError:'JSONの読み込みに失敗しました', mixedDifficulty:'このJSONには複数の難易度が混在しているため読み込みできません。1つのJSONファイルには1つの難易度のみ含めてください。', fileDifficultyMismatch:'読み込んだファイル名とパズル難易度が一致しないため読み込みできません。', exportMixedDifficulty:'このファイルには複数の難易度が混在しているため保存できません。1つのJSONファイルには1つの難易度のみ含めてください。', loadedTitle:'読み込み済みJSONスロット', loadedFile:'読込中', notLoaded:'未読込', loadLoaded:'スロット読込', writeLoaded:'スロットへ保存', addLoaded:'空きへ追加', writeOk:'選択中スロットへ保存しました。PC上のJSONを更新するにはJSON出力してください。', addOk:'現在の盤面を空きスロットへ追加しました。', loadedEmpty:'空スロットです', slotOverwriteTitle:'スロット保存確認', slotOverwrite:'選択中スロットを上書きしますか？', slotLimit:'読み込みは最大100スロットまでです。101件目以降は無視しました。', saveNote:'スロット保存は画面内データへの反映です。\nPC上のJSONファイルを更新するにはJSON出力したファイルを保存してください。', editPlay:'エディットプレイ', exportSame:'読込ファイル名でJSON出力', exportAlias:'別名でJSON出力', filePlaceholder:'別名ファイル名', save:'保存', tempSaved:'一時保存', loadSaved:'一時保存読込', deleteSaved:'一時保存削除', saveOk:'保存しました', loadOk:'保存データを読み込みました', noSaved:'一時保存データがありません', overwriteTitle:'保存確認', overwrite:'同じ難易度・面数の保存があります。上書きしますか？', overwriteAction:'上書き' };
+function renderEditorBackground(){
+  const path=BACKGROUNDS.editor;
+  return typeof path === 'string' ? `<div class="screen-bg" aria-hidden="true" style="background-image:url('${escapeAttr(path)}')"></div>` : '';
+}
 
 export function renderEditor(state, actions){
   const root = state.root; if(!state.edit) state.edit = JSON.parse(JSON.stringify(DEFAULTS)); const E = state.edit;
   const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
   const rule=DIFFICULTY_RULES[E.difficulty]||DIFFICULTY_RULES.beginner; if(!rule.color&&E.mode==='color') E.mode='mono';
   if(E.mode==='mono') E.active='1';
-  const currentSize=`${E.w}x${E.h}`; const sizeList=rule.sizes.some(([w,h])=>currentSize===`${w}x${h}`)?rule.sizes:[[E.w,E.h],...rule.sizes];
-  const sizeOptions=sizeList.map(([w,h])=>`<option value="${w}x${h}" ${currentSize===`${w}x${h}`?'selected':''}>${w} x ${h}</option>`).join('');
+  const currentSize=`${E.w}x${E.h}`; const sizeList=BOARD_SIZE_OPTIONS_BY_DIFFICULTY[E.difficulty]||BOARD_SIZE_OPTIONS_BY_DIFFICULTY.beginner;
+  const selectedSize=sizeList.some(size=>currentSize===`${size.w}x${size.h}`)?currentSize:`${sizeList[0].w}x${sizeList[0].h}`;
+  const sizeOptions=sizeList.map(size=>`<option value="${size.w}x${size.h}" ${selectedSize===`${size.w}x${size.h}`?'selected':''}>${size.label}</option>`).join('');
   const makeOptions=(items,value)=>Object.entries(items).map(([k,label])=>`<option value="${k}" ${k===value?'selected':''}>${label}</option>`).join('');
   const saved=loadSavedPuzzles();
   const savedOptions=saved.map(p=>`<option value="${p.difficulty}:${p.stageNo}">${DIFFICULTY_RULES[p.difficulty]?.label||p.difficulty} #${p.stageNo} ${escapeAttr(p.title||'')}</option>`).join('');
@@ -22,7 +27,7 @@ export function renderEditor(state, actions){
   const selectedSlot=clamp(parseInt(E.loadedSelected,10)||1,1,MAX_LOADED_SLOTS);
 
   root.innerHTML = `
-    <div class="screen editor-screen">
+    <div class="screen editor-screen has-bg">${renderEditorBackground()}
       <button class="btn fixed-top-left" id="backTop">← メニューへ</button>
       <div class="editor-wrap">
         <div class="editor-topbar">
@@ -65,7 +70,7 @@ export function renderEditor(state, actions){
               </div>
             </div>
             <div class="editor-bar">
-              <label>難易度：<select id="difficulty" class="select-input">${Object.values(DIFFICULTY_RULES).map(r=>`<option value="${r.key}" ${r.key===E.difficulty?'selected':''}>${r.label}</option>`).join('')}</select></label>
+              <label>難易度：<select id="difficulty" class="select-input" ${E.loadedFileDifficulty?'disabled':''}>${Object.values(DIFFICULTY_RULES).map(r=>`<option value="${r.key}" ${r.key===E.difficulty?'selected':''}>${r.label}</option>`).join('')}</select></label>
               <label>種別：<select id="colorMode" class="select-input" ${rule.color?'':'disabled'}>${makeOptions(COLOR_MODES,E.mode||'mono')}</select></label>
               <label>面数：<input class="stage-input" id="stageNo" type="number" min="1" value="${E.stageNo||1}" /></label>
               <label>パズル名：<input class="filename" id="titleInput" value="${escapeAttr(E.title||'')}" /></label>
@@ -165,13 +170,13 @@ for(let y=0;y<E.h;y++){ for(let x=0;x<E.w;x++){ const k=`${x},${y}`; const v=E.c
   root.querySelector('#colorMode').addEventListener('change', e=>{ E.mode=normalizeColorMode(e.target.value,E.difficulty); if(E.mode==='mono'){ E.active='1'; normalizeMonoCells(E); } render(state, actions); });
   root.querySelector('#stageNo').addEventListener('input', e=>{ E.stageNo=clamp(parseInt(e.target.value,10)||1,1,MAX_LOADED_SLOTS); E.loadedSelected=String(E.stageNo); updatePreview(); });
   root.querySelector('#titleInput').addEventListener('input', e=>{ E.title=e.target.value; updatePreview(); });
-  root.querySelector('#importJson').addEventListener('click', async ()=>{ const file=root.querySelector('#importFile').files?.[0]; if(!file){ actions.notify(EDITOR_TEXT.importJson, EDITOR_TEXT.importInvalid); return; } try{ const text=await file.text(); const puzzles=normalizeSlotList(normalizeLoadedPuzzles(JSON.parse(text), {mode:DIFFICULTY_RULES[E.difficulty]?.modeKey})); if(!puzzles.length) throw new Error(EDITOR_TEXT.importInvalid); E.loadedFileName=file.name||''; E.loadedPuzzles=puzzles; E.loadedSelected=String(puzzles[0].stageNo||1); applyPuzzle(E,puzzles[0]); E.importMessage=`${EDITOR_TEXT.importOk}（${puzzles.length}件）${puzzles.length>=MAX_LOADED_SLOTS?' / '+EDITOR_TEXT.slotLimit:''}`; render(state, actions); }catch{ E.importMessage=EDITOR_TEXT.importError; actions.notify(EDITOR_TEXT.importJson, EDITOR_TEXT.importError); } });
+  root.querySelector('#importJson').addEventListener('click', async ()=>{ const file=root.querySelector('#importFile').files?.[0]; if(!file){ actions.notify(EDITOR_TEXT.importJson, EDITOR_TEXT.importInvalid); return; } try{ const text=await file.text(); const json=JSON.parse(text); const inferred=difficultyFromFileName(file.name); const check=validateImportDifficulty(json, inferred, E.difficulty); if(!check.ok){ E.importMessage=check.message; actions.notify(EDITOR_TEXT.importJson, check.message); return; } const puzzles=normalizeSlotList(normalizeLoadedPuzzles(json, {mode:DIFFICULTY_RULES[check.difficulty]?.modeKey})).map(p=>normalizePuzzleDifficulty(p, check.difficulty)); if(!puzzles.length) throw new Error(EDITOR_TEXT.importInvalid); E.loadedFileName=file.name||''; E.loadedFileDifficulty=check.difficulty; E.loadedPuzzles=puzzles; E.loadedSelected=String(puzzles[0].stageNo||1); applyPuzzle(E,puzzles[0], check.difficulty); E.importMessage=`${EDITOR_TEXT.importOk}（${puzzles.length}件）${inferred?' '+EDITOR_TEXT.importLinked:''}${puzzles.length>=MAX_LOADED_SLOTS?' / '+EDITOR_TEXT.slotLimit:''}`; render(state, actions); }catch{ E.importMessage=EDITOR_TEXT.importError; actions.notify(EDITOR_TEXT.importJson, EDITOR_TEXT.importError); } });
   root.querySelector('#loadedSlots').addEventListener('click', e=>{ const card=e.target.closest?.('.slot-card'); if(!card) return; E.loadedSelected=card.dataset.slot; E.stageNo=getSelectedSlot(E); render(state, actions); });
-  root.querySelector('#loadLoaded').addEventListener('click', ()=>{ const slot=getSelectedSlot(E); const p=findSlotPuzzle(E.loadedPuzzles, slot); if(!p){ loadEmptySlot(E, slot); E.importMessage=EDITOR_TEXT.loadedEmpty; render(state, actions); return; } applyPuzzle(E,p); E.loadedSelected=String(slot); E.importMessage=EDITOR_TEXT.loadOk; render(state, actions); });
+  root.querySelector('#loadLoaded').addEventListener('click', ()=>{ const slot=getSelectedSlot(E); const p=findSlotPuzzle(E.loadedPuzzles, slot); if(!p){ loadEmptySlot(E, slot); E.importMessage=EDITOR_TEXT.loadedEmpty; render(state, actions); return; } applyPuzzle(E,p,E.loadedFileDifficulty); E.loadedSelected=String(slot); E.importMessage=EDITOR_TEXT.loadOk; render(state, actions); });
   root.querySelector('#writeLoaded').addEventListener('click', ()=>{ const slot=getSelectedSlot(E); const old=findSlotPuzzle(E.loadedPuzzles, slot); const commit=()=>{ writeSlot(E, slot); E.importMessage=EDITOR_TEXT.writeOk; render(state, actions); }; if(old) actions.confirmModal(EDITOR_TEXT.slotOverwriteTitle, EDITOR_TEXT.slotOverwrite, commit, EDITOR_TEXT.overwriteAction); else commit(); });
   root.querySelector('#addLoaded').addEventListener('click', ()=>{ const slot=firstEmptySlot(E.loadedPuzzles); if(!slot){ actions.notify(EDITOR_TEXT.loadedTitle, EDITOR_TEXT.slotLimit); return; } writeSlot(E, slot); E.loadedSelected=String(slot); E.importMessage=EDITOR_TEXT.addOk; render(state, actions); });
   root.querySelector('#saveLocal').addEventListener('click', ()=>{ saveCurrent(E, actions, ()=>{ E.importMessage=EDITOR_TEXT.saveOk; render(state, actions); }); });
-  root.querySelector('#loadSaved').addEventListener('click', ()=>{ const p=findSaved(root.querySelector('#savedList').value); if(!p){ actions.notify(EDITOR_TEXT.loadSaved, EDITOR_TEXT.noSaved); return; } applyPuzzle(E,p); E.importMessage=EDITOR_TEXT.loadOk; render(state, actions); });
+  root.querySelector('#loadSaved').addEventListener('click', ()=>{ const p=findSaved(root.querySelector('#savedList').value); if(!p){ actions.notify(EDITOR_TEXT.loadSaved, EDITOR_TEXT.noSaved); return; } E.loadedFileName=''; E.loadedFileDifficulty=''; E.loadedPuzzles=[]; applyPuzzle(E,p); E.importMessage=EDITOR_TEXT.loadOk; render(state, actions); });
   root.querySelector('#deleteSaved').addEventListener('click', ()=>{ deleteSaved(root.querySelector('#savedList').value); render(state, actions); });
   root.querySelector('#test').addEventListener('click', ()=>{ actions.playCustom({id:E.id||'editor', title:E.title||'エディタのパズル', difficulty:E.difficulty, w:E.w, h:E.h, mode:'EditPlay', returnTo:'editor', colorMode:E.mode||'mono', grid: toGrid(E)}); });
   root.querySelector('#exportSame').addEventListener('click', ()=>downloadJson(E, E.loadedFileName||'puzzles.json'));
@@ -181,12 +186,39 @@ for(let y=0;y<E.h;y++){ for(let x=0;x<E.w;x++){ const k=`${x},${y}`; const v=E.c
 }
 function toGrid(E){ return Array.from({length:E.h},(_,y)=>Array.from({length:E.w},(_,x)=>normalizeColorId(E.cells[`${x},${y}`]??'0'))); }
 function escapeAttr(s){ return String(s).replace(/[&<>"']/g,ch=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch])); }
+function rawPuzzleList(json){ return Array.isArray(json)?json:(Array.isArray(json?.puzzles)?json.puzzles:[]); }
+function explicitDifficulty(raw){
+  const value=raw?.difficulty ?? raw?.level ?? raw?.meta?.difficulty;
+  if(value==null || value==='') return '';
+  const key=String(value).toLowerCase();
+  return DIFFICULTY_RULES[key] ? key : '';
+}
+function validateImportDifficulty(json, inferred, fallback){
+  const explicit=rawPuzzleList(json).map(explicitDifficulty).filter(Boolean);
+  const unique=[...new Set(explicit)];
+  if(unique.length>1) return {ok:false, message:EDITOR_TEXT.mixedDifficulty};
+  if(inferred && unique.length===1 && unique[0]!==inferred) return {ok:false, message:EDITOR_TEXT.fileDifficultyMismatch};
+  return {ok:true, difficulty:inferred || unique[0] || normalizeDifficulty(fallback)};
+}
+function normalizePuzzleDifficulty(puzzle, difficulty){
+  const key=normalizeDifficulty(difficulty);
+  const mode=normalizeColorMode(puzzle.mode||puzzle.colorMode, key);
+  return {...puzzle, difficulty:key, mode, colorMode:mode};
+}
+function validatePuzzleDifficulties(puzzles, filename=''){
+  const list=normalizeSlotList(puzzles);
+  const unique=[...new Set(list.map(p=>normalizeDifficulty(p.difficulty)).filter(Boolean))];
+  if(unique.length>1) return {ok:false, message:EDITOR_TEXT.exportMixedDifficulty};
+  const inferred=difficultyFromFileName(filename);
+  if(inferred && unique.length===1 && unique[0]!==inferred) return {ok:false, message:EDITOR_TEXT.fileDifficultyMismatch};
+  return {ok:true, difficulty:inferred || unique[0] || ''};
+}
 function buildPuzzle(E, grid=toGrid(E), gridStr=grid.map(row=>row.join(''))){ const stageNo=Math.max(1,parseInt(E.stageNo,10)||1); const difficulty=normalizeDifficulty(E.difficulty); const mode=normalizeColorMode(E.mode,difficulty); return { id:E.id||`${difficulty}_${mode}_id${String(stageNo).padStart(8,'0')}`, stageNo, title:E.title||'エディタ作成', difficulty, mode, colorMode:mode, w:E.w, h:E.h, grid, grid_strings:gridStr, updatedAt:new Date().toISOString() }; }
 function exportPuzzles(E){ const gridNum=toGrid(E); const gridStr=gridNum.map(row=>row.join('')); return (Array.isArray(E.loadedPuzzles)&&E.loadedPuzzles.length)?normalizeSlotList(E.loadedPuzzles):[buildPuzzle(E, gridNum, gridStr)]; }
-function downloadJson(E, name){ const filename=(name||'puzzles.json').endsWith('.json')?name:(name+'.json'); const blob=new Blob([JSON.stringify(exportPuzzles(E),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href); }
+function downloadJson(E, name){ const filename=(name||'puzzles.json').endsWith('.json')?name:(name+'.json'); const puzzles=exportPuzzles(E); const check=validatePuzzleDifficulties(puzzles, filename); if(!check.ok){ E.importMessage=check.message; alert(check.message); return; } const blob=new Blob([JSON.stringify(puzzles.map(p=>normalizePuzzleDifficulty(p, check.difficulty||p.difficulty)),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href); }
 function defaultAliasName(){ const d=new Date(); const pad=n=>String(n).padStart(2,'0'); return `edit_puzzles_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.json`; }
 export function normalizePuzzle(json){ const src=Array.isArray(json)?json[0]:(Array.isArray(json?.puzzles)?json.puzzles[0]:json); if(!src) return null; const grid=Array.isArray(src.grid)?src.grid:(Array.isArray(src.grid_strings)?src.grid_strings.map(row=>String(row).split('').map(ch=>normalizeColorId(ch))):null); if(!grid||!grid.length||!Array.isArray(grid[0])) return null; const h=parseInt(src.h||src.height||grid.length,10); const w=parseInt(src.w||src.width||grid[0].length,10); if(!w||!h) return null; const difficulty=normalizeDifficulty(src.difficulty||src.level||'beginner'); const mode=normalizeColorMode(src.colorMode||src.mode||'mono',difficulty); return { id:src.id, stageNo:Math.max(1,parseInt(src.stageNo||src.no||src.id,10)||1), title:src.title||src.name||'エディタ作成', difficulty, mode, w, h, grid:grid.map(row=>row.map(v=>normalizeColorId(v))) }; }
-export function applyPuzzle(E,p){ E.id=p.id?String(p.id):undefined; E.stageNo=p.stageNo||1; E.title=p.title; E.difficulty=normalizeDifficulty(p.difficulty); E.mode=normalizeColorMode(p.mode,E.difficulty); E.active='1'; E.w=p.w; E.h=p.h; E.cells={}; for(let y=0;y<p.h;y++) for(let x=0;x<p.w;x++){ const v=normalizeColorId(p.grid[y]?.[x]); if(v!=='0') E.cells[`${x},${y}`]=v; } }
+export function applyPuzzle(E,p,forcedDifficulty=''){ E.id=p.id?String(p.id):undefined; E.stageNo=p.stageNo||1; E.title=p.title; E.difficulty=normalizeDifficulty(forcedDifficulty||p.difficulty); E.mode=normalizeColorMode(p.mode,E.difficulty); E.active='1'; E.w=p.w; E.h=p.h; E.cells={}; for(let y=0;y<p.h;y++) for(let x=0;x<p.w;x++){ const v=normalizeColorId(p.grid[y]?.[x]); if(v!=='0') E.cells[`${x},${y}`]=v; } }
 function normalizeMonoCells(E){ for(const key of Object.keys(E.cells)){ if(normalizeColorId(E.cells[key])!=='0') E.cells[key]='1'; else delete E.cells[key]; } }
 function normalizeSlotList(list){
   const bySlot=new Map();
@@ -202,6 +234,7 @@ function findSlotPuzzle(list, slot){ return normalizeSlotList(list).find(p=>Numb
 function firstEmptySlot(list){ const used=new Set(normalizeSlotList(list).map(p=>Number(p.stageNo))); for(let i=1;i<=MAX_LOADED_SLOTS;i++) if(!used.has(i)) return i; return null; }
 function loadEmptySlot(E, slot){ E.id=undefined; E.stageNo=slot; E.title=`スロット #${slot}`; E.cells={}; }
 function writeSlot(E, slot){
+  if(E.loadedFileDifficulty) E.difficulty=E.loadedFileDifficulty;
   const puzzle={...buildPuzzle(E), stageNo:slot};
   const list=normalizeSlotList(E.loadedPuzzles);
   const idx=list.findIndex(p=>Number(p.stageNo)===Number(slot));

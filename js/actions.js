@@ -1,8 +1,8 @@
 import { render } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
-import { MC_COLORS, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode } from './config.js';
+import { BOARD_ZOOM_LEVELS, DEBUG_CONFIG, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
-const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解として塗るマスを表示します。', hintRow:index=>`${index + 1}行目の正解部分を表示しました。`, hintCol:index=>`${index + 1}列目の正解部分を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'この問題はクリア扱いになりません。', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'解けています', unsolvedTitle:'判定', unsolvedMessage:'まだ未完成です', pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ' };
+const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'解けています', checkMessage:(mistakes,empty)=>`間違い: ${mistakes}個\n未入力: ${empty}個`, pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
 const AUTH_TEXT = { required:'ユーザー名とパスワードを入力してください', loginFailed:'ユーザー名またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。ログインしてください', duplicate:'同じユーザー名は登録できません' };
 const REGISTER_TEXT = { title:'ユーザー登録', message:'登録しました。\n登録したユーザでログインしますか？', yes:'はい', no:'いいえ' };
 const DEV_USER = { username:'admin', password:'admin' };
@@ -14,7 +14,7 @@ const SAVED_PASSWORD_KEY = 'picross_saved_password';
 const OPTIONS_KEY = 'web_picross_options';
 const DEFAULT_OPTIONS = { crosshairColor:'#42a5f5', bgmVolume:50, seVolume:50, displayMode:'window' };
 const LS_KEY='picross_v2_solved'; let stateRef; let actionsAPI;
-export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ goto, login, registerUser, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
+export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ goto, login, registerUser, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
 function goto(screen){ if(screen!=='game') stopTimer(); stateRef.modal=null; stateRef.hoverCell=null; stateRef.authMessage=''; stateRef.screen=screen; render(stateRef, actionsAPI); if(screen==='ranking') loadRanking(); }
 async function apiPost(path,payload){
   const res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -265,8 +265,8 @@ function beginDrag(mode,k){ if(inputBlocked()) return false; stateRef.drag={acti
 function applyDrag(k){ if(inputBlocked()) return false; const d=stateRef.drag; if(!d.active) return false; if(k!==d.start&&!d.moved){ d.moved=true; const first=d.mode==='fill'?setFilled(d.start):setCrossed(d.start); const next=d.mode==='fill'?setFilled(k):setCrossed(k); return first||next; } if(!d.moved) return false; return d.mode==='fill'?setFilled(k):setCrossed(k); }
 function endDrag(k){ if(inputBlocked()) return false; const d=stateRef.drag; if(!d.active) return false; stateRef.drag={active:false, mode:null, start:null, moved:false}; if(!k) return false; if(d.moved) return false; if(k!==d.start){ const first=d.mode==='fill'?setFilled(d.start):setCrossed(d.start); const last=d.mode==='fill'?setFilled(k):setCrossed(k); return first||last; } return d.mode==='fill'?toggleCell(k):toggleCross(k); }
 function cancelDrag(){ stateRef.drag={active:false, mode:null, start:null, moved:false}; }
-function clear(){ if(inputBlocked()) return false; stateRef.filled.clear(); stateRef.cellColors.clear(); stateRef.crossed.clear(); cancelDrag(); render(stateRef, actionsAPI); return true; }
-function hint(){ if(!stateRef.game||inputBlocked()) return false; return confirmModal(ACTION_TEXT.hintTitle, ACTION_TEXT.hintMessage, applyHint, ACTION_TEXT.use); }
+function clear(){ if(!stateRef.game||inputBlocked()) return false; return confirmModal(ACTION_TEXT.retryTitle, ACTION_TEXT.retryMessage, retryGame, ACTION_TEXT.restart); }
+function hint(){ if(!stateRef.game||inputBlocked()) return false; if((stateRef.hints?.remaining||0)<=0){ notify(ACTION_TEXT.hintTitle, ACTION_TEXT.noHintLeft); return false; } return confirmModal(ACTION_TEXT.hintTitle, ACTION_TEXT.hintMessage, applyHint, ACTION_TEXT.use); }
 function applyHint(){
   const G=stateRef.game; if(!G) return false;
   const candidates=hintCandidates(G);
@@ -277,8 +277,19 @@ function applyHint(){
     const x=target.type==='row'?i:target.index;
     const y=target.type==='row'?target.index:i;
     const value=G.solution[y]?.[x];
-    if(isFilledValue(value)) setFilled(`${x},${y}`, value);
+    const k=`${x},${y}`;
+    if(isFilledValue(value)){
+      stateRef.crossed.delete(k);
+      stateRef.filled.add(k);
+      stateRef.cellColors.set(k, normalizeColorId(value));
+    }else{
+      stateRef.filled.delete(k);
+      stateRef.cellColors.delete(k);
+      stateRef.crossed.add(k);
+    }
   }
+  stateRef.hints.remaining=Math.max(0, (stateRef.hints.remaining||0)-1);
+  render(stateRef, actionsAPI);
   notify(ACTION_TEXT.hintTitle, target.type==='row'?ACTION_TEXT.hintRow(target.index):ACTION_TEXT.hintCol(target.index));
   return true;
 }
@@ -294,10 +305,12 @@ function lineNeedsHint(G,type,index){
     const x=type==='row'?i:index;
     const y=type==='row'?index:i;
     const value=G.solution[y]?.[x];
-    if(!isFilledValue(value)) continue;
     const k=`${x},${y}`;
-    if(!stateRef.filled.has(k)) return true;
-    if(G.colorMode==='color'&&normalizeColorId(stateRef.cellColors.get(k))!==normalizeColorId(value)) return true;
+    if(isFilledValue(value)){
+      if(!stateRef.filled.has(k)) return true;
+      if(stateRef.crossed.has(k)) return true;
+      if(G.colorMode==='color'&&normalizeColorId(stateRef.cellColors.get(k))!==normalizeColorId(value)) return true;
+    }else if(stateRef.filled.has(k)||!stateRef.crossed.has(k)) return true;
   }
   return false;
 }
@@ -309,8 +322,60 @@ function pauseTimer(reason='modal'){ if(stateRef.screen!=='game'||stateRef.gameS
 function resumeTimer(){ if(stateRef.screen!=='game'||stateRef.gameStatus!=='playing'||!stateRef.timer.paused||stateRef.modal) return; stateRef.timer.running=stateRef.timer.limit!=null; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
 function stopTimer(){ if(stateRef.timer.intervalId) clearInterval(stateRef.timer.intervalId); stateRef.timer.intervalId=null; stateRef.timer.running=false; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
 function finishClear(){ if(stateRef.gameStatus==='cleared') return false; stateRef.gameStatus='cleared'; markCurrentPuzzleSolved(); const entry=recordResult('clear'); saveServerProgress(entry,'clear'); stopTimer(); cancelDrag(); notify(ACTION_TEXT.clearTitle, ACTION_TEXT.clearMessage, [{label:ACTION_TEXT.ok, action:'close'}, {label:ACTION_TEXT.select, action:'backToSelect'}]); return true; }
-function showCheckResult(solved){ if(stateRef.gameStatus==='cleared') return false; if(solved) return finishClear(); notify(ACTION_TEXT.unsolvedTitle, ACTION_TEXT.unsolvedMessage); return false; }
+function showCheckResult(solved){ if(stateRef.gameStatus==='cleared') return false; if(solved) return finishClear(); const result=checkBoardState(); notify(ACTION_TEXT.solvedTitle, ACTION_TEXT.checkMessage(result.mistakes, result.empty)); return false; }
+function checkBoardState(){
+  const G=stateRef.game; const result={mistakes:0, empty:0}; if(!G) return result;
+  for(let y=0;y<G.h;y++) for(let x=0;x<G.w;x++){
+    const k=`${x},${y}`; const value=G.solution[y]?.[x]; const shouldFill=isFilledValue(value); const filled=stateRef.filled.has(k); const crossed=stateRef.crossed.has(k);
+    if(shouldFill){
+      if(crossed) result.mistakes++;
+      else if(!filled) result.empty++;
+      else if(G.colorMode==='color'&&normalizeColorId(stateRef.cellColors.get(k))!==normalizeColorId(value)) result.mistakes++;
+    }else{
+      if(filled) result.mistakes++;
+      else if(!crossed) result.empty++;
+    }
+  }
+  return result;
+}
 function startTimer(mode){ stopTimer(); const limit=TIMER_LIMITS[mode]??null; stateRef.timer={limit, remaining:limit, running:limit!=null, intervalId:null, expired:false, paused:false, pauseReason:null}; if(limit==null) return; stateRef.timer.intervalId=setInterval(()=>{ if(!stateRef.timer.running) return; stateRef.timer.remaining=Math.max(0, stateRef.timer.remaining-1); updateTimerNode(); if(stateRef.timer.remaining<=0){ stopTimer(); stateRef.timer.expired=true; stateRef.gameStatus='timeout'; const entry=recordResult('fail'); saveServerProgress(entry,'fail'); cancelDrag(); notify(TIMER_TEXT.timeoutTitle, TIMER_TEXT.timeoutMessage, [{label:ACTION_TEXT.select, action:'backToSelect'}, {label:ACTION_TEXT.retry, action:'retry'}]); } },1000); }
+function initHintCount(game){ const key=String(game?.difficulty||MODE_TO_DIFFICULTY[game?.mode]||'beginner').toLowerCase(); const limit=HINT_LIMITS_BY_DIFFICULTY[key]??0; stateRef.hints={limit, remaining:limit}; }
+function resetGameInput(){
+  stateRef.gameStatus='playing';
+  stateRef.playSession=makePlaySession(stateRef.game);
+  stateRef.filled.clear();
+  stateRef.cellColors.clear();
+  stateRef.crossed.clear();
+  stateRef.selectedColor=firstUsedColor(stateRef.game?.solution);
+  initHintCount(stateRef.game);
+  cancelDrag();
+}
+function requestGameExit(target){
+  if(!stateRef.game||stateRef.modal) return false;
+  if(stateRef.gameStatus==='cleared'||stateRef.gameStatus==='timeout'||stateRef.gameStatus==='giveup') return exitGame(target);
+  return confirmModal(ACTION_TEXT.exitTitle, ACTION_TEXT.exitMessage, ()=>exitGame(target), ACTION_TEXT.ok);
+}
+function exitGame(target){ stopTimer(); stateRef.gameStatus='idle'; stateRef.playSession=null; stateRef.game=null; stateRef.screen=target||'select'; render(stateRef, actionsAPI); }
+function zoomBoard(delta){ const current=Number(stateRef.boardZoom||1); const idx=Math.max(0, BOARD_ZOOM_LEVELS.findIndex(v=>v===current)); const base=idx>=0?idx:BOARD_ZOOM_LEVELS.indexOf(1); const next=BOARD_ZOOM_LEVELS[Math.max(0, Math.min(BOARD_ZOOM_LEVELS.length-1, base+delta))]; stateRef.boardZoom=next||1; render(stateRef, actionsAPI); }
+function debugInstantClear(){
+  if(!DEBUG_CONFIG.enableF1InstantClear || stateRef.screen!=='game' || !stateRef.game || stateRef.modal || stateRef.gameStatus!=='playing') return false;
+  const G=stateRef.game;
+  stateRef.filled.clear();
+  stateRef.cellColors.clear();
+  stateRef.crossed.clear();
+  for(let y=0;y<G.h;y++) for(let x=0;x<G.w;x++){
+    const k=`${x},${y}`;
+    const value=G.solution[y]?.[x];
+    if(isFilledValue(value)){
+      stateRef.filled.add(k);
+      stateRef.cellColors.set(k, normalizeColorId(value));
+    }else{
+      stateRef.crossed.add(k);
+    }
+  }
+  cancelDrag();
+  return finishClear();
+}
 function toggleSolved(mode,id){ const S=stateRef.solved[mode]; S.has(id)?S.delete(id):S.add(String(id)); persistSolved(); render(stateRef, actionsAPI); }
 function resetClearFlags(){ confirmModal(ACTION_TEXT.resetClearTitle, ACTION_TEXT.resetClearMessage, ()=>resetSolvedData(ACTION_TEXT.resetClearTitle), ACTION_TEXT.delete); }
 function resetUserData(){ confirmModal(ACTION_TEXT.resetUserTitle, ACTION_TEXT.resetUserMessage, ()=>resetSolvedData(ACTION_TEXT.resetUserTitle), ACTION_TEXT.delete); }
@@ -318,11 +383,11 @@ function resetSolvedData(title){ for(const k of Object.keys(stateRef.solved)){ s
 async function play(mode,id){ const list=await loadPuzzles(mode); const p=findPuzzle(list,id); if(!p){ notify(ACTION_TEXT.pendingTitle, ACTION_TEXT.puzzleMissing); return; }
   const difficulty=p.difficulty||MODE_TO_DIFFICULTY[mode]||'beginner'; const colorMode=normalizeColorMode(p.colorMode||p.mode||'mono',difficulty);
   stateRef.game={ mode, id:String(p.id??p.stageNo??id), stageNo:p.stageNo, title:p.title||`#${p.stageNo??p.id}`, w:p.w, h:p.h, difficulty, colorMode, solution:(p.grid||[]).map(r=>r.map(v=>normalizeColorId(v))) };
-  stateRef.playSession=makePlaySession(stateRef.game); stateRef.modal=null; stateRef.hoverCell=null; stateRef.gameStatus='playing'; stateRef.filled.clear(); stateRef.cellColors.clear(); stateRef.crossed.clear(); stateRef.selectedColor=firstUsedColor(stateRef.game.solution); cancelDrag(); startTimer(mode); stateRef.screen='game'; render(stateRef, actionsAPI);
+  stateRef.modal=null; stateRef.hoverCell=null; stateRef.boardZoom=1; resetGameInput(); startTimer(mode); stateRef.screen='game'; render(stateRef, actionsAPI);
 }
 function playCustom(p){ const difficulty=p.difficulty||'normal'; const colorMode=normalizeColorMode(p.colorMode||p.solutionMode||p.modeType||'mono',difficulty);
   stateRef.game={ mode:p.mode||'Custom', id:String(p.id||'custom'), title:p.title||'カスタム', w:p.w, h:p.h, returnTo:p.returnTo||'select', difficulty, colorMode, solution:(p.grid||[]).map(r=>r.map(v=>normalizeColorId(v))) };
-  stateRef.playSession=makePlaySession(stateRef.game); stateRef.modal=null; stateRef.hoverCell=null; stateRef.gameStatus='playing'; stateRef.filled.clear(); stateRef.cellColors.clear(); stateRef.crossed.clear(); stateRef.selectedColor=firstUsedColor(stateRef.game.solution); cancelDrag(); startTimer('Custom'); stateRef.screen='game'; render(stateRef, actionsAPI);
+  stateRef.modal=null; stateRef.hoverCell=null; stateRef.boardZoom=1; resetGameInput(); startTimer('Custom'); stateRef.screen='game'; render(stateRef, actionsAPI);
 }
 function firstUsedColor(solution){ const used=new Set(); for(const row of solution||[]) for(const v of row||[]){ const id=normalizeColorId(v); if(isFilledValue(id)) used.add(id); } return MC_COLORS.find(c=>used.has(c.id))?.id || '1'; }
 function openModal(modal){ cancelDrag(); pauseTimer('modal'); stateRef.modal={ title:modal.title||'', message:modal.message||'', buttons:modal.buttons?.length?modal.buttons:[{label:ACTION_TEXT.ok, action:'close'}] }; render(stateRef, actionsAPI); return true; }
@@ -330,7 +395,7 @@ function closeModal(){ stateRef.modal=null; resumeTimer(); render(stateRef, acti
 function notify(title,message,buttons){ return openModal({title,message,buttons}); }
 function confirmModal(title,message,onConfirm,confirmLabel=ACTION_TEXT.ok){ return openModal({title,message,buttons:[{label:ACTION_TEXT.cancel, action:'close'}, {label:confirmLabel, run:onConfirm}]}); }
 function handleModalButton(index){ const modal=stateRef.modal; const btn=modal?.buttons?.[index]; if(!btn){ closeModal(); return; } const run=btn.run; const action=btn.action||'close'; if(btn.close!==false) stateRef.modal=null; if(run){ run(); return; } if(action==='backToSelect'){ stopTimer(); stateRef.gameStatus='idle'; stateRef.playSession=null; stateRef.game=null; stateRef.screen='select'; render(stateRef, actionsAPI); return; } if(action==='retry'){ retryGame(); return; } resumeTimer(); render(stateRef, actionsAPI); }
-function retryGame(){ if(!stateRef.game){ stateRef.gameStatus='idle'; stateRef.screen='select'; render(stateRef, actionsAPI); return; } stateRef.gameStatus='playing'; stateRef.playSession=makePlaySession(stateRef.game); stateRef.filled.clear(); stateRef.cellColors.clear(); stateRef.crossed.clear(); stateRef.selectedColor=firstUsedColor(stateRef.game.solution); cancelDrag(); startTimer(stateRef.game.mode||'Custom'); render(stateRef, actionsAPI); }
+function retryGame(){ if(!stateRef.game){ stateRef.gameStatus='idle'; stateRef.screen='select'; render(stateRef, actionsAPI); return; } resetGameInput(); startTimer(stateRef.game.mode||'Custom'); render(stateRef, actionsAPI); }
 function markCurrentPuzzleSolved(){ const G=stateRef.game; if(!G||!stateRef.solved[G.mode]) return; stateRef.solved[G.mode].add(String(G.stageNo??G.id)); persistSolved(); }
 function loadSolved(){ stateRef.solved=loadSolvedForUser(stateRef.currentUser, stateRef.solved); }
 function persistSolved(){ persistSolvedForUser(stateRef.currentUser, stateRef.solved); try{ localStorage.removeItem(LS_KEY); }catch{} }

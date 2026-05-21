@@ -6,9 +6,38 @@ export const DIFFICULTY_RULES = {
   endless: { key:'endless', modeKey:'Endless', label:'エンドレス', sizes:[[20,20],[25,25],[30,30],[40,40],[50,50]], color:true, min:20, max:50 },
 };
 
+export const BUILD_INFO = { number: 59, label: 'Build #0000059' };
+export const DEBUG_CONFIG = { enableF1InstantClear: true };
+export const HINT_LIMITS_BY_DIFFICULTY = { beginner:2, easy:3, normal:3, hard:5, endless:5 };
+export const BOARD_ZOOM_LEVELS = [0.75, 0.9, 1, 1.1, 1.25, 1.5];
+export const FIXED_DIFFICULTY_FILES = {
+  'beginner.json': 'beginner',
+  'easy.json': 'easy',
+  'normal.json': 'normal',
+  'hard.json': 'hard',
+  'endless.json': 'endless',
+};
+export const BOARD_SIZE_OPTIONS_BY_DIFFICULTY = Object.fromEntries(
+  Object.values(DIFFICULTY_RULES).map(rule=>[
+    rule.key,
+    rule.sizes.map(([w,h])=>({ w, h, label:`${w} x ${h}` }))
+  ])
+);
 export const MODE_TO_DIFFICULTY = Object.fromEntries(Object.values(DIFFICULTY_RULES).map(r=>[r.modeKey,r.key]));
 export const DIFFICULTY_TO_MODE = Object.fromEntries(Object.values(DIFFICULTY_RULES).map(r=>[r.key,r.modeKey]));
 export const COLOR_MODES = { mono:'モノクロ', color:'カラー' };
+export const BACKGROUNDS = {
+  menu: './image/back001.jpg',
+  game: './image/back002.jpg',
+  ranking: './image/back003.jpg',
+  login: './image/back004.jpg',
+  select: './image/back005.jpg',
+  options: './image/back006.jpg',
+  help: './image/back007.jpg',
+  credits: ['./image/back008.jpg', './image/back009.jpg', './image/back001.jpg'],
+  userData: './image/back010.jpg',
+  editor: './image/back011.jpg'
+};
 
 export const MC_COLORS = [
   { id:'0', name:'Black', label:'ブラック', hex:'#000000' },
@@ -52,6 +81,11 @@ export function normalizeColorMode(mode, difficulty='beginner'){
 export function normalizeDifficulty(value){
   const key = String(value||'beginner').toLowerCase();
   return DIFFICULTY_RULES[key] ? key : 'beginner';
+}
+
+export function difficultyFromFileName(name){
+  const base = String(name||'').split(/[\\/]/).pop().toLowerCase();
+  return FIXED_DIFFICULTY_FILES[base] || '';
 }
 
 export function normalizeSizeForDifficulty(difficulty, w, h){

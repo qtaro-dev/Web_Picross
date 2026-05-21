@@ -127,7 +127,7 @@
       ]
     ],
     "stageNo": 1,
-    "difficulty": "beginner",
+    "difficulty": "easy",
     "mode": "mono",
     "colorMode": "mono"
   },
@@ -174,15 +174,15 @@
       ]
     ],
     "stageNo": 2,
-    "difficulty": "beginner",
+    "difficulty": "easy",
     "mode": "mono",
     "colorMode": "mono"
   },
   {
-    "id": "beginner_mono_id00000003",
+    "id": "easy_color_id00000003",
     "stageNo": 3,
     "title": "グラデーション",
-    "difficulty": "beginner",
+    "difficulty": "easy",
     "mode": "color",
     "colorMode": "color",
     "w": 10,

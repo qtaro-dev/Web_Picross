@@ -6,4 +6,10 @@ state.screen = 'title';
 state.game = null;
 state.modal = null;
 const actions = initActions(state);
+window.addEventListener('keydown', event => {
+  if(event.key !== 'F1' || state.screen !== 'game') return;
+  event.preventDefault();
+  event.stopPropagation();
+  actions.debugInstantClear();
+}, true);
 actions.goto('title');

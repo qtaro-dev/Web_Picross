@@ -3,17 +3,27 @@ import { loadPuzzles } from './data.js';
 import { PLACEHOLDERS, createPuzzleThumb } from './thumbs.js';
 import { makeClues, isSolved } from './engine.js';
 import { renderEditor } from './editor.js';
-import { MC_COLORS, MC_COLOR_MAP, isFilledValue, normalizeColorId } from './config.js';
+import { BACKGROUNDS, BUILD_INFO, MC_COLORS, MC_COLOR_MAP, isFilledValue, normalizeColorId } from './config.js';
 import { exportCurrentUserPayload, formatDateTimeForDisplay, USER_DATA_KEYS } from './userData.js';
 const MODE_LABELS = { Beginner:'ビギナー', Easy:'イージー', Normal:'ノーマル', Hard:'ハード', Endless:'エンドレス' };
 const MODE_EN_LABELS = { Beginner:'Beginner', Easy:'Easy', Normal:'Normal', Hard:'Hard', Endless:'Endless', Custom:'Custom', EditPlay:'EditPlay' };
-const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'全消去', check:'判定', giveUp:'ギブアップ', hint:'ヒント', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
+const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
 const SELECT_DEBUG = { title:'開発データ', clearState:'クリアフラグ', storageKey:'保存キー', storage:'保存方式', fileSave:'ファイル直接保存', enabled:'有効', disabled:'無効', userData:'対象', none:'なし', resetClear:'クリア状況リセット', resetUser:'ユーザーデータ削除', exportJson:'ユーザーデータJSON出力', exportCurrent:'現在ユーザーJSON出力' };
 const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', exportCurrent:'現在ユーザーJSON出力', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。' };
 const RANKING_UI = { title:'ランキング', back:'← 戻る', current:'現在の自分の順位', empty:'まだランキングデータがありません。パズルをクリアするとランキングに表示されます。', noUserRank:'まだこの難易度のクリア記録がありません。', sourceLocal:'Live Server環境では現在ユーザーのlocalStorage内データのみを表示します。' };
 function setAlignTop(root, on){ root.classList[on?'add':'remove']('align-top'); }
 function formatGameTime(timer){ const sec=timer?.remaining; if(sec==null) return GAME_UI.unlimited; const m=Math.floor(sec/60); const s=sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
 function escapeHtml(value){ return String(value||'').replace(/[&<>"']/g, ch=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch])); }
+function renderBackgroundLayer(name){
+  const path=BACKGROUNDS[name];
+  return typeof path === 'string' ? `<div class="screen-bg" aria-hidden="true" style="background-image:url('${escapeHtml(path)}')"></div>` : '';
+}
+function renderCreditsBackgroundLayers(){
+  const paths=Array.isArray(BACKGROUNDS.credits) ? BACKGROUNDS.credits : [BACKGROUNDS.credits].filter(Boolean);
+  if(!paths.length) return '';
+  const slides=paths.map((path,i)=>`<div class="credits-bg-slide" style="--slide-index:${i}; background-image:url('${escapeHtml(path)}')"></div>`).join('');
+  return `<div class="screen-bg credits-bg-stack" aria-hidden="true">${slides}</div>`;
+}
 
 export function render(state, actions){
   if(state.screen==='title') renderTitle(state, actions);
@@ -32,14 +42,14 @@ export function render(state, actions){
 
 function renderTitle(state, actions){
   const root=state.root; setAlignTop(root,false);
-  root.innerHTML = `<div class="screen"><img id="titleimg" class="title-img" src="./image/title.png" alt="Title"></div>`;
+  root.innerHTML = `<div class="screen"><img id="titleimg" class="title-img" src="./image/title.png" alt="Title"><div class="build-number">${escapeHtml(BUILD_INFO.label)}</div></div>`;
   root.querySelector('#titleimg').addEventListener('click', ()=>actions.goto('login'));
 }
 
 function renderLogin(state, actions){
   const root=state.root; setAlignTop(root,false);
   const form=state.loginForm||{};
-  root.innerHTML = `<div class="screen login-screen">
+  root.innerHTML = `<div class="screen login-screen has-bg">${renderBackgroundLayer('login')}
     <div class="login-panel">
       <div class="login-title">ログイン / ユーザー登録</div>
       <label class="login-field">ユーザー名<input id="loginUser" class="text-input" autocomplete="username" value="${escapeHtml(form.username||'')}"></label>
@@ -71,7 +81,7 @@ function renderLogin(state, actions){
 function renderMenu(state, actions){
   const root=state.root; setAlignTop(root,false);
   const user=state.currentUser?.username ? `<div class="menu-account"><div class="menu-user">${escapeHtml(state.currentUser.username)}</div><button class="btn menu-user-data" data-act="userData">${USER_DATA_UI.button}</button></div>` : '';
-  root.innerHTML = `<div class="screen"><div class="menu">
+  root.innerHTML = `<div class="screen has-bg">${renderBackgroundLayer('menu')}<div class="menu">
     <div class="menu-title">${USER_DATA_UI.menuTitle}</div>
     ${user}
     <button class="btn" data-act="game">ゲームセレクト</button>
@@ -99,7 +109,7 @@ function renderUserData(state, actions){
   const summary=difficultySummaries(payload.progress, payload.history);
   const hasRecords=rows.length>0 || (payload.history||[]).length>0;
   const fileLine=status.fileSave ? `<div><span>ユーザーファイル</span><strong>${escapeHtml(status.filePath||`user/${payload.user.username}.json`)}</strong></div>` : `<div><span>保存キー</span><strong>${USER_DATA_KEYS.data}</strong></div>`;
-  root.innerHTML = `<div class="screen user-data-screen">
+  root.innerHTML = `<div class="screen user-data-screen has-bg">${renderBackgroundLayer('userData')}
     <div class="user-data-topbar">
       <button class="btn btn-slim" id="backUserData">${USER_DATA_UI.back}</button>
       <div class="user-data-title">${USER_DATA_UI.title}</div>
@@ -153,7 +163,7 @@ function renderRanking(state, actions){
   const data=state.ranking?.data;
   const rows=data?.rankings||[];
   const userRanks=data?.currentUserRanks||[];
-  root.innerHTML = `<div class="screen ranking-screen">
+  root.innerHTML = `<div class="screen ranking-screen has-bg">${renderBackgroundLayer('ranking')}
     <div class="ranking-topbar">
       <button class="btn btn-slim" id="backRanking">${RANKING_UI.back}</button>
       <div class="ranking-title">${RANKING_UI.title}</div>
@@ -163,11 +173,11 @@ function renderRanking(state, actions){
     ${data?.source==='localStorage'?`<div class="ranking-note">${RANKING_UI.sourceLocal}</div>`:''}
     <section class="ranking-panel">
       <div class="ranking-section-title">${RANKING_UI.current}</div>
-      ${state.ranking?.loading ? `<div class="ranking-empty">読み込み中...</div>` : userRanks.length ? `<div class="ranking-current-list">${userRanks.map(rank=>`<div class="ranking-current-item">${MODE_LABELS[mode]} ${stageLabel(rank.stageNo)} ${rank.title?escapeHtml(rank.title):''}　${rank.rank}位 / ${rank.total}人中　${escapeHtml(rank.clearTimeText||formatMs(rank.clearTimeMs))}</div>`).join('')}</div>` : `<div class="ranking-empty">${RANKING_UI.noUserRank}</div>`}
+      ${state.ranking?.loading ? `<div class="ranking-empty">読み込み中...</div>` : userRanks.length ? `<div class="ranking-current-list">${userRanks.map(rank=>`<div class="ranking-current-item">${MODE_LABELS[mode]} ${stageLabel(rank.stageNo)}　${rank.rank}位 / ${rank.total}人中　${escapeHtml(rank.clearTimeText||formatMs(rank.clearTimeMs))}</div>`).join('')}</div>` : `<div class="ranking-empty">${RANKING_UI.noUserRank}</div>`}
     </section>
     <section class="ranking-panel">
       <div class="ranking-section-title">ランキング一覧</div>
-      ${state.ranking?.loading ? `<div class="ranking-empty">読み込み中...</div>` : rows.length ? `<div class="ranking-table-wrap"><table class="ranking-table"><thead><tr><th>順位</th><th>難易度</th><th>面</th><th>パズル名</th><th>クリア時間</th><th>ユーザー名</th><th>クリア日時</th></tr></thead><tbody>${rows.map(row=>`<tr class="${row.username===state.currentUser?.username?'is-current-user':''}"><td>${row.rank}</td><td>${MODE_LABELS[mode]}</td><td>${stageLabel(row.stageNo)}</td><td>${escapeHtml(row.title||'-')}</td><td>${escapeHtml(row.clearTimeText||formatMs(row.clearTimeMs))}</td><td>${escapeHtml(row.username||'-')}</td><td>${escapeHtml(row.clearedAtText||formatDateTimeForDisplay(row.clearedAt))}</td></tr>`).join('')}</tbody></table></div>` : `<div class="ranking-empty">${RANKING_UI.empty}</div>`}
+      ${state.ranking?.loading ? `<div class="ranking-empty">読み込み中...</div>` : rows.length ? `<div class="ranking-table-wrap"><table class="ranking-table"><thead><tr><th>順位</th><th>難易度</th><th>面</th><th>クリア時間</th><th>ユーザー名</th><th>クリア日時</th></tr></thead><tbody>${rows.map(row=>`<tr class="${row.username===state.currentUser?.username?'is-current-user':''}"><td>${row.rank}</td><td>${MODE_LABELS[mode]}</td><td>${stageLabel(row.stageNo)}</td><td>${escapeHtml(row.clearTimeText||formatMs(row.clearTimeMs))}</td><td>${escapeHtml(row.username||'-')}</td><td>${escapeHtml(row.clearedAtText||formatDateTimeForDisplay(row.clearedAt))}</td></tr>`).join('')}</tbody></table></div>` : `<div class="ranking-empty">${RANKING_UI.empty}</div>`}
     </section>
   </div>`;
   root.querySelector('#backRanking').addEventListener('click', ()=>actions.goto('menu'));
@@ -177,7 +187,7 @@ function renderRanking(state, actions){
 function renderOptions(state, actions){
   const root=state.root; setAlignTop(root,true);
   const opt=state.options||{};
-  root.innerHTML = `<div class="screen info-screen">
+  root.innerHTML = `<div class="screen info-screen has-bg">${renderBackgroundLayer('options')}
     <button class="btn btn-slim info-back" id="backOptions">← メニューへ戻る</button>
     <div class="info-title">オプション</div>
     <section class="info-panel option-panel">
@@ -207,7 +217,7 @@ function renderOptions(state, actions){
 
 function renderHelp(state, actions){
   const root=state.root; setAlignTop(root,true);
-  root.innerHTML = `<div class="screen info-screen">
+  root.innerHTML = `<div class="screen info-screen has-bg">${renderBackgroundLayer('help')}
     <button class="btn btn-slim info-back" id="backHelp">← メニューへ戻る</button>
     <div class="info-title">ヘルプ</div>
     <section class="info-panel"><h2>ピクロスの基本ルール</h2><ul><li>数字は、その行または列に連続して塗るマス数を表します。</li><li>複数の数字がある場合は、塗るかたまりが複数あります。</li><li>数字と数字のかたまりの間には、最低1マス以上の空白が入ります。</li><li>正しいマスをすべて塗るとクリアです。</li><li>塗らないと分かったマスには×を付けられます。</li></ul></section>
@@ -220,7 +230,7 @@ function renderHelp(state, actions){
 
 function renderCredits(state, actions){
   const root=state.root; setAlignTop(root,false);
-  root.innerHTML = `<div class="screen credits-screen">
+  root.innerHTML = `<div class="screen credits-screen has-bg">${renderCreditsBackgroundLayers()}
     <button class="btn btn-slim info-back credits-back" id="backCredits">← メニューへ戻る</button>
     <div class="credits-viewport">
       <div class="credits-roll">
@@ -252,9 +262,9 @@ function renderSelect(state, actions){
   const fileSaveLabel=status.fileSave?`${SELECT_DEBUG.enabled} ${escapeHtml(status.filePath||`user/${currentUser}.json`)}`:`${SELECT_DEBUG.disabled} JSON出力で確認`;
   const page=Math.min(Math.max(1,state.page),pages); const start=(page-1)*per; const items=pack.puzzles.slice(start,start+per);
   const thumbSize=isLarge?'var(--thumb-lg)':'var(--thumb)'; const rowGap=isLarge?32:24;
-  root.innerHTML = `<div class="screen select-padding-top">
+  root.innerHTML = `<div class="screen select-screen has-bg">${renderBackgroundLayer('select')}
       <button class="btn fixed-top-left" id="back">← メニューに戻る</button>
-      <div class="fixed-top-center">
+      <div class="select-controls">
         <div class="mode-tabs" id="modes"></div>
         <div class="pager-bar">
           <button class="btn btn-slim" id="prev" ${page<=1?'disabled':''}>◀</button>
@@ -283,7 +293,7 @@ function renderSelect(state, actions){
           </div>
         </div>
       </details>
-      <div class="thumb-grid" id="grid" style="--thumb-size:${thumbSize}; grid-template-columns: repeat(${cols}, var(--thumb-size)); row-gap:${rowGap}px;"></div>
+      <div class="thumb-grid" id="grid" style="--thumb-size:${thumbSize}; --select-cols:${cols}; --select-row-gap:${rowGap}px; max-width:calc((var(--thumb-size) * ${cols}) + (24px * ${cols - 1}));"></div>
     </div>`;
   root.querySelector('#back').addEventListener('click', ()=>actions.goto('menu'));
   const goPage = d => { const n=Math.min(Math.max(1,page+d),pages); if(n!==page) actions.setPage(n); };
@@ -328,7 +338,7 @@ function renderGame(state, actions){
   const root=state.root; setAlignTop(root,false);
   const G=state.game; if(!G){ root.innerHTML=`<div class="screen"><div class="menu"><button class="btn" id="back">${GAME_UI.backSelect}</button><p>${GAME_UI.noPuzzle}</p></div></div>`; root.querySelector('#back').onclick=()=>actions.goto('select'); return; }
   const {w,h,solution}=G; const {rows,cols}=makeClues(solution,w,h,G.colorMode); const maxRowLen=Math.max(...rows.map(r=>r.length)); const maxColLen=Math.max(...cols.map(c=>c.length));
-  const boardSize=Math.max(w,h); const cellSize=Math.max(18, Math.min(34, Math.floor(280/boardSize))); const clueSize=Math.max(18, Math.min(24, cellSize));
+  const boardSize=Math.max(w,h); const zoom=Number(state.boardZoom||1); const baseCellSize=Math.max(18, Math.min(34, Math.floor(280/boardSize))); const cellSize=Math.round(baseCellSize*zoom); const clueSize=Math.max(14, Math.round(Math.max(18, Math.min(24, baseCellSize))*zoom));
   const timerText=formatGameTime(state.timer);
   const gameTitle=gameStageTitle(G);
   const backTarget=G.returnTo==='editor'?'editor':'select';
@@ -336,7 +346,7 @@ function renderGame(state, actions){
   const showPalette=G.colorMode==='color';
   const gameColors=showPalette?usedPaletteColors(solution):MC_COLORS;
   const gameLocked=state.gameStatus==='cleared'||state.gameStatus==='timeout'||state.gameStatus==='giveup';
-  root.innerHTML = `<div class="screen game-screen" style="--crosshair-color:${escapeHtml(state.options?.crosshairColor||'#42a5f5')}">
+  root.innerHTML = `<div class="screen game-screen has-bg" style="--crosshair-color:${escapeHtml(state.options?.crosshairColor||'#42a5f5')}">${renderBackgroundLayer('game')}
     <div class="game-layout">
       <aside class="game-panel">
         <div class="timer-box">
@@ -346,7 +356,7 @@ function renderGame(state, actions){
         <div class="game-actions">
           <button class="btn" id="clear" ${gameLocked?'disabled':''}>${GAME_UI.clear}</button>
           <button class="btn" id="check" ${gameLocked?'disabled':''}>${GAME_UI.check}</button>
-          <button class="btn" id="hint" ${gameLocked?'disabled':''}>${GAME_UI.hint}</button>
+          <button class="btn" id="hint" ${gameLocked||state.hints?.remaining<=0?'disabled':''}>${GAME_UI.hint} ${state.hints?.remaining??0}</button>
           <button class="btn" id="giveup" ${gameLocked?'disabled':''}>${GAME_UI.giveUp}</button>
           <button class="btn" id="menu">${GAME_UI.backMenu}</button>
           <button class="btn" id="back">${backLabel}</button>
@@ -354,13 +364,18 @@ function renderGame(state, actions){
       </aside>
       <div class="game-main">
         <div class="game-title">${escapeHtml(gameTitle)}</div>
+        <div class="zoom-controls">
+          <button class="btn btn-slim" id="zoomOut">${GAME_UI.zoomOut}</button>
+          <div class="zoom-label">${Math.round(zoom*100)}%</div>
+          <button class="btn btn-slim" id="zoomIn">${GAME_UI.zoomIn}</button>
+        </div>
         <div id="gamewrap" class="game-board" style="--cell-size:${cellSize}px; --clue-size:${clueSize}px; display:grid; gap:0;
           grid-template-columns: repeat(${maxRowLen}, var(--clue-size)) repeat(${w}, var(--cell-size));
           grid-template-rows: repeat(${maxColLen}, var(--clue-size)) repeat(${h}, var(--cell-size));"></div>
         <p class="game-help">${GAME_UI.inputHelp}</p>
       </div>
       <aside class="game-palette-panel">
-        ${showPalette ? `<div class="palette-title">パレット</div><div class="game-palette">${gameColors.map(c=>`<button class="palette-btn ${state.selectedColor===c.id?'is-active':''}" data-color="${c.id}" style="background:${c.hex}; color:${textColorFor(c.id)}">${c.id}</button>`).join('')}</div>` : `<div class="palette-title">モノクロ</div><div class="mono-palette-note">■ 塗り</div>`}
+        ${showPalette ? `<div class="palette-title">パレット</div><div class="game-palette">${gameColors.map(c=>`<button class="palette-btn ${state.selectedColor===c.id?'is-active':''}" data-color="${c.id}" title="${c.id} ${escapeHtml(c.label)}" aria-label="${c.id} ${escapeHtml(c.label)}" style="background:${c.hex}; color:${textColorFor(c.id)}"></button>`).join('')}</div>` : `<div class="palette-title">モノクロ</div><div class="mono-palette-note">■ 塗り</div>`}
       </aside>
     </div></div>`;
   const wrap=root.querySelector('#gamewrap');
@@ -413,12 +428,14 @@ function renderGame(state, actions){
   wrap.addEventListener('mouseleave',()=>{ actions.cancelDrag(); actions.clearHoverCell(); });
   window.addEventListener('pointerup',()=>actions.cancelDrag(),{once:true});
   window.addEventListener('mouseup',()=>actions.cancelDrag(),{once:true});
-  root.querySelector('#back').onclick=()=>actions.goto(backTarget);
-  root.querySelector('#menu').onclick=()=>actions.goto('menu');
+  root.querySelector('#back').onclick=()=>actions.requestGameExit(backTarget);
+  root.querySelector('#menu').onclick=()=>actions.requestGameExit('menu');
   root.querySelector('#clear').onclick=()=>actions.clear();
   root.querySelector('#check').onclick=()=>actions.showCheckResult(isSolved(solvedState()));
   root.querySelector('#hint').onclick=()=>actions.hint();
   root.querySelector('#giveup').onclick=()=>actions.giveUp();
+  root.querySelector('#zoomOut').onclick=()=>actions.zoomBoard(-1);
+  root.querySelector('#zoomIn').onclick=()=>actions.zoomBoard(1);
   root.querySelectorAll('.palette-btn').forEach(btn=>btn.addEventListener('click',()=>actions.setSelectedColor(btn.dataset.color)));
 }
 
