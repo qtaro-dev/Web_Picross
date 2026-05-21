@@ -6,7 +6,7 @@ export const DIFFICULTY_RULES = {
   endless: { key:'endless', modeKey:'Endless', label:'エンドレス', sizes:[[20,20],[25,25],[30,30],[40,40],[50,50]], color:true, min:20, max:50 },
 };
 
-export const BUILD_INFO = { number: 59, label: 'Build #0000059' };
+export const BUILD_INFO = { number: 63, label: 'Build #0000063' };
 export const DEBUG_CONFIG = { enableF1InstantClear: true };
 export const HINT_LIMITS_BY_DIFFICULTY = { beginner:2, easy:3, normal:3, hard:5, endless:5 };
 export const BOARD_ZOOM_LEVELS = [0.75, 0.9, 1, 1.1, 1.25, 1.5];

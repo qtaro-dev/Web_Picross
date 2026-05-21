@@ -41,7 +41,34 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000059` です。
+- 現在のビルドは `Build #0000063` です。
+
+## 公開構成方針
+
+- 公開先はVercel、永続データと素材管理はSupabaseへ段階移行する方針です。
+- Vercelには `index.html`、`styles.css`、`js/`、`docs/`、公開してよい設定だけを置きます。
+- Supabase Databaseには `profiles`、`puzzles`、`user_progress`、`play_history`、`ranking_records` を置きます。
+- Supabase Storageには `web-picross-assets` バケットを作り、`bgm/`、`se/`、`backgrounds/`、`title/`、`thumbnails/` に素材を分けます。
+- `users.json`、`user/*.json`、service role key、DBパスワードはGitHub/Vercelへアップロードしません。
+- 詳細は `docs/supabase/000_architecture_plan.md`、`docs/supabase/001_schema.sql`、`docs/supabase/002_rls.sql`、`docs/supabase/003_storage_design.md` を参照します。
+
+## Supabase環境変数
+
+Supabase接続は `js/supabaseClient.js` で管理します。未設定時はSupabaseへ接続せず、既存のローカルJSON / localStorage 動作へフォールバックします。
+
+ローカル用の雛形は `.env.example` を使います。`.env` と `.env.*` はGit管理しません。
+
+```env
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+```
+
+VercelではProject SettingsのEnvironment Variablesへ次の2つを設定します。
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+`SUPABASE_SERVICE_ROLE_KEY`、DBパスワード、JWT secretはフロントエンド、GitHub、Vercelの公開環境変数へ置きません。
 
 ## 起動方法
 
