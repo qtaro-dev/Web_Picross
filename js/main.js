@@ -12,4 +12,4 @@ window.addEventListener('keydown', event => {
   event.stopPropagation();
   actions.debugInstantClear();
 }, true);
-actions.goto('title');
+actions.initializeAuthFlow();

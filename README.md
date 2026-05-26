@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000063` です。
+- 現在のビルドは `Build #0000106` です。
 
 ## 公開構成方針
 
@@ -70,6 +70,58 @@ VercelではProject SettingsのEnvironment Variablesへ次の2つを設定しま
 
 `SUPABASE_SERVICE_ROLE_KEY`、DBパスワード、JWT secretはフロントエンド、GitHub、Vercelの公開環境変数へ置きません。
 
+Supabase設定済みの場合、既存のログイン画面からSupabase Authへ登録・ログインします。`profiles` には `username`、`display_name`、`role` を保存し、ログイン成功時のユーザー情報は `state.currentUser` に `loginSource: "supabase"` として保持します。Supabase未設定時は従来のローカルログインに戻ります。固定ユーザー `admin` / `admin` は開発用です。
+
+Supabase Authでは正規のメールアドレス + パスワードで登録・ログインします。登録時はユーザー名、メールアドレス、パスワードを入力し、ログイン時はメールアドレスとパスワードを使います。ユーザー表示と `profiles.username` には入力されたユーザー名を保存します。
+
+Supabase Authentication のEmail Providerでは、メール確認（Confirm email）を有効にしてください。アプリは登録後に確認メールの案内を表示し、確認済みでないSupabaseユーザーをログイン成功として扱いません。ログイン画面から確認メールを再送できます。
+
+Authentication のURL Configurationには、ローカル確認用の `http://127.0.0.1:8000/` と公開環境のアプリURLをRedirect URLとして登録してください。既存ユーザーのメール確認状態はAuthentication → Usersで確認し、未確認ユーザーにはログイン画面の再送導線から確認を完了してもらいます。
+
+管理者ページはSupabase Authログインかつ `profiles.role = admin` のユーザーだけに表示します。初期管理者は次の手順で作成します。
+
+1. Supabase Dashboardを開きます。
+2. Table Editor → profiles を開きます。
+3. 管理者にしたいユーザーの `role` を `user` から `admin` に変更します。
+4. アプリに再ログインします。
+5. メニューに「管理者ページ」が表示されることを確認します。
+
+管理者ページではユーザー一覧、進行状況、プレイ履歴、ランキング記録、デバッグ操作、システム情報を確認できます。上部のセクションボタンで各管理領域へ移動でき、左下の矢印ボタンでページ上部へ戻れます。表示名・権限・進行状況・ランキングタイムの更新とランキング記録削除は、Supabase RLSで許可された範囲だけ実行します。service role keyはフロントエンドでは使用しません。F1デバッグクリアはSupabase管理者ユーザー専用です。ランキングの非表示フラグ、備考、F1デバッグクリアの `debug_clear` 分離は現スキーマに無いため後続チケットで扱います。
+
+管理者ページの「パスワードクリア」は、対象ユーザーの `profiles.password_clear_required` を有効にします。対象ユーザーは次回のSupabaseログイン後、通常メニューやゲームへ進まず、新しいパスワードの設定を完了する必要があります。更新完了時は `password_clear_required` を解除して `last_password_changed_at` を保存し、一度サインアウトします。本実装は既存RLSにより認証済み管理者が状態を更新する方式で、管理者がAuthパスワードを直接参照・上書きする処理やservice role keyのブラウザ配布は行いません。
+
+エディタはSupabase管理者ユーザー専用です。通常メニュー列には「お知らせ」を表示し、管理者だけがメニュー右側のショートカットからエディタと管理者ページを開けます。一般ユーザーが内部的にエディタ遷移を呼び出した場合も、メニューへ戻して利用を拒否します。
+
+ログイン画面の「パスワードを忘れた場合」から、Supabase Authのパスワード再設定メールを要求できます。登録有無を推測されにくくするため、要求後の表示は入力メールが登録済みの場合に送信するという共通案内です。メール内リンクでアプリへ戻ると新パスワード設定画面を表示し、更新完了後はセッションを終了して新しいパスワードでのログインを求めます。管理者ページでは、管理者だけがユーザー詳細から登録メール宛に同じ再設定メールを送信できます。管理者がパスワードを取得または直接変更する機能はありません。
+
+ユーザーデータ画面のアカウント削除は、この画面から直接削除せず、`account_delete_requests` テーブルへ削除申請を保存します。同一ユーザーの申請中レコードは重複作成しません。管理者ページでは申請一覧、pending件数、承認・拒否、管理者メモを確認できますが、Authユーザーの実削除は行いません。実削除は後続の管理者専用機能で扱います。
+
+管理者が削除申請を承認した場合、現段階ではAuthユーザーを物理削除せず、`profiles.account_status = disabled`、`disabled_at`、`disabled_reason` を保存して利用停止として扱います。利用停止ユーザーはゲームセレクト、ゲーム開始、エディットプレイへ進めず、プレイ記録やランキング記録も保存しません。管理者ページのユーザー詳細から、`disabled` ユーザーだけを `active` に戻す利用停止解除もできます。service role keyはフロントエンドへ出さず、Authユーザーの物理削除は将来のサーバー側処理として検討します。
+
+利用停止ユーザーがSupabaseログインを試みた場合は、検出直後にサインアウトしてログイン画面に留めます。メニュー、ユーザーデータ、ゲーム、管理者ページには遷移せず、ログイン画面に利用停止メッセージを表示します。
+
+削除申請まわりの集計値は `profiles` の `delete_request_count`、`delete_approved_count`、`delete_rejected_count`、`account_disabled_count`、`account_reactivated_count` と最終日時列に保存します。既存環境へ列を追加した場合は、Supabase SQL Editorで `NOTIFY pgrst, 'reload schema';` を実行してからアプリを再読み込みしてください。
+
+Supabaseで `profiles` に `account_status` などの列を追加した直後に画面へ反映されない場合は、SQL Editorで `NOTIFY pgrst, 'reload schema';` を実行してPostgRESTのスキーマキャッシュを更新してください。
+
+パスワードクリア機能には `profiles` の `password_clear_required`、`password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count`、`last_password_changed_at` 列が必要です。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用し、既存の `profiles_update_own_or_admin` RLSポリシーが有効であることを確認してください。ローカル確認でも実ユーザーのログイン制御が変わるため、テストユーザーだけで実行してください。
+
+ローカル `npm start` でSupabase Authを確認する手順:
+
+1. `E:\Dev\web_picross_Ver2\.env` を作成します。
+2. `SUPABASE_URL` と `SUPABASE_ANON_KEY` を設定します。
+3. `npm start` でローカルサーバーを起動します。
+4. `http://127.0.0.1:8000/api/supabase-config` を開き、`configured: true` になることを確認します。
+5. アプリで新規ユーザー登録します。
+6. Supabase Dashboard の Authentication → Users にユーザーが増えることを確認します。
+7. Supabase Dashboard の Table Editor → public → profiles に `username` が増えることを確認します。
+
+`.env` が未設定または空の場合、`/api/supabase-config` は `configured: false` を返し、既存のローカル登録・ログインへフォールバックします。
+
+Supabaseログイン中は、クリア、時間切れ、ギブアップ時に `user_progress` と `play_history` へ記録します。クリア時は `ranking_records` へベストタイムも保存します。F1デバッグクリアは `profiles.role = admin` のSupabase管理者ユーザーだけが利用でき、既存仕様と同じく通常クリア扱いで記録します。
+
+パズルデータは `npm run import:puzzles` で `data/*.json` からSupabase Databaseの `puzzles` へインポートできます。インポートにはローカル `.env` の `SUPABASE_SERVICE_ROLE_KEY` を使いますが、このキーはGitHub/Vercel/フロントエンドへ置きません。アプリ側はSupabase設定済みなら `puzzles.is_published = true` の問題だけを取得し、未設定時は従来どおり `data/*.json` を読み込みます。
+
 ## 起動方法
 
 このアプリは `fetch()` で `data/*.json` を読み込むため、`index.html` を直接開くのではなく、ローカルサーバー経由で起動します。
@@ -95,17 +147,21 @@ http://127.0.0.1:8000/
 ## ログイン
 
 - 開発用固定ユーザー: `admin` / `admin`
+- ユーザー名は1〜10文字で、日本語・英数字・`_`・`-` を使えます。
+- メールアドレスは50文字以内で、メールアドレス形式のみ受け付けます。
+- 登録・パスワード変更時のパスワードは8〜16文字の半角英数字・記号です。弱いパスワードでも原則ブロックせず、画面上の強度メーターで注意を表示します。
+- パスワード欄には表示 / 非表示ボタンがあり、入力内容を確認できます。貼り付けやパスワードマネージャーの自動入力は妨げません。
 - `node server.js` 起動時は、ログイン画面のユーザー登録ボタンから登録したユーザーを `users.json` に保存します。
 - 現在のユーザー保存は開発用の平文パスワードです。本番公開ではハッシュ化や外部DB連携が必要です。
 - ユーザー登録成功後は、登録したユーザー名とパスワードをログインフォームへ転記する確認モーダルを表示します。
-- 「ユーザー名とパスワードを記録する」をONにしてログインすると、ブラウザ側 `localStorage` にログイン情報を保存し、次回ログイン画面で復元します。OFFでログインすると保存済みログイン情報を削除します。
+- 「メールアドレスとパスワードを記録する」をONにしてログインすると、ブラウザ側 `localStorage` にログイン情報を保存し、次回ログイン画面で復元します。OFFでログインすると保存済みログイン情報を削除します。
 - ログイン情報記録機能はローカル開発・ポートフォリオ確認用です。現在はユーザー名・パスワードをブラウザ側に平文保存するため、本番運用では使用せず、Supabase Auth等の認証基盤へ移行する想定です。
 - Live ServerなどAPIのない静的環境では、ユーザー登録情報を `localStorage` の `picross_v2_users` に保存します。
 - クリア状況とクリアタイムはユーザー別に `localStorage` の `picross_v2_user_data` に保存します。
-- パズルセレクト右上の開発データパネルから、進行データの削除とユーザーデータJSON出力ができます。
 - メニュー画面の「ユーザーデータ」から、現在ユーザーの基本情報、難易度別集計、各面のクリア/失敗/ギブアップ記録を確認できます。
+- 通常のユーザーデータ画面では、内部ID、保存キー、権限、JSON出力、データ削除などの管理・デバッグ情報は表示しません。管理者向け操作は後続の管理者専用ページで扱う方針です。
 - 静的環境のユーザー保存は開発確認用です。本番向け認証ではなく、将来的にはSupabaseなどのDB連携へ置き換える想定です。
-- `python -m http.server` やVSCode Live Serverでは静的配信のみのため、`users.json` へ直接保存できません。右上の開発データパネルから users.json 相当のJSONを出力して内容確認します。
+- `python -m http.server` やVSCode Live Serverでは静的配信のみのため、`users.json` へ直接保存できません。
 - `node server.js` 起動時は `/api/register` 経由で `users.json` に登録ユーザーを保存し、`/api/user-data` で保存内容を確認できます。
 - ゲームセレクトの完成サムネイルは、現在ログイン中のユーザーがその問題をクリア済みの場合だけ表示します。未クリア問題はプレースホルダー表示です。
 
@@ -136,9 +192,10 @@ http://127.0.0.1:8000/
 
 ## デバッグ機能
 
-- ゲームプレイ中に `F1` キーを押すと、開発・動作確認用に現在の面を即時クリアできます。
+- ゲームプレイ中に `F1` キーを押すと、Supabase管理者ユーザー専用の開発・動作確認用機能として現在の面を即時クリアできます。
+- 未ログイン、一般ユーザー、ローカル保存ユーザー、固定ユーザー `admin` / `admin` ではF1即時クリアは無効です。
 - F1即時クリアは通常クリアと同じ記録処理を通り、クリアダイアログ、ユーザーデータ、ランキング、クリア済み表示に反映されます。
-- この機能は `js/config.js` の `DEBUG_CONFIG.enableF1InstantClear` でON/OFFできます。公開時には無効化する想定です。
+- この機能は `js/config.js` の `DEBUG_CONFIG.enableF1InstantClear` でON/OFFできます。
 
 ## ランキング表示
 
@@ -165,10 +222,10 @@ Node.jsサーバー起動時:
 - クリア時はクリア回数、最新クリアタイム、ベストタイム、クリア日時を保存します。
 - 時間切れなどの失敗時は失敗回数と最新失敗時間を保存します。
 - ギブアップ時はギブアップ回数と最新ギブアップ時間を保存します。
-- ランキングはNode.jsサーバー起動時に `user/*.json` を集計し、難易度ごとにクリア時間が短い順で最大100件表示します。
-- ランキング画面では、クリア時間、ユーザー名、面番号、パズル名、クリア日時と、現在ログイン中ユーザーの順位を表示します。
-- Live ServerなどAPIのない環境では、現在ユーザーの `localStorage` 内データだけを使った簡易ランキング表示になります。
-- ランキングは将来的にSupabase / PostgreSQL等のDB保存へ移行する想定です。
+- ランキングはSupabase設定時に `ranking_records` を参照し、難易度ごとにクリア時間が短い順で最大100件表示します。
+- ランキング画面では、クリア時間、ユーザー名、面番号、クリア日時と、現在ログイン中ユーザーの順位を表示します。ネタバレ防止のためパズル名は表示しません。
+- Supabase未設定または取得失敗時は、Node.jsサーバーのランキングAPI、さらに現在ユーザーの `localStorage` 内データへフォールバックします。
+- F1即時クリアはSupabase管理者ユーザーだけが利用でき、通常クリアと同じ保存処理を通るため、Supabase利用時も `ranking_records` の対象になります。
 - 日時データは、内部処理・ソート用のISO形式と、画面確認用のローカル日時文字列を併記します。例: `clearedAt: 2026-05-18T05:23:16.665Z` / `clearedAtText: 2026/05/18 14:23:16`。
 - `user/*.json` は `.gitignore` で除外しています。
 
@@ -178,5 +235,4 @@ Live Server / 静的環境:
 - ログイン成功時に `picross_v2_user_data` 上へ現在ユーザーの初期データを作成または読み込みます。
 - クリア時、時間切れ時、ギブアップ時の記録タイミングはNode.jsサーバー起動時と同じです。
 - JSON出力には `createdAtText`、`updatedAtText`、`clearedAtText` などの表示用日時も含めます。既存データに表示用日時がない場合は、画面表示時にISO日時から変換します。
-- パズルセレクト右上の開発データパネルから、現在ユーザーJSONを `<username>.json` として出力できます。
 - 将来的にはSupabase / PostgreSQL等のDB保存へ移行する想定です。

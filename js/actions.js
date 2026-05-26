@@ -1,21 +1,64 @@
 import { render } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
-import { BOARD_ZOOM_LEVELS, DEBUG_CONFIG, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode } from './config.js';
+import { AUTH_LIMITS, BOARD_ZOOM_LEVELS, DEBUG_CONFIG, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
+import { beginSupabasePasswordRecovery, completeSupabaseForcedPasswordChange, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, submitAccountDeleteRequest, updateSupabasePassword } from './supabaseAuth.js';
+import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
+import { deleteAdminRanking, isAdminUser, loadAdminSnapshot, markAdminPasswordClearRequired, reactivateAdminUser, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking } from './admin.js';
 const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'解けています', checkMessage:(mistakes,empty)=>`間違い: ${mistakes}個\n未入力: ${empty}個`, pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
-const AUTH_TEXT = { required:'ユーザー名とパスワードを入力してください', loginFailed:'ユーザー名またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。ログインしてください', duplicate:'同じユーザー名は登録できません' };
+const AUTH_TEXT = { required:'ユーザー名またはメールアドレスとパスワードを入力してください', registerRequired:'ユーザー名、パスワード、メールアドレスを入力してください', emailRequired:'メールアドレスを入力してください', loginFailed:'ユーザー名、メールアドレス、またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。', duplicate:'同じユーザー名は登録できません', passwordMismatch:'新しいパスワードが一致しません', passwordShort:`パスワードは${AUTH_LIMITS.passwordMin}文字以上で入力してください`, passwordChanged:'パスワードを変更しました', supabaseOnly:'この操作はSupabaseログイン時のみ利用できます', deleteTitle:'アカウント削除申請', deleteMessage:'この画面ではアカウントを直接削除しません。\n削除申請として受け付け、管理者確認後に対応します。\n\nアカウント削除はAuthユーザー、プロフィール、進行データ、ランキング記録に影響します。安全のため、この画面では直接削除しません。', deleteRequestConfirm:'削除申請する', deleteRequested:'アカウント削除申請を受け付けました。\n管理者確認後に対応します。', deleteDuplicate:'すでにアカウント削除申請済みです。\n管理者確認後に対応します。', deleteFailed:'アカウント削除申請の保存に失敗しました。\n時間をおいて再度お試しください。' };
 const REGISTER_TEXT = { title:'ユーザー登録', message:'登録しました。\n登録したユーザでログインしますか？', yes:'はい', no:'いいえ' };
 const DEV_USER = { username:'admin', password:'admin' };
+const DISABLED_ACCOUNT_TEXT = { title:'アカウント利用停止', message:'このアカウントは停止されています。\n管理者にお問い合わせください。' };
+const ADMIN_ACCESS_TEXT = { editorTitle:'エディタ', editorDenied:'エディタは管理者専用です。' };
+const EMAIL_VERIFICATION_TEXT = { registered:'確認メールを送信しました。\nメール内のリンクを開いて登録を完了してください。', required:'メールアドレスの確認が完了していません。\n確認メールを開いて登録を完了してください。', resent:'確認メールを再送しました。\nメールをご確認ください。', resendFailed:'確認メールの再送に失敗しました。\n時間をおいて再度お試しください。', unavailable:'Supabase未設定のため確認メールを送信できません。' };
+const PASSWORD_RESET_TEXT = { title:'パスワード再設定', success:'入力されたメールアドレスに一致するアカウントがある場合、再設定メールを送信します。', failed:'パスワード再設定メールの送信に失敗しました。\n時間をおいて再度お試しください。', unavailable:'Supabase未設定のため再設定メールを送信できません。', invalid:'パスワード再設定リンクが無効、または期限切れです。\n再度メールを送信してください。', updated:'パスワードを更新しました。\n新しいパスワードでログインしてください。' };
+const ADMIN_PASSWORD_RESET_TEXT = { title:'パスワード再設定メール送信', denied:'この操作は管理者専用です。', missingEmail:'メールアドレスが登録されていないため送信できません。', confirm:user=>`このユーザーにパスワード再設定メールを送信しますか？\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}`, sent:'パスワード再設定メールを送信しました。' };
+const ADMIN_PASSWORD_CLEAR_TEXT = { title:'パスワードクリア', denied:'この操作は管理者専用です。', confirm:(user,isSelf)=>`${isSelf?'注意: 現在ログイン中の管理者自身が対象です。\n\n':''}このユーザーをパスワードクリア状態にします。\n次回ログイン時に新しいパスワードの設定が必要になります。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}\nユーザーID: ${user.id||'-'}\n\n実行しますか？`, completed:'パスワードクリア状態にしました。' };
+const FORCED_PASSWORD_TEXT = { notice:'管理者によりパスワードクリアが行われました。\n新しいパスワードを設定してください。' };
 const TIMER_LIMITS = { Beginner:600, Easy:600, Normal:1800, Hard:1800, Endless:null, Custom:null };
 const TIMER_TEXT = { unlimited:'無制限', timeoutTitle:'時間切れ', timeoutMessage:'制限時間が終了しました。' };
 const REMEMBER_LOGIN_KEY = 'picross_remember_login';
 const SAVED_USERNAME_KEY = 'picross_saved_username';
+const SAVED_EMAIL_KEY = 'picross_saved_email';
 const SAVED_PASSWORD_KEY = 'picross_saved_password';
 const OPTIONS_KEY = 'web_picross_options';
 const DEFAULT_OPTIONS = { crosshairColor:'#42a5f5', bgmVolume:50, seVolume:50, displayMode:'window' };
 const LS_KEY='picross_v2_solved'; let stateRef; let actionsAPI;
-export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ goto, login, registerUser, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
-function goto(screen){ if(screen!=='game') stopTimer(); stateRef.modal=null; stateRef.hoverCell=null; stateRef.authMessage=''; stateRef.screen=screen; render(stateRef, actionsAPI); if(screen==='ranking') loadRanking(); }
+export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordReset, requestAdminPasswordClear, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
+function initializeAuthFlow(){
+  const params = new URLSearchParams((globalThis.location?.hash || '').replace(/^#/, ''));
+  if(params.get('type')!=='recovery'){
+    goto('title');
+    return;
+  }
+  completeRecoveryInitialization();
+}
+async function completeRecoveryInitialization(){
+  try{
+    const recovery = await beginSupabasePasswordRecovery();
+    if(!recovery.detected || !recovery.valid){
+      showRecoveryLoginMessage(PASSWORD_RESET_TEXT.invalid);
+      return;
+    }
+    stateRef.currentUser=null;
+    stateRef.modal=null;
+    stateRef.passwordRecovery={active:true, forced:false, password:'', confirmPassword:'', error:''};
+    stateRef.screen='passwordRecovery';
+    render(stateRef, actionsAPI);
+  }catch{
+    showRecoveryLoginMessage(PASSWORD_RESET_TEXT.invalid);
+  }
+}
+function showRecoveryLoginMessage(message){
+  stateRef.currentUser=null;
+  stateRef.modal=null;
+  stateRef.passwordRecovery={active:false, forced:false, password:'', confirmPassword:'', error:''};
+  stateRef.screen='login';
+  stateRef.authMessage=message;
+  render(stateRef, actionsAPI);
+}
+function goto(screen){ if(screen!=='game') stopTimer(); stateRef.modal=null; stateRef.hoverCell=null; if(accountDisabled()&&!['title','login'].includes(screen)){ endDisabledSession(); return; } if(passwordClearRequired()&&!['login','passwordRecovery'].includes(screen)){ showForcedPasswordReset(); return; } stateRef.authMessage=''; if(screen==='admin'&&!isAdminUser(stateRef.currentUser)){ stateRef.screen=stateRef.currentUser?'menu':'title'; render(stateRef, actionsAPI); notify('管理者ページ', '管理者権限がありません'); return; } if(screen==='editor'&&!isAdminUser(stateRef.currentUser)){ stateRef.screen=stateRef.currentUser?'menu':'title'; render(stateRef, actionsAPI); notify(ADMIN_ACCESS_TEXT.editorTitle, ADMIN_ACCESS_TEXT.editorDenied); return; } stateRef.screen=screen; render(stateRef, actionsAPI); if(screen==='ranking') loadRanking(); if(screen==='admin') loadAdminData(); if(screen==='userData') loadAccountDeleteRequestStatus(); }
 async function apiPost(path,payload){
   const res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   let body={}; try{ body=await res.json(); }catch{}
@@ -24,19 +67,66 @@ async function apiPost(path,payload){
 }
 function updateLoginForm(patch){
   stateRef.loginForm={...(stateRef.loginForm||{}), ...(patch||{})};
+  if(!Object.prototype.hasOwnProperty.call(patch||{}, 'remember')) stateRef.authMessage='';
   if(Object.prototype.hasOwnProperty.call(patch||{}, 'remember')) persistRememberPreference(stateRef.loginForm.remember);
   if(Object.prototype.hasOwnProperty.call(patch||{}, 'remember')) render(stateRef, actionsAPI);
 }
-async function login(username,password,remember=stateRef.loginForm?.remember){
-  username=String(username||'').trim(); password=String(password||'');
-  stateRef.loginForm={username, password, remember:!!remember};
-  if(!username||!password){ stateRef.authMessage=AUTH_TEXT.required; render(stateRef, actionsAPI); return false; }
+function authValidationMessage(results){
+  return results.flatMap(result=>result.errors||[]).filter(Boolean).join('\n');
+}
+async function login(username,password,remember=stateRef.loginForm?.remember,email=stateRef.loginForm?.email){
+  username=String(username||'').trim(); email=String(email||'').trim(); password=String(password||'');
+  stateRef.loginForm={username, email, password, remember:!!remember};
+  if((!username&&!email)||!password){ stateRef.authMessage=AUTH_TEXT.required; render(stateRef, actionsAPI); return false; }
+  const emailCheck = validateEmail(email, { required:false });
+  const usernameCheck = username ? validateUsername(username) : {ok:true, errors:[]};
+  const validation = authValidationMessage([emailCheck, usernameCheck]);
+  if(validation){ stateRef.authMessage=validation; render(stateRef, actionsAPI); return false; }
+  const supabaseAvailable=await isSupabaseAuthAvailable();
+  if(supabaseAvailable&&!email&&!(username===DEV_USER.username&&password===DEV_USER.password)){
+    stateRef.authMessage=AUTH_TEXT.emailRequired;
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  try{
+    const supabase=supabaseAvailable&&email ? await loginSupabaseUser(email,password) : {available:false};
+    if(supabase.available){
+      if(supabase.emailUnconfirmed){
+        stateRef.authMessage=EMAIL_VERIFICATION_TEXT.required;
+        stateRef.loginForm={...stateRef.loginForm, password:''};
+        render(stateRef, actionsAPI);
+        return false;
+      }
+      if(accountDisabled(supabase.user)){
+        await logoutSupabaseUser();
+        endDisabledSession(false);
+        return false;
+      }
+      stateRef.currentUser=supabase.user;
+      if(passwordClearRequired()){
+        clearRememberedLogin();
+        showForcedPasswordReset();
+        return true;
+      }
+      prepareUserData('Supabase Auth', false);
+      saveRememberedLogin(username, email, password, remember);
+      stateRef.authMessage='';
+      goto('menu');
+      return true;
+    }
+  }catch(err){
+    if(username!==DEV_USER.username||password!==DEV_USER.password){
+      stateRef.authMessage=err.message||AUTH_TEXT.loginFailed;
+      render(stateRef, actionsAPI);
+      return false;
+    }
+  }
   try{
     const result=await apiPost('/api/login',{username,password});
     stateRef.currentUser={username:result.user?.username||username, id:result.user?.id||userIdFor(result.user?.username||username), source:'server'};
     mergeServerUserProgress(stateRef.currentUser, {progress:result.progress, stats:result.stats, history:result.history, user:result.user});
     prepareUserData('server users.json', true);
-    saveRememberedLogin(username, password, remember);
+    saveRememberedLogin(username, email, password, remember);
     stateRef.authMessage='';
     goto('menu');
     return true;
@@ -44,7 +134,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember){
     if(username===DEV_USER.username&&password===DEV_USER.password){
       stateRef.currentUser={username:DEV_USER.username, id:userIdFor(DEV_USER.username), source:'built-in'};
       prepareUserData('localStorage', false);
-      saveRememberedLogin(username, password, remember);
+      saveRememberedLogin(username, email, password, remember);
       stateRef.authMessage='';
       goto('menu');
       return true;
@@ -53,7 +143,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember){
     if(localUser){
       stateRef.currentUser=localUser;
       prepareUserData('localStorage', false);
-      saveRememberedLogin(username, password, remember);
+      saveRememberedLogin(username, email, password, remember);
       stateRef.authMessage='';
       goto('menu');
       return true;
@@ -63,12 +153,37 @@ async function login(username,password,remember=stateRef.loginForm?.remember){
     return false;
   }
 }
-async function registerUser(username,password){
-  username=String(username||'').trim(); password=String(password||'');
-  if(!username||!password){ stateRef.authMessage=AUTH_TEXT.required; render(stateRef, actionsAPI); return false; }
+async function registerUser(username,password,email=stateRef.loginForm?.email){
+  username=String(username||'').trim(); email=String(email||'').trim(); password=String(password||'');
+  if(!username||!password){ stateRef.authMessage=AUTH_TEXT.registerRequired; render(stateRef, actionsAPI); return false; }
+  const validation = authValidationMessage([validateUsername(username), validateEmail(email), validatePassword(password)]);
+  if(validation){ stateRef.authMessage=validation; render(stateRef, actionsAPI); return false; }
+  const supabaseAvailable=await isSupabaseAuthAvailable();
+  if(supabaseAvailable&&!email){
+    stateRef.authMessage=AUTH_TEXT.emailRequired;
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  try{
+    const supabase=supabaseAvailable&&email ? await registerSupabaseUser(username,email,password) : {available:false};
+    if(supabase.available){
+      if(supabase.confirmationRequired){
+        stateRef.authMessage=EMAIL_VERIFICATION_TEXT.registered;
+        stateRef.loginForm={username:'', email, password:'', remember:!!stateRef.loginForm?.remember};
+        render(stateRef, actionsAPI);
+        return true;
+      }
+      showRegisterLoginAssist(username,email,password);
+      return true;
+    }
+  }catch(err){
+    stateRef.authMessage=err.message||AUTH_TEXT.loginFailed;
+    render(stateRef, actionsAPI);
+    return false;
+  }
   try{
     await apiPost('/api/register',{username,password});
-    showRegisterLoginAssist(username,password);
+    showRegisterLoginAssist(username,email,password);
     return true;
   }catch(err){
     if(err.status===409){
@@ -77,46 +192,262 @@ async function registerUser(username,password){
       return false;
     }
     const local=registerLocalUser(username,password);
-    if(local.ok) showRegisterLoginAssist(username,password);
+    if(local.ok) showRegisterLoginAssist(username,email,password);
     else { stateRef.authMessage=local.message==='duplicate' ? AUTH_TEXT.duplicate : AUTH_TEXT.required; render(stateRef, actionsAPI); }
     return local.ok;
   }
 }
-function logout(){ stateRef.currentUser=null; goto('title'); }
+function logout(){ if(stateRef.currentUser?.source==='supabase') logoutSupabaseUser(); stateRef.currentUser=null; goto('title'); }
 function exportUserDataJson(){ downloadUserDataJson(); return true; }
 function exportCurrentUserJson(){ downloadCurrentUserJson(stateRef.currentUser); return true; }
-function showRegisterLoginAssist(username,password){
+async function changePassword(newPassword, confirmPassword){
+  const password=String(newPassword||'');
+  const confirm=String(confirmPassword||'');
+  if(stateRef.currentUser?.source!=='supabase'){
+    notify('アカウント管理', AUTH_TEXT.supabaseOnly);
+    return false;
+  }
+  const validation = authValidationMessage([validatePassword(password)]);
+  if(validation){
+    notify('アカウント管理', validation);
+    return false;
+  }
+  if(password!==confirm){
+    notify('アカウント管理', AUTH_TEXT.passwordMismatch);
+    return false;
+  }
+  try{
+    const result=await updateSupabasePassword(password);
+    notify('アカウント管理', result?.available ? AUTH_TEXT.passwordChanged : AUTH_TEXT.supabaseOnly);
+    return !!result?.available;
+  }catch(err){
+    notify('アカウント管理', err.message||AUTH_TEXT.loginFailed);
+    return false;
+  }
+}
+async function requestPasswordReset(email){
+  const validation = authValidationMessage([validateEmail(email)]);
+  if(validation){
+    stateRef.authMessage=validation;
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  try{
+    const result=await requestSupabasePasswordReset(email);
+    notify(PASSWORD_RESET_TEXT.title, result?.available ? PASSWORD_RESET_TEXT.success : PASSWORD_RESET_TEXT.unavailable);
+    return !!result?.available;
+  }catch(err){
+    notify(PASSWORD_RESET_TEXT.title, err.message||PASSWORD_RESET_TEXT.failed);
+    return false;
+  }
+}
+async function resendConfirmationEmail(email){
+  const validation = authValidationMessage([validateEmail(email)]);
+  if(validation){
+    stateRef.authMessage=validation;
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  try{
+    const result=await resendSupabaseConfirmationEmail(email);
+    notify('メールアドレス確認', result?.available ? EMAIL_VERIFICATION_TEXT.resent : EMAIL_VERIFICATION_TEXT.unavailable);
+    return !!result?.available;
+  }catch(err){
+    notify('メールアドレス確認', err.message||EMAIL_VERIFICATION_TEXT.resendFailed);
+    return false;
+  }
+}
+async function completePasswordRecovery(newPassword, confirmPassword){
+  const password=String(newPassword||'');
+  const confirm=String(confirmPassword||'');
+  const error=authValidationMessage([validatePassword(password)]) || (password!==confirm ? AUTH_TEXT.passwordMismatch : '');
+  const forced=Boolean(stateRef.passwordRecovery?.forced);
+  stateRef.passwordRecovery={active:true, forced, password, confirmPassword:confirm, error};
+  if(error){
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  try{
+    const result=forced ? await completeSupabaseForcedPasswordChange(password) : await updateSupabasePassword(password);
+    if(!result?.available){
+      stateRef.passwordRecovery={...stateRef.passwordRecovery, error:PASSWORD_RESET_TEXT.invalid};
+      render(stateRef, actionsAPI);
+      return false;
+    }
+    await logoutSupabaseUser();
+    stateRef.currentUser=null;
+    stateRef.loginForm={...(stateRef.loginForm||{}), password:''};
+    showRecoveryLoginMessage(PASSWORD_RESET_TEXT.updated);
+    return true;
+  }catch{
+    stateRef.passwordRecovery={...stateRef.passwordRecovery, error:PASSWORD_RESET_TEXT.invalid};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+}
+async function cancelPasswordRecovery(){
+  await logoutSupabaseUser();
+  stateRef.currentUser=null;
+  showRecoveryLoginMessage('');
+}
+function requestAccountDeletion(){
+  if(stateRef.currentUser?.source!=='supabase'){
+    notify(AUTH_TEXT.deleteTitle, AUTH_TEXT.supabaseOnly);
+    return false;
+  }
+  confirmModal(AUTH_TEXT.deleteTitle, AUTH_TEXT.deleteMessage, submitAccountDeletion, AUTH_TEXT.deleteRequestConfirm);
+  return true;
+}
+async function submitAccountDeletion(){
+  try{
+    const result=await submitAccountDeleteRequest(stateRef.currentUser);
+    if(result?.request) stateRef.accountDeleteRequest={loading:false, data:result.request, error:''};
+    render(stateRef, actionsAPI);
+    notify(AUTH_TEXT.deleteTitle, result?.duplicate ? AUTH_TEXT.deleteDuplicate : AUTH_TEXT.deleteRequested);
+  }catch(err){
+    stateRef.accountDeleteRequest={...(stateRef.accountDeleteRequest||{}), loading:false, error:err.message||AUTH_TEXT.deleteFailed};
+    render(stateRef, actionsAPI);
+    notify(AUTH_TEXT.deleteTitle, err.message||AUTH_TEXT.deleteFailed);
+  }
+}
+function accountDisabled(user=stateRef.currentUser){ return user?.source==='supabase' && user?.account_status === 'disabled'; }
+function passwordClearRequired(user=stateRef.currentUser){ return user?.source==='supabase' && user?.password_clear_required === true; }
+function showForcedPasswordReset(){
+  stateRef.modal=null;
+  stateRef.passwordRecovery={active:true, forced:true, password:'', confirmPassword:'', error:'', notice:FORCED_PASSWORD_TEXT.notice};
+  stateRef.screen='passwordRecovery';
+  stateRef.authMessage='';
+  render(stateRef, actionsAPI);
+}
+function endDisabledSession(signOut=true){
+  if(signOut) logoutSupabaseUser();
+  stateRef.currentUser=null;
+  stateRef.accountDeleteRequest={loading:false, data:null, error:''};
+  stateRef.modal=null;
+  stateRef.screen='login';
+  stateRef.authMessage=DISABLED_ACCOUNT_TEXT.message;
+  stateRef.loginForm={...(stateRef.loginForm||{}), password:''};
+  render(stateRef, actionsAPI);
+}
+async function loadAccountDeleteRequestStatus(){
+  if(stateRef.currentUser?.source!=='supabase'){
+    stateRef.accountDeleteRequest={loading:false, data:null, error:''};
+    return false;
+  }
+  stateRef.accountDeleteRequest={...(stateRef.accountDeleteRequest||{}), loading:true, error:''};
+  render(stateRef, actionsAPI);
+  try{
+    const result=await loadAccountDeleteRequest(stateRef.currentUser);
+    stateRef.accountDeleteRequest={loading:false, data:result?.request||null, error:''};
+    render(stateRef, actionsAPI);
+    return true;
+  }catch(err){
+    stateRef.accountDeleteRequest={...(stateRef.accountDeleteRequest||{}), loading:false, error:err.message||'アカウント削除申請の状態取得に失敗しました'};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+}
+async function loadAdminData(){
+  if(!isAdminUser(stateRef.currentUser)){ notify('管理者ページ', '管理者権限がありません'); return false; }
+  stateRef.admin={...(stateRef.admin||{}), loading:true, error:'', message:''};
+  render(stateRef, actionsAPI);
+  try{
+    const data=await loadAdminSnapshot();
+    stateRef.admin={...(stateRef.admin||{}), loading:false, error:'', data, message:data.message||'管理データを読み込みました'};
+    render(stateRef, actionsAPI);
+    return true;
+  }catch(err){
+    stateRef.admin={...(stateRef.admin||{}), loading:false, error:err.message||'管理データの読み込みに失敗しました', message:'RLSまたは権限設定を確認してください'};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+}
+function setAdminFilter(key,value){ stateRef.admin={...(stateRef.admin||{}), [key]:value}; render(stateRef, actionsAPI); }
+function selectAdminUser(id){ stateRef.admin={...(stateRef.admin||{}), selectedUserId:id}; render(stateRef, actionsAPI); }
+function selectAdminRanking(id){ stateRef.admin={...(stateRef.admin||{}), selectedRankingId:id}; render(stateRef, actionsAPI); }
+function selectAdminDeleteRequest(id){ stateRef.admin={...(stateRef.admin||{}), selectedDeleteRequestId:id}; render(stateRef, actionsAPI); }
+function saveAdminProfile(id,patch){ confirmModal('ユーザー情報を保存', '表示名と権限を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminProfile(id, patch), 'ユーザー情報を保存しました'); }); }
+function saveAdminProgress(id,patch){ confirmModal('進行状況を保存', 'このユーザーの進行状況を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminProgress(id, patch), '進行状況を保存しました'); }); }
+function saveAdminRanking(id,patch){ confirmModal('ランキングを保存', 'ランキング記録を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminRanking(id, patch), 'ランキング記録を保存しました'); }); }
+function deleteAdminRankingRecord(id){ confirmModal('ランキング記録を削除', 'このランキング記録を削除します。よろしいですか？', async()=>{ await runAdminMutation(()=>deleteAdminRanking(id), 'ランキング記録を削除しました'); }, ACTION_TEXT.delete); }
+function saveAdminDeleteRequestReview(id,patch){ const label=patch.status==='approved'?'承認':'拒否'; const message=patch.status==='approved'?'この削除申請を許可します。\n対象ユーザーは利用停止状態になり、ゲームを利用できなくなります。\nよろしいですか？':'この削除申請を拒否します。\n対象ユーザーは引き続きゲームを利用できます。\nよろしいですか？'; confirmModal(`削除申請を${label}`, message, async()=>{ await runAdminMutation(()=>updateAccountDeleteRequest(id, patch, stateRef.currentUser?.id), `削除申請を${label}しました`); }, label); }
+function reactivateAdminAccount(id){ confirmModal('利用停止解除', 'このユーザーの利用停止を解除します。\n対象ユーザーは再びゲームを利用できるようになります。\nよろしいですか？', async()=>{ await runAdminMutation(()=>reactivateAdminUser(id), '利用停止を解除しました'); }, '解除する'); }
+function requestAdminPasswordClear(user){
+  if(!isAdminUser(stateRef.currentUser)){
+    notify(ADMIN_PASSWORD_CLEAR_TEXT.title, ADMIN_PASSWORD_CLEAR_TEXT.denied);
+    return false;
+  }
+  if(!user?.id){
+    notify(ADMIN_PASSWORD_CLEAR_TEXT.title, '対象ユーザーが見つかりません。');
+    return false;
+  }
+  confirmModal(ADMIN_PASSWORD_CLEAR_TEXT.title, ADMIN_PASSWORD_CLEAR_TEXT.confirm(user, user.id===stateRef.currentUser.id), async()=>{
+    await runAdminMutation(()=>markAdminPasswordClearRequired(user.id, stateRef.currentUser?.id), ADMIN_PASSWORD_CLEAR_TEXT.completed);
+  }, '実行する');
+  return true;
+}
+function requestAdminPasswordReset(user){
+  if(!isAdminUser(stateRef.currentUser)){
+    notify(ADMIN_PASSWORD_RESET_TEXT.title, ADMIN_PASSWORD_RESET_TEXT.denied);
+    return false;
+  }
+  if(!String(user?.email||'').trim()){
+    notify(ADMIN_PASSWORD_RESET_TEXT.title, ADMIN_PASSWORD_RESET_TEXT.missingEmail);
+    return false;
+  }
+  confirmModal(ADMIN_PASSWORD_RESET_TEXT.title, ADMIN_PASSWORD_RESET_TEXT.confirm(user), async()=>{
+    try{
+      const result=await requestSupabasePasswordReset(user.email);
+      notify(ADMIN_PASSWORD_RESET_TEXT.title, result?.available ? ADMIN_PASSWORD_RESET_TEXT.sent : PASSWORD_RESET_TEXT.unavailable);
+    }catch(err){
+      notify(ADMIN_PASSWORD_RESET_TEXT.title, err.message||PASSWORD_RESET_TEXT.failed);
+    }
+  }, '送信する');
+  return true;
+}
+async function runAdminMutation(task, successMessage){
+  try{
+    const result=await task();
+    stateRef.admin={...(stateRef.admin||{}), message:result?.available===false?'Supabase未設定のため操作できません':successMessage, error:''};
+    await loadAdminData();
+  }catch(err){
+    stateRef.admin={...(stateRef.admin||{}), message:'', error:`操作できませんでした: ${err.message||'RLSまたは権限設定を確認してください'}`};
+    render(stateRef, actionsAPI);
+  }
+}
+function showRegisterLoginAssist(username,email,password){
   stateRef.authMessage=AUTH_TEXT.registered;
-  stateRef.loginForm={...(stateRef.loginForm||{}), username:'', password:''};
+  stateRef.loginForm={...(stateRef.loginForm||{}), username:'', email:'', password:''};
   openModal({title:REGISTER_TEXT.title, message:REGISTER_TEXT.message, buttons:[
-    {label:REGISTER_TEXT.yes, run:()=>fillRegisteredLogin(username,password)},
+    {label:REGISTER_TEXT.yes, run:()=>fillRegisteredLogin(username,email,password)},
     {label:REGISTER_TEXT.no, run:()=>clearRegisteredLogin()}
   ]});
 }
-function fillRegisteredLogin(username,password){
-  stateRef.loginForm={username, password, remember:!!stateRef.loginForm?.remember};
+function fillRegisteredLogin(username,email,password){
+  stateRef.loginForm={username, email, password, remember:!!stateRef.loginForm?.remember};
   stateRef.authMessage=AUTH_TEXT.registered;
   stateRef.screen='login';
   render(stateRef, actionsAPI);
 }
 function clearRegisteredLogin(){
   const remember=!!stateRef.loginForm?.remember;
-  stateRef.loginForm={username:'', password:'', remember};
+  stateRef.loginForm={username:'', email:'', password:'', remember};
   if(!remember) clearRememberedLogin();
   stateRef.authMessage='';
   stateRef.screen='login';
   render(stateRef, actionsAPI);
 }
 function loadRememberedLogin(){
-  let remember=false, username='', password='';
+  let remember=false, username='', email='', password='';
   try{
     remember=localStorage.getItem(REMEMBER_LOGIN_KEY)==='true';
     if(remember){
       username=localStorage.getItem(SAVED_USERNAME_KEY)||'';
+      email=localStorage.getItem(SAVED_EMAIL_KEY)||'';
       password=localStorage.getItem(SAVED_PASSWORD_KEY)||'';
     }
   }catch{}
-  stateRef.loginForm={username, password, remember};
+  stateRef.loginForm={username, email, password, remember};
 }
 function persistRememberPreference(remember){
   try{
@@ -124,16 +455,18 @@ function persistRememberPreference(remember){
     if(!remember) clearRememberedLogin();
   }catch{}
 }
-function saveRememberedLogin(username,password,remember){
+function saveRememberedLogin(username,email,password,remember){
   try{
     localStorage.setItem(REMEMBER_LOGIN_KEY, remember?'true':'false');
     if(remember){
       localStorage.setItem(SAVED_USERNAME_KEY, username);
+      localStorage.setItem(SAVED_EMAIL_KEY, email);
       localStorage.setItem(SAVED_PASSWORD_KEY, password);
     }else{
       localStorage.removeItem(SAVED_USERNAME_KEY);
+      localStorage.removeItem(SAVED_EMAIL_KEY);
       localStorage.removeItem(SAVED_PASSWORD_KEY);
-      if(stateRef?.loginForm) stateRef.loginForm={username:'', password:'', remember:false};
+      if(stateRef?.loginForm) stateRef.loginForm={username:'', email:'', password:'', remember:false};
     }
   }catch{}
 }
@@ -141,6 +474,7 @@ function clearRememberedLogin(){
   try{
     localStorage.setItem(REMEMBER_LOGIN_KEY, 'false');
     localStorage.removeItem(SAVED_USERNAME_KEY);
+    localStorage.removeItem(SAVED_EMAIL_KEY);
     localStorage.removeItem(SAVED_PASSWORD_KEY);
   }catch{}
 }
@@ -185,6 +519,16 @@ async function loadRanking(){
   const mode=stateRef.ranking?.mode||'Beginner';
   stateRef.ranking={...(stateRef.ranking||{}), mode, loading:true, error:''};
   render(stateRef, actionsAPI);
+  try{
+    const supabase = await loadSupabaseRanking({ difficulty:String(mode).toLowerCase(), currentUser:stateRef.currentUser });
+    if(supabase.available){
+      stateRef.ranking={mode, loading:false, error:'', data:supabase};
+      render(stateRef, actionsAPI);
+      return;
+    }
+  }catch(err){
+    console.info(`Supabase ranking fallback: ${err.message}`);
+  }
   try{
     const params=new URLSearchParams({difficulty:String(mode).toLowerCase(), username:stateRef.currentUser?.username||''});
     const res=await fetch(`/api/ranking?${params.toString()}`);
@@ -321,7 +665,7 @@ function updateTimerNode(){ const el=stateRef.root?.querySelector?.('.timer-valu
 function pauseTimer(reason='modal'){ if(stateRef.screen!=='game'||stateRef.gameStatus!=='playing'||stateRef.timer.limit==null) return; stateRef.timer.running=false; stateRef.timer.paused=true; stateRef.timer.pauseReason=reason; }
 function resumeTimer(){ if(stateRef.screen!=='game'||stateRef.gameStatus!=='playing'||!stateRef.timer.paused||stateRef.modal) return; stateRef.timer.running=stateRef.timer.limit!=null; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
 function stopTimer(){ if(stateRef.timer.intervalId) clearInterval(stateRef.timer.intervalId); stateRef.timer.intervalId=null; stateRef.timer.running=false; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
-function finishClear(){ if(stateRef.gameStatus==='cleared') return false; stateRef.gameStatus='cleared'; markCurrentPuzzleSolved(); const entry=recordResult('clear'); saveServerProgress(entry,'clear'); stopTimer(); cancelDrag(); notify(ACTION_TEXT.clearTitle, ACTION_TEXT.clearMessage, [{label:ACTION_TEXT.ok, action:'close'}, {label:ACTION_TEXT.select, action:'backToSelect'}]); return true; }
+function finishClear(){ if(stateRef.gameStatus==='cleared') return false; if(accountDisabled()){ notify(DISABLED_ACCOUNT_TEXT.title, DISABLED_ACCOUNT_TEXT.message); return false; } stateRef.gameStatus='cleared'; markCurrentPuzzleSolved(); const entry=recordResult('clear'); saveServerProgress(entry,'clear'); stopTimer(); cancelDrag(); notify(ACTION_TEXT.clearTitle, ACTION_TEXT.clearMessage, [{label:ACTION_TEXT.ok, action:'close'}, {label:ACTION_TEXT.select, action:'backToSelect'}]); return true; }
 function showCheckResult(solved){ if(stateRef.gameStatus==='cleared') return false; if(solved) return finishClear(); const result=checkBoardState(); notify(ACTION_TEXT.solvedTitle, ACTION_TEXT.checkMessage(result.mistakes, result.empty)); return false; }
 function checkBoardState(){
   const G=stateRef.game; const result={mistakes:0, empty:0}; if(!G) return result;
@@ -359,6 +703,7 @@ function exitGame(target){ stopTimer(); stateRef.gameStatus='idle'; stateRef.pla
 function zoomBoard(delta){ const current=Number(stateRef.boardZoom||1); const idx=Math.max(0, BOARD_ZOOM_LEVELS.findIndex(v=>v===current)); const base=idx>=0?idx:BOARD_ZOOM_LEVELS.indexOf(1); const next=BOARD_ZOOM_LEVELS[Math.max(0, Math.min(BOARD_ZOOM_LEVELS.length-1, base+delta))]; stateRef.boardZoom=next||1; render(stateRef, actionsAPI); }
 function debugInstantClear(){
   if(!DEBUG_CONFIG.enableF1InstantClear || stateRef.screen!=='game' || !stateRef.game || stateRef.modal || stateRef.gameStatus!=='playing') return false;
+  if(!isAdminUser(stateRef.currentUser)) return false;
   const G=stateRef.game;
   stateRef.filled.clear();
   stateRef.cellColors.clear();
@@ -380,12 +725,13 @@ function toggleSolved(mode,id){ const S=stateRef.solved[mode]; S.has(id)?S.delet
 function resetClearFlags(){ confirmModal(ACTION_TEXT.resetClearTitle, ACTION_TEXT.resetClearMessage, ()=>resetSolvedData(ACTION_TEXT.resetClearTitle), ACTION_TEXT.delete); }
 function resetUserData(){ confirmModal(ACTION_TEXT.resetUserTitle, ACTION_TEXT.resetUserMessage, ()=>resetSolvedData(ACTION_TEXT.resetUserTitle), ACTION_TEXT.delete); }
 function resetSolvedData(title){ for(const k of Object.keys(stateRef.solved)){ stateRef.solved[k]=new Set(); } resetProgressForUser(stateRef.currentUser); notify(title, ACTION_TEXT.resetDone); }
-async function play(mode,id){ const list=await loadPuzzles(mode); const p=findPuzzle(list,id); if(!p){ notify(ACTION_TEXT.pendingTitle, ACTION_TEXT.puzzleMissing); return; }
+async function play(mode,id){ if(passwordClearRequired()){ showForcedPasswordReset(); return; } const list=await loadPuzzles(mode); const p=findPuzzle(list,id); if(!p){ notify(ACTION_TEXT.pendingTitle, ACTION_TEXT.puzzleMissing); return; }
+  if(accountDisabled()){ endDisabledSession(); return; }
   const difficulty=p.difficulty||MODE_TO_DIFFICULTY[mode]||'beginner'; const colorMode=normalizeColorMode(p.colorMode||p.mode||'mono',difficulty);
   stateRef.game={ mode, id:String(p.id??p.stageNo??id), stageNo:p.stageNo, title:p.title||`#${p.stageNo??p.id}`, w:p.w, h:p.h, difficulty, colorMode, solution:(p.grid||[]).map(r=>r.map(v=>normalizeColorId(v))) };
   stateRef.modal=null; stateRef.hoverCell=null; stateRef.boardZoom=1; resetGameInput(); startTimer(mode); stateRef.screen='game'; render(stateRef, actionsAPI);
 }
-function playCustom(p){ const difficulty=p.difficulty||'normal'; const colorMode=normalizeColorMode(p.colorMode||p.solutionMode||p.modeType||'mono',difficulty);
+function playCustom(p){ if(passwordClearRequired()){ showForcedPasswordReset(); return; } if(accountDisabled()){ endDisabledSession(); return; } const difficulty=p.difficulty||'normal'; const colorMode=normalizeColorMode(p.colorMode||p.solutionMode||p.modeType||'mono',difficulty);
   stateRef.game={ mode:p.mode||'Custom', id:String(p.id||'custom'), title:p.title||'カスタム', w:p.w, h:p.h, returnTo:p.returnTo||'select', difficulty, colorMode, solution:(p.grid||[]).map(r=>r.map(v=>normalizeColorId(v))) };
   stateRef.modal=null; stateRef.hoverCell=null; stateRef.boardZoom=1; resetGameInput(); startTimer('Custom'); stateRef.screen='game'; render(stateRef, actionsAPI);
 }
@@ -404,8 +750,28 @@ function makePlaySession(game){
   return {currentUserId:stateRef.currentUser?.id||userIdFor(stateRef.currentUser?.username||'guest'), username:stateRef.currentUser?.username||'guest', difficulty:game?.difficulty, puzzleId:String(game?.stageNo??game?.id??'unknown'), stageNo:game?.stageNo??game?.id, startedAt:now.toISOString(), startedTimeMs:now.getTime()};
 }
 function recordResult(type){
+  if(accountDisabled()){
+    stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastResult:'利用停止中のため保存しません'};
+    return null;
+  }
   const entry=recordGameResultForUser(stateRef.currentUser, stateRef.game, stateRef.timer, type, stateRef.playSession);
   stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:entry ? `${type}を保存しました` : '保存対象がありません'};
   return entry;
 }
-function saveServerProgress(entry,type='clear'){ if(stateRef.currentUser?.source!=='server'||!entry) return; apiPost('/api/user-progress',{username:stateRef.currentUser.username, mode:String(stateRef.game?.mode||'Custom').toLowerCase(), type, entry}).then(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'userフォルダJSONへ保存しました'}; }).catch(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'server保存に失敗しました'}; }); }
+function usedHintCount(){ return Math.max(0, Number(stateRef.hints?.limit||0) - Number(stateRef.hints?.remaining||0)); }
+function saveServerProgress(entry,type='clear'){
+  if(!entry || accountDisabled()) return;
+  const game=stateRef.game;
+  const hintUsedCount=usedHintCount();
+  if(stateRef.currentUser?.source==='supabase'){
+    saveSupabaseGameResult({user:stateRef.currentUser, game, entry, type, hintUsedCount}).then(result=>{
+      const message=result?.saved ? 'Supabaseへ保存しました' : (result?.reason==='puzzle_not_found' ? 'Supabase保存対象のパズルが見つかりません' : 'Supabase未設定のためローカル保存のみ');
+      stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:message};
+    }).catch(()=>{
+      stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'Supabase保存に失敗しました'};
+    });
+    return;
+  }
+  if(stateRef.currentUser?.source!=='server') return;
+  apiPost('/api/user-progress',{username:stateRef.currentUser.username, mode:String(game?.mode||'Custom').toLowerCase(), type, entry}).then(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'userフォルダJSONへ保存しました'}; }).catch(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'server保存に失敗しました'}; });
+}

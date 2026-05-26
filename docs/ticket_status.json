@@ -1,0 +1,994 @@
+{
+  "_note": {
+    "description": "ticket_manager_json.html と CODEX が共有するチケット状態ファイルです。初回はHTML側でdocs/*.mdから生成して保存できます。",
+    "statusValues": [
+      "修正済",
+      "未修整",
+      "保留"
+    ],
+    "codexInstruction": "実装完了後、該当mdファイル名の status を修正済にし、note に適用内容を2〜5行で追記してください。"
+  },
+  "tickets": [
+    {
+      "number": "1",
+      "title": "チケット1: ゲーム中画面のレイアウト変更と操作ボタン追加",
+      "fileName": "001_game_screen_layout_buttons.md",
+      "path": "docs/001_game_screen_layout_buttons.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "2",
+      "title": "チケット2: パズル盤面サイズに応じたセルサイズ自動調整",
+      "fileName": "002_responsive_board_cell_size.md",
+      "path": "docs/002_responsive_board_cell_size.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "3",
+      "title": "チケット3: 難易度別の時間表示と制限時間実装",
+      "fileName": "003_difficulty_timer.md",
+      "path": "docs/003_difficulty_timer.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "4",
+      "title": "チケット4: エディタのパズルデータ入出力対応",
+      "fileName": "004_editor_import_export_puzzle_data.md",
+      "path": "docs/004_editor_import_export_puzzle_data.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "5",
+      "title": "チケット5: エディットプレイモード新設",
+      "fileName": "005_edit_play_mode.md",
+      "path": "docs/005_edit_play_mode.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "6",
+      "title": "チケット6: 難易度別の盤面サイズ・カラー設定の再定義",
+      "fileName": "006_difficulty_board_rules.md",
+      "path": "docs/006_difficulty_board_rules.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "7",
+      "title": "チケット7: エディタ難易度選択に応じた盤面サイズ候補表示",
+      "fileName": "007_editor_size_candidates_by_difficulty.md",
+      "path": "docs/007_editor_size_candidates_by_difficulty.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "8",
+      "title": "チケット8: 難易度・面数指定付きエディタ保存と読み込み対応",
+      "fileName": "008_editor_save_load_with_stage_number.md",
+      "path": "docs/008_editor_save_load_with_stage_number.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "9",
+      "title": "チケット9: エディタのカラー定義をMinecraftカラーコード順の16色に統一",
+      "fileName": "009_editor_16_color_palette_minecraft_order.md",
+      "path": "docs/009_editor_16_color_palette_minecraft_order.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "10",
+      "title": "チケット10: ノーマル以上のゲーム画面にカラー/モノクロパレットを追加",
+      "fileName": "010_game_color_palette_panel.md",
+      "path": "docs/010_game_color_palette_panel.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "11",
+      "title": "チケット11: ゲーム中のalert / confirm表示を画面内モーダルへ置き換え",
+      "fileName": "011_replace_alerts_with_in_game_modal.md",
+      "path": "docs/011_replace_alerts_with_in_game_modal.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "12",
+      "title": "チケット12: エディタ出力JSONとゲーム側読み込み形式の互換修正",
+      "fileName": "012_editor_json_game_loader_compatibility.md",
+      "path": "docs/012_editor_json_game_loader_compatibility.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "13",
+      "title": "チケット13: ゲーム画面のヒント列位置ずれ修正と盤面グリッド等間隔化",
+      "fileName": "013_fix_hint_alignment_and_grid_spacing.md",
+      "path": "docs/013_fix_hint_alignment_and_grid_spacing.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "14",
+      "title": "チケット14: エディタモードのパズルデータ一覧カラム追加",
+      "fileName": "014_editor_loaded_puzzle_list_column.md",
+      "path": "docs/014_editor_loaded_puzzle_list_column.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "15",
+      "title": "チケット15: エディタモードのモノクロ・カラー切り替えUI改善",
+      "fileName": "015_editor_mono_color_toggle_palette_state.md",
+      "path": "docs/015_editor_mono_color_toggle_palette_state.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "16",
+      "title": "チケット16: ビギナー・イージーへのカラーパズル対応",
+      "fileName": "016_beginner_easy_color_puzzle_support.md",
+      "path": "docs/016_beginner_easy_color_puzzle_support.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "17",
+      "title": "チケット17: パズル中のクロスヘア表示強化",
+      "fileName": "017_game_crosshair_hover_focus.md",
+      "path": "docs/017_game_crosshair_hover_focus.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "18",
+      "title": "チケット18: エディタのリスト領域拡張と複数パズルデータの読み書き対応",
+      "fileName": "018_editor_multi_puzzle_list_read_write.md",
+      "path": "docs/018_editor_multi_puzzle_list_read_write.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "19",
+      "title": "チケット19: エディタの最大100スロット管理とサムネイル対応",
+      "fileName": "019_editor_100_slot_puzzle_management.md",
+      "path": "docs/019_editor_100_slot_puzzle_management.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "20",
+      "title": "チケット20: エディタの読込ファイル操作とパズルデータ保存方法の整理",
+      "fileName": "020_editor_loaded_file_save_flow.md",
+      "path": "docs/020_editor_loaded_file_save_flow.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "21",
+      "title": "チケット21: カラー問題の使用色限定パレットとヒント数字の色表示対応",
+      "fileName": "021_color_used_palette_and_colored_hints.md",
+      "path": "docs/021_color_used_palette_and_colored_hints.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "22",
+      "title": "チケット22: エディタモードの上部余白削減と読込UI・説明文配置整理",
+      "fileName": "022_editor_layout_move_up_and_file_ui.md",
+      "path": "docs/022_editor_layout_move_up_and_file_ui.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "23",
+      "title": "チケット23: エディタのJSON上書き出力ボタン追加と紛らわしい保存ボタン削除",
+      "fileName": "023_editor_same_name_json_export_remove_save_button.md",
+      "path": "docs/023_editor_same_name_json_export_remove_save_button.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "24",
+      "title": "チケット24: ゲーム中ヒントをランダム行・列の正解表示に変更",
+      "fileName": "024_game_hint_random_row_or_column.md",
+      "path": "docs/024_game_hint_random_row_or_column.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "25",
+      "title": "チケット25: 空白行・空白列の0ヒント表示とセル正方形保証",
+      "fileName": "025_zero_hints_and_square_cells.md",
+      "path": "docs/025_zero_hints_and_square_cells.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "26",
+      "title": "チケット26: エディットモードのドラッグ連続入力対応",
+      "fileName": "026_editor_drag_fill_and_cross.md",
+      "path": "docs/026_editor_drag_fill_and_cross.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "27",
+      "title": "チケット27: 右クリックメニュー抑止範囲の拡張とページ更新時タイトル復帰",
+      "fileName": "027_suppress_context_menu_keep_right_click_cross.md",
+      "path": "docs/027_suppress_context_menu_keep_right_click_cross.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "28",
+      "title": "チケット28: ユーザー登録・ログイン画面追加とサーバ側ユーザーファイル保存",
+      "fileName": "028_user_registration_login_user_file.md",
+      "path": "docs/028_user_registration_login_user_file.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "29",
+      "title": "チケット29: クリア後の盤面操作ロックとクリア通知の多重表示防止",
+      "fileName": "029_lock_board_after_clear.md",
+      "path": "docs/029_lock_board_after_clear.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "30",
+      "title": "チケット30: エディタ完成サムネイル生成・保存とパズルセレクト表示対応",
+      "fileName": "030_editor_thumbnail_generation_and_select_display.md",
+      "path": "docs/030_editor_thumbnail_generation_and_select_display.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "31",
+      "title": "チケット31: クリアフラグ確認・削除用デバッグ機能とユーザーデータ削除機能",
+      "fileName": "031_debug_clear_flags_and_reset_user_data.md",
+      "path": "docs/031_debug_clear_flags_and_reset_user_data.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "32",
+      "title": "チケット32: パズルセレクトのサムネイル表示とクリア状態表示の分離・デバッグパネル整理",
+      "fileName": "032_separate_thumbnail_and_clear_state_debug_panel.md",
+      "path": "docs/032_separate_thumbnail_and_clear_state_debug_panel.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "33",
+      "title": "チケット33: Live Server対応のユーザー登録フォールバックとユーザーデータJSON出力",
+      "fileName": "033_static_user_registration_and_user_data_export.md",
+      "path": "docs/033_static_user_registration_and_user_data_export.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "34",
+      "title": "チケット34: ゲーム中モーダル表示時のタイマー停止",
+      "fileName": "034_pause_timer_while_game_modal_open.md",
+      "path": "docs/034_pause_timer_while_game_modal_open.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "35",
+      "title": "チケット35: ユーザー登録データのusers.json保存確認とローカルファイル出力対応",
+      "fileName": "035_users_json_save_and_export_user_data.md",
+      "path": "docs/035_users_json_save_and_export_user_data.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "36",
+      "title": "チケット36: 新規登録ユーザーのパズルセレクトでサムネイルを確実に非表示にする",
+      "fileName": "036_hide_thumbnails_for_new_uncleared_users.md",
+      "path": "docs/036_hide_thumbnails_for_new_uncleared_users.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "37",
+      "title": "チケット37: ローカルuserフォルダへのユーザー別JSON保存対応",
+      "fileName": "037_local_user_folder_json_save.md",
+      "path": "docs/037_local_user_folder_json_save.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "38",
+      "title": "チケット38: ログインユーザーのユーザーデータ生成・書き込みタイミング明確化",
+      "fileName": "038_user_data_create_write_timing.md",
+      "path": "docs/038_user_data_create_write_timing.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "39",
+      "title": "チケット39: ユーザーデータ参照画面の追加とメニュー画面ヘッダー整備",
+      "fileName": "039_user_data_reference_screen.md",
+      "path": "docs/039_user_data_reference_screen.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "40",
+      "title": "チケット40: ユーザーデータ日時表示を人が読める形式に整形する",
+      "fileName": "040_human_readable_user_datetime.md",
+      "path": "docs/040_human_readable_user_datetime.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "41",
+      "title": "チケット41: ゲーム中タイトル表示とセレクト画面ステージ表示の整理",
+      "fileName": "041_game_title_and_select_stage_label.md",
+      "path": "docs/041_game_title_and_select_stage_label.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "42",
+      "title": "チケット42: ユーザー登録後ログイン補助とログイン情報記録チェックボックス追加",
+      "fileName": "042_registration_to_login_assist_and_remember_login.md",
+      "path": "docs/042_registration_to_login_assist_and_remember_login.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "43",
+      "title": "チケット43: ランキング画面がユーザーデータ画面のまま表示される問題の修正",
+      "fileName": "043_fix_ranking_screen_not_user_data.md",
+      "path": "docs/043_fix_ranking_screen_not_user_data.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "43",
+      "title": "チケット43: ランキング画面の実装",
+      "fileName": "043_ranking_screen_by_difficulty.md",
+      "path": "docs/043_ranking_screen_by_difficulty.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "44",
+      "title": "チケット44: オプション・ヘルプ・クレジット画面の実装",
+      "fileName": "044_options_help_credits_pages.md",
+      "path": "docs/044_options_help_credits_pages.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "45",
+      "title": "チケット45: ゲーム画面の背景画像設定",
+      "fileName": "045_game_background_image.md",
+      "path": "docs/045_game_background_image.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "46",
+      "title": "チケット46: メニュー画面・ランキング画面の背景画像設定",
+      "fileName": "046_menu_ranking_background_image.md",
+      "path": "docs/046_menu_ranking_background_image.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "47",
+      "title": "チケット47: 未設定画面への背景画像割り当て",
+      "fileName": "047_assign_backgrounds_to_remaining_screens.md",
+      "path": "docs/047_assign_backgrounds_to_remaining_screens.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "48",
+      "title": "チケット48: ユーザーデータ画面・エディタ画面への背景画像設定",
+      "fileName": "048_background_for_user_data_and_editor.md",
+      "path": "docs/048_background_for_user_data_and_editor.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "49",
+      "title": "チケット49: ゲームセレクト画面のレイアウト崩れ修正",
+      "fileName": "049_fix_game_select_layout_with_background.md",
+      "path": "docs/049_fix_game_select_layout_with_background.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "50",
+      "title": "チケット50: タイトル画面へのビルドナンバー表示",
+      "fileName": "050_show_build_number_on_title.md",
+      "path": "docs/050_show_build_number_on_title.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "51",
+      "title": "チケット51: エディットモードでJSONファイル名に応じて難易度・盤面サイズ候補を自動連動する",
+      "fileName": "051_editor_auto_sync_difficulty_and_variable_board_size_options.md",
+      "path": "docs/051_editor_auto_sync_difficulty_and_variable_board_size_options.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "52",
+      "title": "チケット52: エディットモードで難易度混在JSONを作成・保存・読込できないようにする",
+      "fileName": "052_prevent_mixed_difficulty_puzzle_json.md",
+      "path": "docs/052_prevent_mixed_difficulty_puzzle_json.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "53",
+      "title": "チケット53: ヒント使用時に正解セルと×セルを同時表示する",
+      "fileName": "053_hint_reveals_filled_and_cross_cells.md",
+      "path": "docs/053_hint_reveals_filled_and_cross_cells.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "54",
+      "title": "チケット54: 難易度ごとのヒント使用回数制限",
+      "fileName": "054_limit_hints_by_difficulty.md",
+      "path": "docs/054_limit_hints_by_difficulty.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "55",
+      "title": "チケット55: ゲーム中左メニュー系ボタンの挙動変更",
+      "fileName": "055_game_side_buttons_behavior_update.md",
+      "path": "docs/055_game_side_buttons_behavior_update.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "56",
+      "title": "チケット56: ゲーム画面の拡大・縮小ボタン実装とパレット表示改善",
+      "fileName": "056_game_zoom_buttons_and_palette_display.md",
+      "path": "docs/056_game_zoom_buttons_and_palette_display.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "57",
+      "title": "チケット57: クリア後にゲーム画面へ戻った場合、メニューへ戻る・セレクトへ戻るボタンが動作しない不具合修正",
+      "fileName": "057_fix_navigation_after_clear_ok.md",
+      "path": "docs/057_fix_navigation_after_clear_ok.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "58",
+      "title": "チケット58: ランキング画面のパズル名を非表示にする",
+      "fileName": "058_hide_puzzle_name_on_ranking_screen.md",
+      "path": "docs/058_hide_puzzle_name_on_ranking_screen.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "59",
+      "title": "チケット59: デバッグ機能としてF1キーで即時クリアできるようにする",
+      "fileName": "059_debug_f1_instant_clear.md",
+      "path": "docs/059_debug_f1_instant_clear.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "60",
+      "title": "チケット60: Vercel・Supabase対応の全体構成整理",
+      "fileName": "060_vercel_supabase_architecture_plan.md",
+      "path": "docs/060_vercel_supabase_architecture_plan.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "61",
+      "title": "チケット61: Supabase Database設計とSQL作成",
+      "fileName": "061_supabase_database_schema.md",
+      "path": "docs/061_supabase_database_schema.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "62",
+      "title": "チケット62: Supabase Storageバケット設計と素材配置ルール作成",
+      "fileName": "062_supabase_storage_design.md",
+      "path": "docs/062_supabase_storage_design.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "63",
+      "title": "チケット63: Supabase接続設定と環境変数対応",
+      "fileName": "063_supabase_client_env_config.md",
+      "path": "docs/063_supabase_client_env_config.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "64-修正",
+      "title": "チケット64-修正: ローカルnpm start環境でSupabase設定を取得できず、Supabase Auth登録に進まない不具合修正",
+      "fileName": "064_fix_local_supabase_config_route.md",
+      "path": "docs/064_fix_local_supabase_config_route.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "64fix2",
+      "title": "チケット64fix2: Supabase Auth登録時の内部メールアドレス形式を修正する",
+      "fileName": "064_fix2_supabase_auth_internal_email.md",
+      "path": "docs/064_fix2_supabase_auth_internal_email.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "64fix3",
+      "title": "チケット64fix3: Supabase Authを正規のメールアドレス方式へ変更する",
+      "fileName": "064_fix3_supabase_email_password_auth.md",
+      "path": "docs/064_fix3_supabase_email_password_auth.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "64",
+      "title": "チケット64: ユーザー登録・ログインをSupabase対応へ移行",
+      "fileName": "064_supabase_auth_profiles.md",
+      "path": "docs/064_supabase_auth_profiles.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "65",
+      "title": "チケット65: クリア記録・ギブアップ・プレイ履歴をSupabaseへ保存",
+      "fileName": "065_supabase_user_progress_ranking.md",
+      "path": "docs/065_supabase_user_progress_ranking.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "66",
+      "title": "チケット66: パズルデータをSupabase Databaseへ移行する",
+      "fileName": "066_supabase_puzzle_data_migration.md",
+      "path": "docs/066_supabase_puzzle_data_migration.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "67",
+      "title": "チケット67: Vercel公開用設定とSupabase本番モード確認",
+      "fileName": "067_vercel_deploy_supabase_public_mode.md",
+      "path": "docs/067_vercel_deploy_supabase_public_mode.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "68",
+      "title": "チケット68: ログインUIと認証エラーメッセージ改善",
+      "fileName": "068_login_ui_auth_error_messages.md",
+      "path": "docs/068_login_ui_auth_error_messages.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "69",
+      "title": "チケット69: Supabaseランキング反映・表示確認",
+      "fileName": "069_supabase_ranking_reflection.md",
+      "path": "docs/069_supabase_ranking_reflection.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "70",
+      "title": "チケット70: ユーザーデータ管理画面の拡張",
+      "fileName": "070_user_account_management.md",
+      "path": "docs/070_user_account_management.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "71",
+      "title": "チケット71: パスワード強度メーターと弱いパスワード警告の追加",
+      "fileName": "071_password_strength_meter.md",
+      "path": "docs/071_password_strength_meter.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "72",
+      "title": "チケット72: ユーザー名・メールアドレス・パスワードの入力制限とエラー表示改善",
+      "fileName": "072_auth_input_validation.md",
+      "path": "docs/072_auth_input_validation.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "72",
+      "title": "チケット72: ユーザー名・メールアドレス・パスワードの入力制限とエラー表示改善",
+      "fileName": "072_fix_auth_input_validation_revised.md",
+      "path": "docs/072_fix_auth_input_validation_revised.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "72fix",
+      "title": "チケット72fix: パスワード表示 / 非表示切り替えボタンの追加",
+      "fileName": "072_fix2_password_visibility_toggle.md",
+      "path": "docs/072_fix2_password_visibility_toggle.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "72fix2",
+      "title": "チケット72fix2: パスワード表示 / 非表示ボタンのサイズ調整",
+      "fileName": "072_fix3_password_toggle_button_size.md",
+      "path": "docs/072_fix3_password_toggle_button_size.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "72fix4",
+      "title": "チケット72fix4: パスワード欄レイアウト調整と16文字制限の再修正",
+      "fileName": "072fix4_password_field_layout_and_16_limit.md",
+      "path": "docs/072fix4_password_field_layout_and_16_limit.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "73",
+      "title": "チケット73: ユーザーデータ画面の管理・デバッグ情報非表示化",
+      "fileName": "073_hide_user_debug_admin_info.md",
+      "path": "docs/073_hide_user_debug_admin_info.md",
+      "status": "修正済",
+      "note": "",
+      "updatedAt": "2026-05-22T17:40:44.8767666+09:00"
+    },
+    {
+      "number": "74",
+      "title": "チケット74: 管理者専用ページの追加",
+      "fileName": "074_admin_page_addition.md",
+      "path": "docs/074_admin_page_addition.md",
+      "status": "修正済",
+      "note": "profiles.role === 'admin' のSupabaseユーザーだけに管理者ページ導線を表示するようにしました。\n管理者ページの土台として、ユーザー管理、ユーザー進行状況、ランキング管理、デバッグ操作、システム情報の入口を追加しました。",
+      "updatedAt": "2026-05-22T17:14:35.6679611+09:00"
+    },
+    {
+      "number": "75",
+      "title": "チケット75: 管理者専用ユーザーデータ編集機能",
+      "fileName": "075_admin_user_data_editing.md",
+      "path": "docs/075_admin_user_data_editing.md",
+      "status": "修正済",
+      "note": "管理者専用のユーザー一覧、検索、詳細表示を追加しました。\n表示名・権限編集、user_progress の確認・編集、play_history の確認を管理者ページから行えるようにしました。",
+      "updatedAt": "2026-05-22T17:14:35.6679611+09:00"
+    },
+    {
+      "number": "76",
+      "title": "チケット76: 管理者専用ランキング修正・デバッグ機能",
+      "fileName": "076_admin_ranking_debug_tools.md",
+      "path": "docs/076_admin_ranking_debug_tools.md",
+      "status": "修正済",
+      "note": "ranking_records の一覧、検索、詳細表示、タイム更新、削除UIを追加しました。\n通常画面から外したJSON出力、クリア状況リセット、ユーザーデータ削除などのデバッグ操作を管理者ページへ移動しました。",
+      "updatedAt": "2026-05-22T17:14:35.6679611+09:00"
+    },
+    {
+      "number": "77",
+      "title": "チケット77: F1デバッグクリアを管理者ユーザー専用に制限する",
+      "fileName": "077_admin_only_f1_debug_clear.md",
+      "path": "docs/077_admin_only_f1_debug_clear.md",
+      "status": "修正済",
+      "note": "F1デバッグクリア実行前に profiles.role === 'admin' のSupabase管理者ユーザーかを判定するようにしました。\n未ログイン、一般ユーザー、ローカル保存ユーザー、固定admin/adminでは即時クリア処理へ進まないようにしました。\nREADMEと管理者ページの説明、ビルド番号を更新しました。",
+      "updatedAt": "2026-05-22T19:36:02.4955152+09:00"
+    },
+    {
+      "number": "78fix1",
+      "title": "チケット78fix1: アカウント管理フォームの補足文サイズと余白調整",
+      "fileName": "078_fix1_account_password_hint_spacing.md",
+      "path": "docs/078_fix1_account_password_hint_spacing.md",
+      "status": "修正済",
+      "note": "ユーザーデータ画面のアカウント管理セクションに user-account-panel クラスを追加しました。\n補足文の文字サイズを16pxへ上げ、強度表示枠との間に余白を追加しました。\nログイン画面の共通補足文には影響しないよう、アカウント管理内だけにCSSを限定しました。",
+      "updatedAt": "2026-05-22T20:05:50.6428404+09:00"
+    },
+    {
+      "number": "78",
+      "title": "チケット78: ユーザーデータ画面のアカウント操作ボタンを下部へ移動する",
+      "fileName": "078_user_account_buttons_position.md",
+      "path": "docs/078_user_account_buttons_position.md",
+      "status": "修正済",
+      "note": "ユーザーデータ画面のアカウント管理ボタン群を専用の account-actions クラスへ分離しました。\n入力欄・強度表示・確認欄の下に余白と区切り線を追加し、ボタンを下部へ移動しました。\nアカウント削除申請には危険操作用の btn-danger を適用し、スマホ幅では縦並びにしました。",
+      "updatedAt": "2026-05-22T19:52:06.1115295+09:00"
+    },
+    {
+      "number": "79",
+      "title": "チケット79: アカウント削除申請を直接削除ではなく申請受付に変更する",
+      "fileName": "079_account_delete_request_only.md",
+      "path": "docs/079_account_delete_request_only.md",
+      "status": "修正済",
+      "note": "アカウント削除申請ダイアログを、直接削除ではなく申請受付であることが分かる文言へ変更しました。\n実行ボタンを「削除申請する」に変更し、押下後は申請受付メッセージだけを表示します。\nAuth、profiles、user_progress、play_history、ranking_records、localStorageの削除処理は呼ばない構成を維持しました。",
+      "updatedAt": "2026-05-22T20:16:05.5183611+09:00"
+    },
+    {
+      "number": "80",
+      "title": "チケット80: アカウント削除申請テーブルと申請保存処理の追加",
+      "fileName": "080_account_delete_requests_table.md",
+      "path": "docs/080_account_delete_requests_table.md",
+      "status": "修正済",
+      "note": "account_delete_requests テーブル、RLS、pending重複防止用の部分ユニーク制約を追加しました。\n削除申請ボタン押下時にSupabaseへpending申請を保存し、既存pendingがある場合は重複作成しないようにしました。\nユーザーデータ画面に削除申請の状態と申請日時を表示するようにしました。",
+      "updatedAt": "2026-05-22T20:40:44.365239+09:00"
+    },
+    {
+      "number": "81",
+      "title": "チケット81: 管理者ページにアカウント削除申請一覧と通知表示を追加する",
+      "fileName": "081_admin_account_delete_request_list.md",
+      "path": "docs/081_admin_account_delete_request_list.md",
+      "status": "修正済",
+      "note": "管理者ページにアカウント削除申請一覧、pending件数通知、状態フィルター、検索欄、詳細表示を追加しました。\n申請中レコードに承認・拒否ボタンと管理者メモ欄を追加し、statusとadmin_noteだけを更新するようにしました。\nAuthユーザーや進行データの実削除は行わない構成を維持しました。",
+      "updatedAt": "2026-05-22T20:40:44.365239+09:00"
+    },
+    {
+      "number": "82",
+      "title": "チケット82: 削除申請承認時にアカウントを利用停止状態にする",
+      "fileName": "082_account_disable_on_delete_approval.md",
+      "path": "docs/082_account_disable_on_delete_approval.md",
+      "status": "修正済",
+      "note": "削除申請の承認時に account_delete_requests を approved にし、対象 profiles を account_status=disabled に更新するようにしました。\n拒否時は削除申請だけを rejected にし、profiles は変更しないようにしました。\n利用停止ユーザーはゲーム開始や保存処理に進めず、ユーザーデータ画面と管理者ページに利用停止状態を表示します。",
+      "updatedAt": "2026-05-22T20:54:12.0205256+09:00"
+    },
+    {
+      "number": "83",
+      "title": "チケット83: 管理者ページにアカウント削除申請一覧が表示されない問題の修正",
+      "fileName": "083_admin_delete_request_visibility_fix.md",
+      "path": "docs/083_admin_delete_request_visibility_fix.md",
+      "status": "修正済",
+      "note": "account_delete_requests の取得に失敗しても管理者ページ全体を落とさず、削除申請セクションに日本語エラーを表示するようにしました。\n申請0件時は「現在、アカウント削除申請はありません」と表示し、pending申請行を目立たせる表示にしました。\n取得対象は全件のまま維持し、状態フィルターと検索で絞り込めるようにしています。",
+      "updatedAt": "2026-05-22T21:18:21.7435648+09:00"
+    },
+    {
+      "number": "84",
+      "title": "チケット84: 管理者ページの進行状況テーブルで「クリア」列の文字が縦になる問題の修正",
+      "fileName": "084_admin_progress_clear_column_layout_fix.md",
+      "path": "docs/084_admin_progress_clear_column_layout_fix.md",
+      "status": "修正済",
+      "note": "管理者ページの進行状況テーブルへ admin-progress-table と admin-progress-clear-column を追加しました。\nクリア列に最小幅、横書き固定、折り返し防止、中央寄せを設定しました。\nチェックボックスも列内で中央に見えるようサイズと accent-color を調整しました。",
+      "updatedAt": "2026-05-22T21:18:21.7435648+09:00"
+    },
+    {
+      "number": "84fix1",
+      "title": "チケット84fix1: 管理者ページの進行状況テーブル「クリア」列修正が効いていない問題の再修正",
+      "fileName": "084_fix1_admin_progress_clear_column_reapply.md",
+      "path": "docs/084_fix1_admin_progress_clear_column_reapply.md",
+      "status": "修正済",
+      "note": "進行状況テーブルのクリア列ヘッダーとセルに専用クラスを再適用し、td側へ admin-progress-clear-cell を追加しました。\n.admin-progress-table 配下の強いセレクタで幅72px固定、横書き、折り返し禁止、中央寄せ、writing-modeを明示しました。\nProgress Key列は折り返し可能にし、テーブルは横スクロール可能にしました。",
+      "updatedAt": "2026-05-22T21:51:15.0694991+09:00"
+    },
+    {
+      "number": "85",
+      "title": "チケット85: 管理者ページのユーザー一覧・詳細にアカウント状態を表示する",
+      "fileName": "085_admin_show_account_status.md",
+      "path": "docs/085_admin_show_account_status.md",
+      "status": "修正済",
+      "note": "管理者ページのユーザー詳細にアカウント状態、利用停止日時、利用停止理由を常時表示するグリッドを追加しました。\nユーザー一覧の状態列とdisabledユーザーの薄い赤系表示は既存実装を維持し、詳細側でもdisabledを見分けやすくしました。\nREADMEにPostgRESTスキーマキャッシュ更新用の NOTIFY pgrst, 'reload schema'; を追記しました。",
+      "updatedAt": "2026-05-22T21:51:15.0694991+09:00"
+    },
+    {
+      "number": "86",
+      "title": "チケット86: 管理者ページから利用停止ユーザーを復活できる機能",
+      "fileName": "086_admin_reactivate_disabled_user.md",
+      "path": "docs/086_admin_reactivate_disabled_user.md",
+      "status": "修正済",
+      "note": "管理者ページのユーザー詳細で disabled ユーザーだけに利用停止解除ボタンを表示するようにしました。\n確認後に profiles を active へ戻し、disabled_at / disabled_reason を null にします。\n解除時は account_reactivated_count と last_reactivated_at も更新します。",
+      "updatedAt": "2026-05-22T22:59:04.1946095+09:00"
+    },
+    {
+      "number": "87",
+      "title": "チケット87: 削除申請・承認・拒否・停止・復活の回数カウントを追加する",
+      "fileName": "087_account_delete_action_counters.md",
+      "path": "docs/087_account_delete_action_counters.md",
+      "status": "修正済",
+      "note": "削除申請作成、承認、拒否、利用停止解除の各操作で profiles の集計カウントと最終日時を更新するようにしました。\n承認・拒否は pending 申請に限定して二重カウントを防止します。\n管理者ユーザー詳細に各カウントと最終日時を表示し、一覧にも主要カウントを追加しました。",
+      "updatedAt": "2026-05-22T22:59:04.1946095+09:00"
+    },
+    {
+      "number": "88",
+      "title": "チケット88：停止済みアカウントのログイン後遷移不具合修正",
+      "fileName": "088_disabled_account_login.md",
+      "path": "docs/088_disabled_account_login.md",
+      "status": "修正済",
+      "note": "Supabaseログイン成功後に停止状態を先に確認し、停止ユーザーはセッションを終了してログイン画面に留めるようにしました。\nログイン画面に停止案内を表示し、ユーザーデータ画面やゲーム画面へ遷移しないようにしました。\n既に停止状態を保持するセッションによる画面遷移もログイン画面へ戻す防御を追加しました。",
+      "updatedAt": "2026-05-25T16:37:43.2183765+09:00"
+    },
+    {
+      "number": "89",
+      "title": "チケット89：ユーザー登録成功メッセージの文言調整",
+      "fileName": "089_registration_success_message.md",
+      "path": "docs/089_registration_success_message.md",
+      "status": "修正済",
+      "note": "ユーザー登録成功時にログイン画面へ表示するメッセージを「登録しました。」へ短縮しました。\nSupabase Auth登録、ローカル登録、登録後のログイン補助モーダルと画面遷移処理は変更していません。",
+      "updatedAt": "2026-05-25T17:22:39.2736956+09:00"
+    },
+    {
+      "number": "90",
+      "title": "チケット90：管理者ページのユーザー詳細ステータス表示レイアウト調整",
+      "fileName": "090_admin_status_badge_layout.md",
+      "path": "docs/090_admin_status_badge_layout.md",
+      "status": "修正済",
+      "note": "管理者ユーザー詳細の状態表示を、フォーム行の高さに合うコンパクトなバッジ表示へ調整しました。\n利用停止時の赤系警告色は維持し、表示名入力・権限選択・保存・解除ボタンとの並びを崩さないCSS変更に限定しました。",
+      "updatedAt": "2026-05-25T17:29:36.3775936+09:00"
+    },
+    {
+      "number": "90fix1",
+      "title": "チケット90fix1：管理者ページの状態ボタン高さ揃え修正",
+      "fileName": "090_fix1_admin_status_badge_height_align.md",
+      "path": "docs/090_fix1_admin_status_badge_height_align.md",
+      "status": "修正済",
+      "note": "管理者ユーザー詳細行に共通の操作高さを定義し、状態表示・ユーザー情報保存・利用停止解除を同じ49pxへ揃えました。\n状態バッジの幅と警告色は維持し、状態判定や利用停止解除の機能処理は変更していません。",
+      "updatedAt": "2026-05-25T17:38:26.8346699+09:00"
+    },
+    {
+      "number": "91",
+      "title": "チケット91：エディタの管理者専用化とお知らせ枠への置き換え",
+      "fileName": "091_editor_admin_only_notice_layout.md",
+      "path": "docs/091_editor_admin_only_notice_layout.md",
+      "status": "修正済",
+      "note": "中央メニューのエディタ導線を全ユーザー共通の「お知らせ」へ置き換え、準備中メッセージを表示するようにしました。\nSupabase管理者だけに右側のエディタ・管理者ページショートカットを表示し、狭い幅では下へ折り返します。\n管理者以外がエディタ遷移を呼び出した場合も拒否してメニューへ戻すガードを追加しました。",
+      "updatedAt": "2026-05-25T18:59:28.3086121+09:00"
+    },
+    {
+      "number": "92",
+      "title": "チケット92：パスワード再設定メール送信機能の追加",
+      "fileName": "092_password_reset_request.md",
+      "path": "docs/092_password_reset_request.md",
+      "status": "修正済",
+      "note": "ログイン画面に「パスワードを忘れた場合」導線を追加し、入力済みメールアドレス宛にSupabaseの再設定メールを送信できるようにしました。\n既存のメール形式チェックを利用し、送信成功・失敗・Supabase未設定時のメッセージを表示します。\n通常ログイン、登録、停止済みアカウント制御の処理は維持しています。",
+      "updatedAt": "2026-05-25T19:32:17.9915656+09:00"
+    },
+    {
+      "number": "93",
+      "title": "チケット93：管理者ページからパスワード再設定メールを送信できる機能の追加",
+      "fileName": "093_admin_password_reset_request.md",
+      "path": "docs/093_admin_password_reset_request.md",
+      "status": "修正済",
+      "note": "管理者ページのユーザー詳細に再設定メール送信ボタンを追加し、確認モーダルから対象ユーザーの登録メール宛へ送信できるようにしました。\nメールがないユーザーではボタンを無効化し、処理側でもSupabase管理者判定とメール有無を検証します。\nservice role keyやパスワード参照・直接上書き処理は追加していません。",
+      "updatedAt": "2026-05-25T19:32:17.9915656+09:00"
+    },
+    {
+      "number": "94",
+      "title": "チケット94：パスワード再設定リンク後の新パスワード設定画面",
+      "fileName": "094_password_reset_completion_screen.md",
+      "path": "docs/094_password_reset_completion_screen.md",
+      "status": "修正済",
+      "note": "再設定リンクのリカバリー復帰を検出して、新パスワード・確認入力・強度表示を備えた専用画面を追加しました。\n更新成功時はSupabaseセッションを終了してログイン画面へ戻し、無効リンクでは再送案内を表示します。\nURL内の認証トークンは表示・ログ出力せず、処理開始時にフラグメントを消去します。",
+      "updatedAt": "2026-05-25T20:09:03.3204309+09:00"
+    },
+    {
+      "number": "95",
+      "title": "チケット95：メールアドレス確認必須化とパスワード再設定時の本人確認整理",
+      "fileName": "095_email_verification_and_password_reset_identity.md",
+      "path": "docs/095_email_verification_and_password_reset_identity.md",
+      "status": "修正済",
+      "note": "Supabase登録後のメール確認案内、確認メール再送導線、未確認アカウントのログイン拒否処理を追加しました。\nパスワード再設定は登録有無を明示しないメールアドレスのみの案Aとし、表示文言を中立化しました。\nSupabase側で必要なメール確認とリダイレクトURL設定をREADMEへ記載しました。",
+      "updatedAt": "2026-05-25T20:09:03.3204309+09:00"
+    },
+    {
+      "number": "96",
+      "title": "チケット96：ログイン補助リンクの中央寄せレイアウト調整",
+      "fileName": "096_login_support_links_center_layout.md",
+      "path": "docs/096_login_support_links_center_layout.md",
+      "status": "修正済",
+      "note": "ログイン画面のパスワード再設定と確認メール再送リンクを、フォーム幅に対して中央揃えに変更しました。\nリンク間隔は1文字分を基準にし、折り返し時も中央寄せを維持するCSS指定にしています。\n認証処理およびリンクのイベント処理は変更していません。",
+      "updatedAt": "2026-05-25T20:30:13.9590180+09:00"
+    },
+    {
+      "number": "97",
+      "title": "チケット97：管理者によるパスワードクリアと次回ログイン時パスワード再設定",
+      "fileName": "097_admin_password_clear_force_reset_local_test.md",
+      "path": "docs/097_admin_password_clear_force_reset_local_test.md",
+      "status": "修正済",
+      "note": "管理者ページにパスワードクリア操作と状態・履歴表示を追加し、profilesの再設定必須フラグを管理者RLS経由で更新します。\nフラグ付きユーザーはログイン後に通常画面へ進めず、既存の新パスワード設定画面で更新完了するまで利用できません。\n更新時にフラグ解除と変更日時保存を行い、Authパスワードの管理者直接上書きやservice role keyのフロント利用は追加していません。",
+      "updatedAt": "2026-05-25T23:16:21.1483899+09:00"
+    },
+    {
+      "number": "98",
+      "title": "チケット98：管理者ページのページ内リンク化とトップへ戻るボタン追加",
+      "fileName": "098_admin_page_anchor_links_back_to_top.md",
+      "path": "docs/098_admin_page_anchor_links_back_to_top.md",
+      "status": "修正済",
+      "note": "管理者ページ上部の6項目を対応セクションへスクロールするボタンに変更しました。\n各対象にIDとスクロール余白を付与し、管理者ページ左下に一番上へ戻る固定ボタンを追加しました。\n管理処理や権限判定の動作は変更していません。",
+      "updatedAt": "2026-05-25T23:16:21.1483899+09:00"
+    }
+  ]
+}

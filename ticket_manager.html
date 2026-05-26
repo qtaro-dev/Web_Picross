@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Webピクロス チケット管理</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101417;
+      --panel: rgba(0, 0, 0, 0.62);
+      --panel-2: rgba(255, 255, 255, 0.055);
+      --border: rgba(255, 255, 255, 0.18);
+      --text: #f4f7fa;
+      --muted: #aeb8c2;
+      --accent: #38a7ff;
+      --done: #31c96b;
+      --todo: #ffcc4d;
+      --hold: #ff7a59;
+      --danger: #ff6678;
+      --input: #0b0f12;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(56, 167, 255, 0.15), transparent 30%),
+        radial-gradient(circle at 90% 20%, rgba(170, 90, 255, 0.16), transparent 32%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 14, 18, 0.92);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.45rem;
+      letter-spacing: 0.04em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    main {
+      width: min(1240px, calc(100% - 32px));
+      margin: 20px auto 48px;
+    }
+
+    .toolbar,
+    .summary,
+    .table-wrap,
+    .manual {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    .toolbar {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 0.72fr 0.9fr auto auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      color: var(--text);
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      outline: none;
+    }
+
+    select,
+    select option {
+      background-color: #0b0f12;
+      color: #f4f7fa;
+    }
+
+    select option:checked {
+      background-color: #1f5f9f;
+      color: #ffffff;
+    }
+
+    input[type="text"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(56, 167, 255, 0.2);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      color: var(--muted);
+      background: var(--input);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 0.9rem;
+    }
+
+    button {
+      cursor: pointer;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(56, 167, 255, 0.25), rgba(56, 167, 255, 0.12));
+      border: 1px solid rgba(56, 167, 255, 0.55);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border);
+    }
+
+    button.danger {
+      background: rgba(255, 102, 120, 0.14);
+      border-color: rgba(255, 102, 120, 0.55);
+    }
+
+    .summary {
+      margin: 14px 0;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 12px;
+    }
+
+    .summary-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.35rem;
+    }
+
+    .manual {
+      margin: 14px 0;
+      padding: 14px 16px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.7;
+    }
+
+    .manual code {
+      color: #d6ecff;
+    }
+
+    .table-wrap {
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      vertical-align: top;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background: rgba(12, 17, 22, 0.98);
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+    }
+
+    tbody tr:hover {
+      background: rgba(56, 167, 255, 0.055);
+    }
+
+    .col-status { width: 124px; }
+    .col-no {
+      width: 86px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .col-file {
+      width: 220px;
+      color: var(--muted);
+      word-break: break-all;
+      font-size: 0.82rem;
+    }
+    .col-note { width: 300px; }
+
+    .title {
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+    .status-select {
+      width: 110px;
+      min-height: 30px;
+      font-weight: 700;
+      padding: 4px 8px;
+      font-size: 0.86rem;
+      line-height: 1.2;
+    }
+
+    .status-done {
+      border-color: rgba(49, 201, 107, 0.55);
+      background: rgba(49, 201, 107, 0.12);
+    }
+
+    .status-todo {
+      border-color: rgba(255, 204, 77, 0.55);
+      background: rgba(255, 204, 77, 0.12);
+    }
+
+    .status-hold {
+      border-color: rgba(255, 122, 89, 0.55);
+      background: rgba(255, 122, 89, 0.12);
+    }
+
+    textarea {
+      min-height: 52px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .empty {
+      padding: 34px 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .ok {
+      color: #95ffbd;
+    }
+
+    .warn {
+      color: #ffd966;
+    }
+
+    .scroll-top-button {
+      position: fixed;
+      left: 18px;
+      bottom: 24px;
+      z-index: 20;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 999px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      line-height: 1;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
+    }
+
+    .scroll-top-button.is-visible {
+      display: flex;
+    }
+
+    @media (max-width: 1000px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        min-width: 1040px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Webピクロス チケット管理</h1>
+    <p class="lead">docs内のMarkdownとticket_status.jsonを使って、CODEXも更新できるチケット状態表を管理します。</p>
+  </header>
+
+  <main>
+    <section class="toolbar">
+      <label>
+        docs フォルダ選択
+        <input id="folderInput" type="file" webkitdirectory directory multiple accept=".md,.markdown,text/markdown">
+      </label>
+
+      <label>
+        ticket_status.json 読み込み
+        <input id="statusJsonInput" type="file" accept=".json,application/json">
+      </label>
+
+      <label>
+        状態フィルター
+        <select id="statusFilter">
+          <option value="all">すべて</option>
+          <option value="修正済">修正済</option>
+          <option value="未修整">未修整</option>
+          <option value="保留">保留</option>
+        </select>
+      </label>
+
+      <label>
+        キーワード検索
+        <input id="searchInput" type="text" placeholder="タイトル・ファイル名・備考">
+      </label>
+
+      <button id="exportButton" type="button">ticket_status.json保存</button>
+      <button id="clearButton" type="button" class="danger">画面上の状態クリア</button>
+    </section>
+
+    <section class="manual">
+      <div><strong>初回:</strong> docsフォルダを選択 → docs直下のmdだけで一覧生成 → <code>ticket_status.json保存</code> → 出力されたJSONを <code>E:\Dev\web_picross_Ver2\docs\ticket_status.json</code> として置く。</div>
+      <div><strong>2回目以降:</strong> docsフォルダと <code>ticket_status.json</code> を読み込むと、状態・備考を復元します。</div>
+      <div><strong>CODEX運用:</strong> 実装後に <code>docs/ticket_status.json</code> の該当mdファイルの <code>status</code> と <code>note</code> を更新させます。</div>
+      <div id="loadStatus" class="warn">未読み込み</div>
+    </section>
+
+    <section class="summary">
+      <div class="summary-card"><span>読み込み件数</span><strong id="totalCount">0</strong></div>
+      <div class="summary-card"><span>修正済</span><strong id="doneCount">0</strong></div>
+      <div class="summary-card"><span>未修整</span><strong id="todoCount">0</strong></div>
+      <div class="summary-card"><span>保留</span><strong id="holdCount">0</strong></div>
+      <div class="summary-card"><span>表示中</span><strong id="visibleCount">0</strong></div>
+    </section>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-status">状態</th>
+            <th class="col-no">番号</th>
+            <th>タイトル</th>
+            <th class="col-file">ファイル</th>
+            <th class="col-note">備考</th>
+          </tr>
+        </thead>
+        <tbody id="ticketBody">
+          <tr>
+            <td colspan="5" class="empty">docsフォルダを選択すると一覧が表示されます。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <button id="scrollTopButton" class="scroll-top-button secondary" type="button" aria-label="ページ上部へ戻る" title="上へ戻る">↑</button>
+
+  <script>
+    const STORAGE_KEY = "web_picross_ticket_manager_v2_draft";
+    const DEFAULT_STATUS = "未修整";
+    const STATUS_OPTIONS = ["修正済", "未修整", "保留"];
+
+    const state = {
+      tickets: [],
+      meta: loadLocalDraft(),
+      loadedJsonName: "",
+    };
+
+    const elements = {
+      folderInput: document.getElementById("folderInput"),
+      statusJsonInput: document.getElementById("statusJsonInput"),
+      statusFilter: document.getElementById("statusFilter"),
+      searchInput: document.getElementById("searchInput"),
+      exportButton: document.getElementById("exportButton"),
+      clearButton: document.getElementById("clearButton"),
+      ticketBody: document.getElementById("ticketBody"),
+      totalCount: document.getElementById("totalCount"),
+      doneCount: document.getElementById("doneCount"),
+      todoCount: document.getElementById("todoCount"),
+      holdCount: document.getElementById("holdCount"),
+      visibleCount: document.getElementById("visibleCount"),
+      loadStatus: document.getElementById("loadStatus"),
+      scrollTopButton: document.getElementById("scrollTopButton"),
+    };
+
+    elements.folderInput.addEventListener("change", handleFolderSelect);
+    elements.statusJsonInput.addEventListener("change", handleStatusJsonSelect);
+    elements.statusFilter.addEventListener("change", render);
+    elements.searchInput.addEventListener("input", render);
+    elements.exportButton.addEventListener("click", exportStatusJson);
+    elements.clearButton.addEventListener("click", clearDraft);
+    if (elements.scrollTopButton) {
+      elements.scrollTopButton.addEventListener("click", scrollToTop);
+      window.addEventListener("scroll", updateScrollTopButton, { passive: true });
+      updateScrollTopButton();
+    }
+
+    function isDirectDocsFile(file) {
+      const path = file.webkitRelativePath || file.name;
+      const parts = path.split("/").filter(Boolean);
+
+      // フォルダ選択で docs を選んだ場合:
+      //   docs/074_admin_page_addition.md           => 読み込む
+      //   docs/supabase/000_architecture_plan.md    => 読み込まない
+      if (parts.length >= 2) {
+        return parts.length === 2;
+      }
+
+      // webkitRelativePath が取れない環境向けの保険
+      return !path.includes("/") && !path.includes("\\");
+    }
+
+    function scrollToTop() {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
+
+    function updateScrollTopButton() {
+      if (!elements.scrollTopButton) return;
+      const shouldShow = window.scrollY > 360;
+      elements.scrollTopButton.classList.toggle("is-visible", shouldShow);
+    }
+
+    function loadLocalDraft() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? normalizeMeta(JSON.parse(raw)) : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveLocalDraft() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.meta, null, 2));
+    }
+
+    async function handleFolderSelect(event) {
+      const files = Array.from(event.target.files || [])
+        .filter(file => /\.(md|markdown)$/i.test(file.name))
+        .filter(file => !/^ticket_status\.json$/i.test(file.name))
+        .filter(isDirectDocsFile);
+
+      const tickets = [];
+
+      for (const file of files) {
+        const text = await file.text();
+        const title = extractTitle(text, file.name);
+        const number = extractTicketNumber(title, file.name);
+        const key = file.name;
+
+        tickets.push({
+          key,
+          fileName: file.name,
+          path: file.webkitRelativePath || file.name,
+          title,
+          number,
+        });
+
+        ensureMeta(key, title, file.name);
+      }
+
+      state.tickets = tickets.sort(compareTickets);
+      saveLocalDraft();
+      updateLoadStatus();
+      render();
+    }
+
+    async function handleStatusJsonSelect(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        state.meta = normalizeMeta(json);
+        state.loadedJsonName = file.name;
+
+        for (const ticket of state.tickets) {
+          ensureMeta(ticket.key, ticket.title, ticket.fileName);
+        }
+
+        saveLocalDraft();
+        updateLoadStatus();
+        render();
+      } catch (error) {
+        alert("ticket_status.json の読み込みに失敗しました: " + error.message);
+      }
+    }
+
+    function updateLoadStatus() {
+      const parts = [];
+      if (state.tickets.length) parts.push(`docs: ${state.tickets.length}件`);
+      if (state.loadedJsonName) parts.push(`json: ${state.loadedJsonName}`);
+      if (!elements.loadStatus) return;
+      elements.loadStatus.textContent = parts.length ? `読み込み済み: ${parts.join(" / ")}` : "未読み込み";
+      elements.loadStatus.className = parts.length ? "ok" : "warn";
+    }
+
+    function normalizeMeta(input) {
+      const source = input && input.tickets ? input.tickets : input;
+      const meta = {};
+
+      if (Array.isArray(source)) {
+        for (const item of source) {
+          const key = item.fileName || item.path;
+          if (!key) continue;
+          meta[key] = normalizeMetaItem(item);
+        }
+        return meta;
+      }
+
+      if (source && typeof source === "object") {
+        for (const [key, value] of Object.entries(source)) {
+          meta[key] = normalizeMetaItem(value);
+        }
+      }
+
+      return meta;
+    }
+
+    function normalizeMetaItem(value) {
+      const item = value && typeof value === "object" ? value : {};
+      let status = item.status || DEFAULT_STATUS;
+      if (status === "修正") status = "修正済";
+      if (!STATUS_OPTIONS.includes(status)) status = DEFAULT_STATUS;
+
+      return {
+        status,
+        note: item.note || "",
+        title: item.title || "",
+        updatedAt: item.updatedAt || "",
+      };
+    }
+
+    function ensureMeta(key, title, fileName) {
+      if (!state.meta[key]) {
+        state.meta[key] = {
+          status: DEFAULT_STATUS,
+          note: "",
+          title,
+          updatedAt: "",
+        };
+      }
+
+      state.meta[key].title = title;
+      state.meta[key].fileName = fileName;
+      return state.meta[key];
+    }
+
+    function extractTitle(text, fileName) {
+      const lines = text.split(/\r?\n/);
+      const heading = lines.find(line => /^#\s+/.test(line.trim()));
+      if (heading) return heading.replace(/^#\s+/, "").trim();
+      return fileName.replace(/\.(md|markdown)$/i, "");
+    }
+
+    function extractTicketNumber(title, fileName) {
+      const source = `${title} ${fileName}`;
+      const match = source.match(/チケット\s*([0-9]+(?:fix[0-9]*)?|[0-9]+_fix[0-9]*)/i)
+        || source.match(/(^|[^0-9])([0-9]{1,3}(?:fix[0-9]*)?|[0-9]{1,3}_fix[0-9]*)/i);
+
+      if (!match) return "";
+      return (match[1] && match[1].match(/[0-9]/) ? match[1] : match[2] || "").trim();
+    }
+
+    function compareTickets(a, b) {
+      const av = normalizeTicketNumber(a.number);
+      const bv = normalizeTicketNumber(b.number);
+      if (av.main !== bv.main) return av.main - bv.main;
+      if (av.fix !== bv.fix) return av.fix - bv.fix;
+      return a.fileName.localeCompare(b.fileName, "ja");
+    }
+
+    function normalizeTicketNumber(value) {
+      const text = String(value || "").toLowerCase().replace("_", "");
+      const main = Number((text.match(/[0-9]+/) || ["9999"])[0]);
+      const fixMatch = text.match(/fix([0-9]*)/);
+      const fix = fixMatch ? Number(fixMatch[1] || "1") : 0;
+      return { main, fix };
+    }
+
+    function getFilteredTickets() {
+      const filter = elements.statusFilter.value;
+      const keyword = elements.searchInput.value.trim().toLowerCase();
+
+      return state.tickets.filter(ticket => {
+        const meta = getMeta(ticket.key);
+        const matchesStatus = filter === "all" || meta.status === filter;
+        const haystack = `${ticket.title} ${ticket.fileName} ${ticket.path} ${meta.note}`.toLowerCase();
+        const matchesKeyword = !keyword || haystack.includes(keyword);
+        return matchesStatus && matchesKeyword;
+      });
+    }
+
+    function getMeta(key) {
+      if (!state.meta[key]) {
+        state.meta[key] = { status: DEFAULT_STATUS, note: "", updatedAt: "" };
+      }
+
+      if (state.meta[key].status === "修正") {
+        state.meta[key].status = "修正済";
+      }
+
+      return state.meta[key];
+    }
+
+    function render() {
+      renderSummary();
+      const tickets = getFilteredTickets();
+      elements.visibleCount.textContent = String(tickets.length);
+
+      if (!tickets.length) {
+        elements.ticketBody.innerHTML = `<tr><td colspan="5" class="empty">表示対象のチケットがありません。</td></tr>`;
+        return;
+      }
+
+      elements.ticketBody.innerHTML = tickets.map(ticket => {
+        const meta = getMeta(ticket.key);
+        const statusClass = statusToClass(meta.status);
+
+        return `
+          <tr>
+            <td class="col-status">
+              <select class="status-select ${statusClass}" data-key="${escapeAttr(ticket.key)}" data-field="status">
+                ${STATUS_OPTIONS.map(status => `
+                  <option value="${status}" ${status === meta.status ? "selected" : ""}>${status}</option>
+                `).join("")}
+              </select>
+            </td>
+            <td class="col-no">${escapeHtml(ticket.number || "-")}</td>
+            <td>
+              <div class="title">${escapeHtml(ticket.title)}</div>
+              <div class="small">${escapeHtml(ticket.path)}</div>
+            </td>
+            <td class="col-file">${escapeHtml(ticket.fileName)}</td>
+            <td class="col-note">
+              <textarea data-key="${escapeAttr(ticket.key)}" data-field="note" placeholder="備考を入力">${escapeHtml(meta.note || "")}</textarea>
+              <div class="small">${meta.updatedAt ? `更新: ${escapeHtml(meta.updatedAt)}` : ""}</div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      elements.ticketBody.querySelectorAll("[data-key]").forEach(input => {
+        input.addEventListener("change", handleMetaChange);
+        input.addEventListener("input", handleMetaChange);
+      });
+    }
+
+    function renderSummary() {
+      const counts = { 修正済: 0, 未修整: 0, 保留: 0 };
+
+      for (const ticket of state.tickets) {
+        const status = getMeta(ticket.key).status || DEFAULT_STATUS;
+        if (counts[status] !== undefined) counts[status] += 1;
+      }
+
+      elements.totalCount.textContent = String(state.tickets.length);
+      elements.doneCount.textContent = String(counts["修正済"]);
+      elements.todoCount.textContent = String(counts["未修整"]);
+      elements.holdCount.textContent = String(counts["保留"]);
+    }
+
+    function handleMetaChange(event) {
+      const key = event.target.dataset.key;
+      const field = event.target.dataset.field;
+      if (!key || !field) return;
+
+      const meta = getMeta(key);
+      meta[field] = event.target.value;
+      meta.updatedAt = new Date().toISOString();
+      saveLocalDraft();
+
+      if (field === "status") {
+        event.target.className = `status-select ${statusToClass(event.target.value)}`;
+        renderSummary();
+      }
+    }
+
+    function statusToClass(status) {
+      if (status === "修正済") return "status-done";
+      if (status === "保留") return "status-hold";
+      return "status-todo";
+    }
+
+    function exportStatusJson() {
+      const output = {};
+
+      for (const ticket of state.tickets) {
+        const meta = getMeta(ticket.key);
+        output[ticket.fileName] = {
+          status: meta.status || DEFAULT_STATUS,
+          title: ticket.title,
+          note: meta.note || "",
+          updatedAt: meta.updatedAt || "",
+        };
+      }
+
+      const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "ticket_status.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearDraft() {
+      if (!confirm("画面上の保存済み状態・備考をクリアします。よろしいですか？")) return;
+
+      state.meta = {};
+      localStorage.removeItem(STORAGE_KEY);
+
+      for (const ticket of state.tickets) {
+        ensureMeta(ticket.key, ticket.title, ticket.fileName);
+      }
+
+      saveLocalDraft();
+      render();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replaceAll("\n", " ");
+    }
+  </script>
+</body>
+</html>

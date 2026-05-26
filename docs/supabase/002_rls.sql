@@ -6,6 +6,7 @@ alter table public.puzzles enable row level security;
 alter table public.user_progress enable row level security;
 alter table public.play_history enable row level security;
 alter table public.ranking_records enable row level security;
+alter table public.account_delete_requests enable row level security;
 
 create or replace function public.is_admin()
 returns boolean
@@ -139,6 +140,28 @@ on public.ranking_records
 for delete
 to authenticated
 using (public.is_admin());
+
+drop policy if exists "account_delete_requests_select_own_or_admin" on public.account_delete_requests;
+create policy "account_delete_requests_select_own_or_admin"
+on public.account_delete_requests
+for select
+to authenticated
+using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists "account_delete_requests_insert_own_pending" on public.account_delete_requests;
+create policy "account_delete_requests_insert_own_pending"
+on public.account_delete_requests
+for insert
+to authenticated
+with check (user_id = auth.uid() and status = 'pending');
+
+drop policy if exists "account_delete_requests_update_admin" on public.account_delete_requests;
+create policy "account_delete_requests_update_admin"
+on public.account_delete_requests
+for update
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
 
 -- Production authentication policy:
 -- - The current local fixed user admin/admin is for development only.

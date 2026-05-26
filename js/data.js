@@ -1,7 +1,10 @@
 // data.js: normalize puzzle data from built-in JSON and editor exports.
 import { MODE_TO_DIFFICULTY, normalizeColorId, normalizeColorMode, normalizeDifficulty } from './config.js';
+import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient.js';
 
 export async function loadPuzzles(mode){
+  const supabase = await loadSupabasePuzzles(mode);
+  if(supabase.available) return supabase.puzzles;
   const path = `./data/${mode.toLowerCase()}.json`;
   try{
     const res = await fetch(path, {cache:'no-store'});
@@ -11,6 +14,44 @@ export async function loadPuzzles(mode){
     console.warn('loadPuzzles failed:', e);
     return [];
   }
+}
+
+async function loadSupabasePuzzles(mode){
+  if(!(await isSupabaseConfigured())) return { available:false, puzzles:[] };
+  const client = await getSupabaseClient();
+  if(!client) return { available:false, puzzles:[] };
+  const difficulty = normalizeDifficulty(MODE_TO_DIFFICULTY[mode] || mode);
+  try{
+    const { data, error } = await client
+      .from('puzzles')
+      .select('id, difficulty, stage_no, title, width, height, color_mode, palette, solution, thumbnail_path, is_published')
+      .eq('difficulty', difficulty)
+      .eq('is_published', true)
+      .order('stage_no', { ascending:true });
+    if(error) throw error;
+    return { available:true, puzzles:normalizePuzzles({puzzles:(data||[]).map(puzzleFromSupabase)}, { mode }) };
+  }catch(e){
+    console.warn('loadSupabasePuzzles failed:', e);
+    return { available:false, puzzles:[] };
+  }
+}
+
+function puzzleFromSupabase(row){
+  return {
+    dbId: row.id,
+    id: String(row.stage_no),
+    stageNo: row.stage_no,
+    title: row.title,
+    difficulty: row.difficulty,
+    colorMode: row.color_mode,
+    mode: row.color_mode,
+    w: row.width,
+    h: row.height,
+    palette: row.palette,
+    grid: row.solution,
+    thumbnailPath: row.thumbnail_path,
+    isPublished: row.is_published,
+  };
 }
 
 export function normalizePuzzles(json, context={}){

@@ -17,13 +17,20 @@ async function fetchRuntimeConfig(){
   const endpoint = globalThis.PICROSS_SUPABASE_CONFIG_ENDPOINT || DEFAULT_CONFIG_ENDPOINT;
   try{
     const response = await fetch(endpoint, { cache: 'no-store' });
-    if(!response.ok) return {};
+    if(!response.ok){
+      console.info(`Supabase config fetch failed (${response.status}). Falling back to local mode.`);
+      return {};
+    }
     const data = await response.json();
+    if(data.configured === false){
+      console.info('Supabase config is not configured. Falling back to local mode.');
+    }
     return {
       url: data.url || data.supabaseUrl || '',
       anonKey: data.anonKey || data.supabaseAnonKey || '',
     };
   }catch{
+    console.info('Supabase config fetch failed. Falling back to local mode.');
     return {};
   }
 }

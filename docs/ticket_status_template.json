@@ -1,0 +1,7 @@
+{
+  "_note": {
+    "description": "ticket_manager_json.html と CODEX が共有するチケット状態ファイルです。初回はHTML側でdocs/*.mdから生成して保存できます。",
+    "statusValues": ["修正済", "未修整", "保留"],
+    "codexInstruction": "実装完了後、該当mdファイル名の status を修正済にし、note に適用内容を2〜5行で追記してください。"
+  }
+}

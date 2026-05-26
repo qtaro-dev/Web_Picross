@@ -3,17 +3,68 @@ import { loadPuzzles } from './data.js';
 import { PLACEHOLDERS, createPuzzleThumb } from './thumbs.js';
 import { makeClues, isSolved } from './engine.js';
 import { renderEditor } from './editor.js';
-import { BACKGROUNDS, BUILD_INFO, MC_COLORS, MC_COLOR_MAP, isFilledValue, normalizeColorId } from './config.js';
-import { exportCurrentUserPayload, formatDateTimeForDisplay, USER_DATA_KEYS } from './userData.js';
+import { AUTH_LIMITS, BACKGROUNDS, BUILD_INFO, MC_COLORS, MC_COLOR_MAP, evaluatePasswordStrength, isFilledValue, normalizeColorId } from './config.js';
+import { exportCurrentUserPayload, formatDateTimeForDisplay } from './userData.js';
+import { isAdminUser } from './admin.js';
 const MODE_LABELS = { Beginner:'ビギナー', Easy:'イージー', Normal:'ノーマル', Hard:'ハード', Endless:'エンドレス' };
 const MODE_EN_LABELS = { Beginner:'Beginner', Easy:'Easy', Normal:'Normal', Hard:'Hard', Endless:'Endless', Custom:'Custom', EditPlay:'EditPlay' };
 const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
-const SELECT_DEBUG = { title:'開発データ', clearState:'クリアフラグ', storageKey:'保存キー', storage:'保存方式', fileSave:'ファイル直接保存', enabled:'有効', disabled:'無効', userData:'対象', none:'なし', resetClear:'クリア状況リセット', resetUser:'ユーザーデータ削除', exportJson:'ユーザーデータJSON出力', exportCurrent:'現在ユーザーJSON出力' };
-const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', exportCurrent:'現在ユーザーJSON出力', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。' };
+const MENU_UI = { notice:'お知らせ', noticePending:'お知らせ機能は準備中です。', editor:'エディタ' };
+const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConfirmation:'確認メールを再送する' };
+const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
+const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
 const RANKING_UI = { title:'ランキング', back:'← 戻る', current:'現在の自分の順位', empty:'まだランキングデータがありません。パズルをクリアするとランキングに表示されます。', noUserRank:'まだこの難易度のクリア記録がありません。', sourceLocal:'Live Server環境では現在ユーザーのlocalStorage内データのみを表示します。' };
+const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', debug:'デバッグ操作', system:'システム情報', passwordReset:'パスワード再設定メール送信', passwordClear:'パスワードクリア', backToTop:'一番上へ戻る' };
+const ADMIN_SECTIONS = [
+  ['admin-section-users', ADMIN_UI.users],
+  ['admin-section-progress', ADMIN_UI.progress],
+  ['admin-section-rankings', ADMIN_UI.ranking],
+  ['admin-section-delete-requests', ADMIN_UI.deleteRequests],
+  ['admin-section-debug', ADMIN_UI.debug],
+  ['admin-section-system', ADMIN_UI.system],
+];
+const DELETE_REQUEST_STATUS_LABELS = { pending:'申請中', approved:'承認済み', rejected:'拒否済み', cancelled:'取消済み' };
+const ACCOUNT_STATUS_LABELS = { active:'通常', disabled:'利用停止' };
+const ACCOUNT_COUNTER_LABELS = [
+  ['delete_request_count', '削除申請回数'],
+  ['delete_approved_count', '申請承認回数'],
+  ['delete_rejected_count', '申請拒否回数'],
+  ['account_disabled_count', '利用停止回数'],
+  ['account_reactivated_count', '利用停止解除回数'],
+  ['last_delete_requested_at', '最終削除申請日時', 'date'],
+  ['last_disabled_at', '最終利用停止日時', 'date'],
+  ['last_reactivated_at', '最終復活日時', 'date'],
+];
 function setAlignTop(root, on){ root.classList[on?'add':'remove']('align-top'); }
 function formatGameTime(timer){ const sec=timer?.remaining; if(sec==null) return GAME_UI.unlimited; const m=Math.floor(sec/60); const s=sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
 function escapeHtml(value){ return String(value||'').replace(/[&<>"']/g, ch=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch])); }
+function passwordStrengthHtml(password, username='', email=''){
+  const strength = evaluatePasswordStrength(password, { username, email });
+  return `<div class="password-strength password-strength-${strength.level}" data-password-strength>
+    <div class="password-strength-row"><span>パスワード強度: ${escapeHtml(strength.label)}</span><span class="password-strength-bar"><span style="width:${strength.level==='strong'?100:strength.level==='medium'?66:strength.level==='weak'?33:8}%"></span></span></div>
+    <div class="password-strength-message">${escapeHtml(strength.message)}</div>
+  </div>`;
+}
+function updatePasswordStrength(container, password, username='', email=''){
+  const target = container?.querySelector('[data-password-strength]');
+  if(target) target.outerHTML = passwordStrengthHtml(password, username, email);
+}
+function bindPasswordToggles(root){
+  root.querySelectorAll('[data-toggle-password]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const input=root.querySelector(btn.dataset.togglePassword);
+      if(!input) return;
+      const start=input.selectionStart;
+      const end=input.selectionEnd;
+      const show=input.type==='password';
+      input.type=show?'text':'password';
+      btn.textContent=show?'非表示':'表示';
+      btn.setAttribute('aria-label', show?'パスワードを非表示':'パスワードを表示');
+      input.focus();
+      if(typeof start==='number'&&typeof end==='number') input.setSelectionRange(start,end);
+    });
+  });
+}
 function renderBackgroundLayer(name){
   const path=BACKGROUNDS[name];
   return typeof path === 'string' ? `<div class="screen-bg" aria-hidden="true" style="background-image:url('${escapeHtml(path)}')"></div>` : '';
@@ -28,9 +79,11 @@ function renderCreditsBackgroundLayers(){
 export function render(state, actions){
   if(state.screen==='title') renderTitle(state, actions);
   else if(state.screen==='login') renderLogin(state, actions);
+  else if(state.screen==='passwordRecovery') renderPasswordRecovery(state, actions);
   else if(state.screen==='menu') renderMenu(state, actions);
   else if(state.screen==='userData') renderUserData(state, actions);
   else if(state.screen==='ranking') renderRanking(state, actions);
+  else if(state.screen==='admin') renderAdmin(state, actions);
   else if(state.screen==='options') renderOptions(state, actions);
   else if(state.screen==='help') renderHelp(state, actions);
   else if(state.screen==='credits') renderCredits(state, actions);
@@ -50,38 +103,80 @@ function renderLogin(state, actions){
   const root=state.root; setAlignTop(root,false);
   const form=state.loginForm||{};
   root.innerHTML = `<div class="screen login-screen has-bg">${renderBackgroundLayer('login')}
-    <div class="login-panel">
+      <div class="login-panel">
       <div class="login-title">ログイン / ユーザー登録</div>
-      <label class="login-field">ユーザー名<input id="loginUser" class="text-input" autocomplete="username" value="${escapeHtml(form.username||'')}"></label>
-      <label class="login-field">パスワード<input id="loginPass" class="text-input" type="password" autocomplete="current-password" value="${escapeHtml(form.password||'')}"></label>
+      <label class="login-field">ユーザー名<input id="loginUser" class="text-input" autocomplete="username" maxlength="${AUTH_LIMITS.usernameMax}" value="${escapeHtml(form.username||'')}"><span class="input-help">10文字まで / 日本語OK / 記号は _ - のみ</span></label>
+      <label class="login-field">パスワード<span class="password-input-wrap"><input id="loginPass" class="text-input" type="password" autocomplete="current-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}" value="${escapeHtml(form.password||'')}"><button class="password-toggle" type="button" data-toggle-password="#loginPass" aria-label="パスワードを表示">表示</button></span><span class="input-help">${AUTH_LIMITS.passwordMin}〜${AUTH_LIMITS.passwordMax}文字 / 半角英数字・記号</span></label>
+      ${passwordStrengthHtml(form.password||'', form.username||'', form.email||'')}
+      <label class="login-field">メールアドレス<input id="loginEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}" value="${escapeHtml(form.email||'')}"><span class="input-help">50文字まで</span></label>
+      <div class="login-support-actions">
+        <button class="password-reset-action" type="button" id="passwordReset">${LOGIN_UI.passwordReset}</button>
+        <button class="password-reset-action" type="button" id="resendConfirmation">${LOGIN_UI.resendConfirmation}</button>
+      </div>
       <div class="login-actions">
         <button class="btn" id="loginBtn">ログイン</button>
         <button class="btn" id="registerBtn">ユーザー登録</button>
       </div>
-      <label class="remember-login"><input id="rememberLogin" type="checkbox" ${form.remember?'checked':''}>ユーザー名とパスワードを記録する</label>
-      <div class="login-message" aria-live="polite">${escapeHtml(state.authMessage)}</div>
+      <label class="remember-login"><input id="rememberLogin" type="checkbox" ${form.remember?'checked':''}>メールアドレスとパスワードを記録する</label>
+      <div class="login-message ${state.authMessage?'is-error':''}" aria-live="polite">${escapeHtml(state.authMessage)}</div>
     </div>
   </div>`;
   const user=root.querySelector('#loginUser');
+  const email=root.querySelector('#loginEmail');
   const pass=root.querySelector('#loginPass');
   const remember=root.querySelector('#rememberLogin');
   const loginBtn=root.querySelector('#loginBtn');
-  const values=()=>[user.value, pass.value, remember.checked];
-  const refreshLoginButton=()=>{ loginBtn.disabled=!(user.value.trim()&&pass.value); };
-  const syncForm=()=>{ actions.updateLoginForm({username:user.value, password:pass.value}); refreshLoginButton(); };
+  const values=()=>[user.value, pass.value, remember.checked, email.value];
+  const refreshLoginButton=()=>{ loginBtn.disabled=!((email.value.trim()||user.value.trim())&&pass.value); };
+  const message=root.querySelector('.login-message');
+  const syncForm=()=>{ actions.updateLoginForm({username:user.value, email:email.value, password:pass.value}); updatePasswordStrength(root, pass.value, user.value, email.value); if(message){ message.textContent=''; message.classList.remove('is-error'); } refreshLoginButton(); };
   refreshLoginButton();
   user.addEventListener('input', syncForm);
+  email.addEventListener('input', syncForm);
   pass.addEventListener('input', syncForm);
-  remember.addEventListener('change', ()=>actions.updateLoginForm({username:user.value, password:pass.value, remember:remember.checked}));
+  remember.addEventListener('change', ()=>actions.updateLoginForm({username:user.value, email:email.value, password:pass.value, remember:remember.checked}));
   root.querySelector('#loginBtn').addEventListener('click',()=>actions.login(...values()));
-  root.querySelector('#registerBtn').addEventListener('click',()=>actions.registerUser(user.value, pass.value));
+  root.querySelector('#registerBtn').addEventListener('click',()=>actions.registerUser(user.value, pass.value, email.value));
+  root.querySelector('#passwordReset').addEventListener('click',()=>actions.requestPasswordReset(email.value));
+  root.querySelector('#resendConfirmation').addEventListener('click',()=>actions.resendConfirmationEmail(email.value));
   pass.addEventListener('keydown',e=>{ if(e.key==='Enter') actions.login(...values()); });
+  bindPasswordToggles(root);
+}
+
+function renderPasswordRecovery(state, actions){
+  const root=state.root; setAlignTop(root,false);
+  const form=state.passwordRecovery||{};
+  root.innerHTML = `<div class="screen login-screen has-bg">${renderBackgroundLayer('login')}
+      <div class="login-panel password-recovery-panel">
+      <div class="login-title">${RECOVERY_UI.title}</div>
+      ${form.notice ? `<div class="password-recovery-notice">${escapeHtml(form.notice)}</div>` : ''}
+      <label class="login-field">${RECOVERY_UI.newPassword}<span class="password-input-wrap"><input id="recoveryPassword" class="text-input" type="password" autocomplete="new-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}" value="${escapeHtml(form.password||'')}"><button class="password-toggle" type="button" data-toggle-password="#recoveryPassword" aria-label="パスワードを表示">表示</button></span><span class="input-help">${AUTH_LIMITS.passwordMin}〜${AUTH_LIMITS.passwordMax}文字 / 半角英数字・記号</span></label>
+      ${passwordStrengthHtml(form.password||'')}
+      <label class="login-field">${RECOVERY_UI.confirmPassword}<span class="password-input-wrap"><input id="recoveryConfirm" class="text-input" type="password" autocomplete="new-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}" value="${escapeHtml(form.confirmPassword||'')}"><button class="password-toggle" type="button" data-toggle-password="#recoveryConfirm" aria-label="パスワードを表示">表示</button></span></label>
+      <div class="login-actions">
+        <button class="btn" id="completeRecovery">${RECOVERY_UI.update}</button>
+        <button class="btn" id="cancelRecovery">${RECOVERY_UI.cancel}</button>
+      </div>
+      <div class="login-message ${form.error?'is-error':''}" aria-live="polite">${escapeHtml(form.error||'')}</div>
+    </div>
+  </div>`;
+  const password=root.querySelector('#recoveryPassword');
+  const confirm=root.querySelector('#recoveryConfirm');
+  password.addEventListener('input', ()=>updatePasswordStrength(root, password.value));
+  root.querySelector('#completeRecovery').addEventListener('click', ()=>actions.completePasswordRecovery(password.value, confirm.value));
+  root.querySelector('#cancelRecovery').addEventListener('click', ()=>actions.cancelPasswordRecovery());
+  confirm.addEventListener('keydown', event=>{ if(event.key==='Enter') actions.completePasswordRecovery(password.value, confirm.value); });
+  bindPasswordToggles(root);
 }
 
 function renderMenu(state, actions){
   const root=state.root; setAlignTop(root,false);
   const user=state.currentUser?.username ? `<div class="menu-account"><div class="menu-user">${escapeHtml(state.currentUser.username)}</div><button class="btn menu-user-data" data-act="userData">${USER_DATA_UI.button}</button></div>` : '';
-  root.innerHTML = `<div class="screen has-bg">${renderBackgroundLayer('menu')}<div class="menu">
+  const adminShortcuts = isAdminUser(state.currentUser) ? `<aside class="admin-menu-shortcuts" aria-label="${ADMIN_UI.title}">
+      <button class="btn" data-act="editor">${MENU_UI.editor}</button>
+      <button class="btn" data-act="admin">${ADMIN_UI.title}</button>
+    </aside>` : '';
+  root.innerHTML = `<div class="screen menu-screen has-bg">${renderBackgroundLayer('menu')}<div class="menu-layout"><div class="menu">
     <div class="menu-title">${USER_DATA_UI.menuTitle}</div>
     ${user}
     <button class="btn" data-act="game">ゲームセレクト</button>
@@ -89,33 +184,38 @@ function renderMenu(state, actions){
     <button class="btn" data-act="option">オプション</button>
     <button class="btn" data-act="help">ヘルプ</button>
     <button class="btn" data-act="credit">クレジット</button>
-    <button class="btn" data-act="editor">エディタ</button>
-    <button class="btn" data-act="logout">ログアウト</button></div></div>`;
+    <button class="btn" data-act="notice">${MENU_UI.notice}</button>
+    <button class="btn" data-act="logout">ログアウト</button></div>
+    ${adminShortcuts}
+  </div></div>`;
   root.querySelector('[data-act="game"]').addEventListener('click', ()=>actions.goto('select'));
   root.querySelector('[data-act="userData"]')?.addEventListener('click', ()=>actions.goto('userData'));
   root.querySelector('[data-act="ranking"]').addEventListener('click', ()=>actions.goto('ranking'));
   root.querySelector('[data-act="option"]').addEventListener('click', ()=>actions.goto('options'));
   root.querySelector('[data-act="help"]').addEventListener('click', ()=>actions.goto('help'));
   root.querySelector('[data-act="credit"]').addEventListener('click', ()=>actions.goto('credits'));
-  root.querySelector('[data-act="editor"]').addEventListener('click', ()=>actions.goto('editor'));
+  root.querySelector('[data-act="notice"]').addEventListener('click', ()=>actions.notify(MENU_UI.notice, MENU_UI.noticePending));
+  root.querySelector('[data-act="editor"]')?.addEventListener('click', ()=>actions.goto('editor'));
+  root.querySelector('[data-act="admin"]')?.addEventListener('click', ()=>actions.goto('admin'));
   root.querySelector('[data-act="logout"]').addEventListener('click', ()=>actions.logout());
 }
 
 function renderUserData(state, actions){
   const root=state.root; setAlignTop(root,true);
   const payload=exportCurrentUserPayload(state.currentUser);
+  const account=state.currentUser||{};
+  const isSupabase=account.source==='supabase';
   const status=state.userDataStatus||{};
+  const deleteRequest=state.accountDeleteRequest||{};
   const rows=progressRows(payload.progress);
   const summary=difficultySummaries(payload.progress, payload.history);
   const hasRecords=rows.length>0 || (payload.history||[]).length>0;
-  const fileLine=status.fileSave ? `<div><span>ユーザーファイル</span><strong>${escapeHtml(status.filePath||`user/${payload.user.username}.json`)}</strong></div>` : `<div><span>保存キー</span><strong>${USER_DATA_KEYS.data}</strong></div>`;
   root.innerHTML = `<div class="screen user-data-screen has-bg">${renderBackgroundLayer('userData')}
     <div class="user-data-topbar">
       <button class="btn btn-slim" id="backUserData">${USER_DATA_UI.back}</button>
       <div class="user-data-title">${USER_DATA_UI.title}</div>
       <div class="user-data-actions">
         <button class="btn btn-debug" id="reloadUserData">${USER_DATA_UI.reload}</button>
-        <button class="btn btn-debug" id="exportCurrentUser">${USER_DATA_UI.exportCurrent}</button>
       </div>
     </div>
     <div class="user-data-note">${USER_DATA_UI.note}</div>
@@ -123,15 +223,27 @@ function renderUserData(state, actions){
       <div class="user-data-section-title">基本情報</div>
       <div class="user-info-grid">
         <div><span>ユーザー名</span><strong>${escapeHtml(payload.user.username)}</strong></div>
-        <div><span>ユーザーID</span><strong>${escapeHtml(payload.user.id)}</strong></div>
-        <div><span>作成日時</span><strong>${escapeHtml(dateText(payload.user, 'createdAt'))}</strong></div>
+        <div class="${account.account_status==='disabled'?'account-disabled-cell':''}"><span>アカウント状態</span><strong>${escapeHtml(ACCOUNT_STATUS_LABELS[account.account_status]||account.account_status||'通常')}</strong></div>
+        <div><span>表示名</span><strong>${escapeHtml(account.display_name||payload.user.display_name||payload.user.username||'-')}</strong></div>
+        <div><span>メールアドレス</span><strong>${escapeHtml(account.email||payload.user.email||'-')}</strong></div>
+        <div><span>登録日時</span><strong>${escapeHtml(account.created_at ? formatDateTimeForDisplay(account.created_at) : dateText(payload.user, 'createdAt'))}</strong></div>
+        <div><span>最終ログイン</span><strong>${escapeHtml(account.last_sign_in_at ? formatDateTimeForDisplay(account.last_sign_in_at) : '-')}</strong></div>
         <div><span>最終更新日時</span><strong>${escapeHtml(dateText(payload.user, 'updatedAt'))}</strong></div>
-        <div><span>保存方式</span><strong>${escapeHtml(status.storage||payload.storage||'localStorage')}</strong></div>
-        ${fileLine}
+        ${account.account_status==='disabled'?`<div class="user-info-wide account-disabled-cell"><span>利用停止日時</span><strong>${escapeHtml(formatDateTimeForDisplay(account.disabled_at))}</strong></div><div class="user-info-wide account-disabled-cell"><span>理由</span><strong>${escapeHtml(account.disabled_reason||'アカウント削除申請承認')}</strong></div>`:''}
         <div><span>最終読込</span><strong>${escapeHtml(status.lastLoad||'-')}</strong></div>
         <div><span>最終保存</span><strong>${escapeHtml(status.lastSave||'-')}</strong></div>
-        <div class="user-info-wide"><span>最終結果</span><strong>${escapeHtml(status.lastResult||'-')}</strong></div>
       </div>
+    </section>
+    <section class="user-data-panel user-account-panel">
+      <div class="user-data-section-title">${USER_DATA_UI.accountTitle}</div>
+      ${isSupabase ? `<div class="login-field">${USER_DATA_UI.newPassword}<span class="password-input-wrap"><input id="newPassword" class="text-input" type="password" autocomplete="new-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}"><button class="password-toggle" type="button" data-toggle-password="#newPassword" aria-label="パスワードを表示">表示</button></span><span class="input-help">${AUTH_LIMITS.passwordMin}〜${AUTH_LIMITS.passwordMax}文字 / 半角英数字・記号</span></div>
+      ${passwordStrengthHtml('', account.username||payload.user.username||'', account.email||payload.user.email||'')}
+      <div class="login-field">${USER_DATA_UI.confirmPassword}<span class="password-input-wrap"><input id="confirmPassword" class="text-input" type="password" autocomplete="new-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}"><button class="password-toggle" type="button" data-toggle-password="#confirmPassword" aria-label="パスワードを表示">表示</button></span></div>
+      ${accountDeleteRequestHtml(deleteRequest)}
+      <div class="account-actions">
+        <button class="btn btn-slim" id="changePassword">${USER_DATA_UI.changePassword}</button>
+        <button class="btn btn-slim btn-danger" id="requestAccountDeletion">${USER_DATA_UI.deleteRequest}</button>
+      </div>` : `<div class="user-data-note">${USER_DATA_UI.localAccountNote}</div>`}
     </section>
     <section class="user-data-panel">
       <div class="user-data-section-title">全体集計</div>
@@ -154,7 +266,21 @@ function renderUserData(state, actions){
   </div>`;
   root.querySelector('#backUserData').addEventListener('click', ()=>actions.goto('menu'));
   root.querySelector('#reloadUserData').addEventListener('click', ()=>actions.reloadUserData());
-  root.querySelector('#exportCurrentUser').addEventListener('click', ()=>actions.exportCurrentUserJson());
+  root.querySelector('#changePassword')?.addEventListener('click', ()=>{
+    actions.changePassword(root.querySelector('#newPassword')?.value, root.querySelector('#confirmPassword')?.value);
+  });
+  root.querySelector('#newPassword')?.addEventListener('input', e=>updatePasswordStrength(root, e.target.value, account.username||payload.user.username||'', account.email||payload.user.email||''));
+  root.querySelector('#requestAccountDeletion')?.addEventListener('click', ()=>actions.requestAccountDeletion());
+  bindPasswordToggles(root);
+}
+
+function accountDeleteRequestHtml(state){
+  if(state?.loading) return `<div class="account-delete-status">アカウント削除申請: 確認中...</div>`;
+  if(state?.error) return `<div class="account-delete-status is-error">${escapeHtml(state.error)}</div>`;
+  const req=state?.data;
+  if(!req) return '';
+  const label=DELETE_REQUEST_STATUS_LABELS[req.status]||req.status||'-';
+  return `<div class="account-delete-status">アカウント削除申請: ${escapeHtml(label)}<br>申請日時: ${escapeHtml(formatDateTimeForDisplay(req.requested_at))}</div>`;
 }
 
 function renderRanking(state, actions){
@@ -182,6 +308,182 @@ function renderRanking(state, actions){
   </div>`;
   root.querySelector('#backRanking').addEventListener('click', ()=>actions.goto('menu'));
   root.querySelectorAll('[data-ranking-mode]').forEach(btn=>btn.addEventListener('click',()=>actions.setRankingMode(btn.dataset.rankingMode)));
+}
+
+function renderAdmin(state, actions){
+  const root=state.root; setAlignTop(root,true);
+  const admin=state.admin||{};
+  if(!isAdminUser(state.currentUser)){
+    root.innerHTML = `<div class="screen info-screen has-bg">${renderBackgroundLayer('admin')}<button class="btn btn-slim info-back" id="backAdmin">${ADMIN_UI.back}</button><div class="info-title">${ADMIN_UI.title}</div><section class="info-panel admin-danger">${ADMIN_UI.denied}</section></div>`;
+    root.querySelector('#backAdmin').addEventListener('click',()=>actions.goto('menu'));
+    return;
+  }
+  const data=admin.data||{};
+  const profiles=filterAdminProfiles(data.profiles||[], admin);
+  const selectedUser=(data.profiles||[]).find(user=>user.id===admin.selectedUserId)||profiles[0]||null;
+  const selectedProgress=(data.progress||[]).filter(row=>!selectedUser||row.user_id===selectedUser.id);
+  const selectedHistory=(data.history||[]).filter(row=>!selectedUser||row.user_id===selectedUser.id).slice(0,20);
+  const rankings=filterAdminRankings(data.rankings||[], admin);
+  const selectedRanking=(data.rankings||[]).find(row=>row.id===admin.selectedRankingId)||rankings[0]||null;
+  const deleteRequests=filterAccountDeleteRequests(data.deleteRequests||[], admin);
+  const pendingDeleteCount=(data.deleteRequests||[]).filter(row=>row.status==='pending').length;
+  const selectedDeleteRequest=(data.deleteRequests||[]).find(row=>row.id===admin.selectedDeleteRequestId)||deleteRequests[0]||null;
+  root.innerHTML = `<div class="screen admin-screen has-bg" id="admin-page-top">${renderBackgroundLayer('admin')}
+    <div class="admin-topbar"><button class="btn btn-slim" id="backAdmin">${ADMIN_UI.back}</button><div class="admin-title">${ADMIN_UI.title}</div><button class="btn btn-debug" id="reloadAdmin">${ADMIN_UI.reload}</button></div>
+    <div class="admin-status ${admin.error?'is-error':''}">${escapeHtml(admin.loading?'読み込み中...':(admin.error||admin.message||'profiles.role = admin のユーザーだけが利用できます'))}</div>
+    ${pendingDeleteCount ? `<div class="admin-status admin-notice">アカウント削除申請が ${pendingDeleteCount} 件届いています</div>` : ''}
+    <div class="admin-card-grid">
+      ${ADMIN_SECTIONS.map(([id,label])=>`<button class="admin-entry-card" type="button" data-admin-scroll="${id}">${label}</button>`).join('')}
+    </div>
+    <section class="admin-panel admin-scroll-section" id="admin-section-users">
+      <div class="admin-section-title">${ADMIN_UI.users}</div>
+      <div class="admin-filters">
+        <input id="adminUserQuery" class="text-input admin-input" placeholder="ユーザー名 / メール検索" value="${escapeHtml(admin.userQuery||'')}">
+        <select id="adminRoleFilter" class="text-input admin-input"><option value="all" ${admin.roleFilter==='all'?'selected':''}>全権限</option><option value="admin" ${admin.roleFilter==='admin'?'selected':''}>admin</option><option value="user" ${admin.roleFilter==='user'?'selected':''}>user</option></select>
+      </div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>ユーザー名</th><th>表示名</th><th>メール</th><th>権限</th><th>状態</th><th>削除申請</th><th>停止</th><th>復活</th><th>登録日時</th><th>ユーザーID</th><th></th></tr></thead><tbody>${profiles.map(user=>`<tr class="${selectedUser?.id===user.id?'is-current-user':''} ${user.account_status==='disabled'?'is-disabled-user':''}"><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.display_name||'-')}</td><td>${escapeHtml(user.email||'-')}</td><td>${escapeHtml(user.role||'-')}</td><td>${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</td><td>${escapeHtml(countText(user.delete_request_count))}</td><td>${escapeHtml(countText(user.account_disabled_count))}</td><td>${escapeHtml(countText(user.account_reactivated_count))}</td><td>${escapeHtml(formatDateTimeForDisplay(user.created_at))}</td><td>${escapeHtml(user.id)}</td><td><button class="btn btn-debug" data-admin-user="${escapeHtml(user.id)}">詳細</button></td></tr>`).join('')||`<tr><td colspan="11">ユーザーがありません</td></tr>`}</tbody></table></div>
+      ${selectedUser?adminUserDetailHtml(selectedUser, selectedProgress, selectedHistory):''}
+    </section>
+    <section class="admin-panel admin-scroll-section" id="admin-section-rankings">
+      <div class="admin-section-title">${ADMIN_UI.ranking}</div>
+      <div class="admin-filters">
+        <select id="adminRankingDifficulty" class="text-input admin-input">${['all','beginner','easy','normal','hard','endless'].map(key=>`<option value="${key}" ${admin.rankingDifficulty===key?'selected':''}>${key==='all'?'全難易度':key}</option>`).join('')}</select>
+        <input id="adminRankingStage" class="text-input admin-input" placeholder="ステージ番号" value="${escapeHtml(admin.rankingStage||'')}">
+        <input id="adminRankingQuery" class="text-input admin-input" placeholder="ユーザー検索" value="${escapeHtml(admin.rankingQuery||'')}">
+        <select id="adminRankingSort" class="text-input admin-input"><option value="time" ${admin.rankingSort==='time'?'selected':''}>タイム順</option><option value="date" ${admin.rankingSort==='date'?'selected':''}>日付順</option></select>
+      </div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>難易度</th><th>面</th><th>ユーザー名</th><th>表示名</th><th>メール</th><th>ベスト</th><th>クリア日時</th><th>記録ID</th><th></th></tr></thead><tbody>${rankings.map(row=>`<tr class="${selectedRanking?.id===row.id?'is-current-user':''}"><td>${escapeHtml(row.difficulty)}</td><td>#${escapeHtml(row.stage_no)}</td><td>${escapeHtml(row.profile?.username||'-')}</td><td>${escapeHtml(row.profile?.display_name||'-')}</td><td>${escapeHtml(row.profile?.email||'-')}</td><td>${formatMs(row.clear_time_ms)}</td><td>${escapeHtml(formatDateTimeForDisplay(row.created_at))}</td><td>${escapeHtml(row.id)}</td><td><button class="btn btn-debug" data-admin-ranking="${escapeHtml(row.id)}">詳細</button></td></tr>`).join('')||`<tr><td colspan="9">ランキング記録がありません</td></tr>`}</tbody></table></div>
+      ${selectedRanking?adminRankingDetailHtml(selectedRanking):''}
+    </section>
+    <section class="admin-panel admin-scroll-section" id="admin-section-delete-requests">
+      <div class="admin-section-title">${ADMIN_UI.deleteRequests}</div>
+      <div class="admin-filters">
+        <select id="adminDeleteRequestStatus" class="text-input admin-input">${['all','pending','approved','rejected'].map(key=>`<option value="${key}" ${admin.deleteRequestStatus===key?'selected':''}>${key==='all'?'全状態':DELETE_REQUEST_STATUS_LABELS[key]}</option>`).join('')}</select>
+        <input id="adminDeleteRequestQuery" class="text-input admin-input" placeholder="ユーザー名 / メール検索" value="${escapeHtml(admin.deleteRequestQuery||'')}">
+      </div>
+      ${data.deleteRequestError?`<div class="admin-status is-error">${escapeHtml(data.deleteRequestError)}</div>`:''}
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>申請日時</th><th>ユーザー名</th><th>表示名</th><th>メール</th><th>状態</th><th>管理者メモ</th><th>ユーザーID</th><th>申請ID</th><th></th></tr></thead><tbody>${deleteRequests.map(row=>`<tr class="${selectedDeleteRequest?.id===row.id?'is-current-user':''} ${row.status==='pending'?'is-pending-request':''}"><td>${escapeHtml(formatDateTimeForDisplay(row.requested_at))}</td><td>${escapeHtml(row.username||row.profile?.username||'-')}</td><td>${escapeHtml(row.display_name||row.profile?.display_name||'-')}</td><td>${escapeHtml(row.email||row.profile?.email||'-')}</td><td>${escapeHtml(DELETE_REQUEST_STATUS_LABELS[row.status]||row.status||'-')}</td><td>${escapeHtml(row.admin_note||'-')}</td><td>${escapeHtml(row.user_id)}</td><td>${escapeHtml(row.id)}</td><td><button class="btn btn-debug" data-admin-delete-request="${escapeHtml(row.id)}">詳細</button></td></tr>`).join('')||`<tr><td colspan="9">現在、アカウント削除申請はありません</td></tr>`}</tbody></table></div>
+      ${selectedDeleteRequest?adminDeleteRequestDetailHtml(selectedDeleteRequest):''}
+    </section>
+    <section class="admin-panel admin-danger admin-scroll-section" id="admin-section-debug">
+      <div class="admin-section-title">${ADMIN_UI.debug}</div>
+      <div class="admin-debug-actions">
+        <button class="btn btn-debug" id="adminExportAll">ユーザーデータJSON出力</button>
+        <button class="btn btn-debug" id="adminExportCurrent">現在ユーザーJSON出力</button>
+        <button class="btn btn-debug" id="adminResetClear">クリア状況リセット</button>
+        <button class="btn btn-debug" id="adminResetUser">ユーザーデータ削除</button>
+      </div>
+      <div class="admin-note">F1デバッグクリアはSupabase管理者ユーザー専用です。実行時は現状、通常クリアとしてランキング対象です。debug_clear フラグ分離は後続チケットで扱います。</div>
+    </section>
+    <section class="admin-panel admin-scroll-section" id="admin-section-system"><div class="admin-section-title">${ADMIN_UI.system}</div><div class="admin-note">service role keyはフロントでは使用しません。更新・削除はSupabase RLSで許可された範囲だけ実行します。</div></section>
+    <button class="btn admin-back-to-top" type="button" id="adminBackToTop" title="${ADMIN_UI.backToTop}" aria-label="${ADMIN_UI.backToTop}">↑</button>
+  </div>`;
+  bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest);
+}
+
+function adminUserDetailHtml(user, progress, history){
+  const disabled = user.account_status === 'disabled';
+  const passwordClearRequired = user.password_clear_required === true;
+  return `<div class="admin-detail"><div class="admin-section-title">ユーザー詳細</div>
+    <div class="admin-edit-grid"><label>表示名<input id="adminDisplayName" class="text-input admin-input" value="${escapeHtml(user.display_name||'')}"></label><label>権限<select id="adminRole" class="text-input admin-input"><option value="user" ${user.role!=='admin'?'selected':''}>user</option><option value="admin" ${user.role==='admin'?'selected':''}>admin</option></select></label><div class="admin-status-label ${disabled?'is-disabled':''}">状態: ${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</div><button class="btn btn-slim" id="saveAdminProfile">ユーザー情報保存</button>${disabled?'<button class="btn btn-slim" id="reactivateAdminUser">利用停止解除</button>':''}<button class="btn btn-slim admin-password-reset-btn" id="sendAdminPasswordReset" ${String(user.email||'').trim()?'':'disabled'}>${ADMIN_UI.passwordReset}</button><button class="btn btn-slim btn-danger admin-password-reset-btn" id="clearAdminPassword">${ADMIN_UI.passwordClear}</button></div>
+    <div class="admin-account-status-grid">
+      <div class="${disabled?'is-disabled':''}"><span>アカウント状態</span><strong>${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</strong></div>
+      <div class="${disabled?'is-disabled':''}"><span>利用停止日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.disabled_at)||'-')}</strong></div>
+      <div class="${disabled?'is-disabled':''}"><span>利用停止理由</span><strong>${escapeHtml(user.disabled_reason||'-')}</strong></div>
+      <div class="${passwordClearRequired?'is-disabled':''}"><span>パスワード再設定</span><strong>${passwordClearRequired?'必須':'不要'}</strong></div>
+      <div><span>パスワードクリア日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.password_clear_requested_at)||'-')}</strong></div>
+      <div><span>最終パスワード変更日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.last_password_changed_at)||'-')}</strong></div>
+      <div><span>パスワードクリア回数</span><strong>${escapeHtml(countText(user.password_clear_count))}</strong></div>
+    </div>
+    <div class="admin-subtitle">削除申請・利用停止カウント</div>
+    <div class="admin-account-counter-grid">
+      ${ACCOUNT_COUNTER_LABELS.map(([key,label,type])=>`<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(type==='date' ? (formatDateTimeForDisplay(user[key])||'-') : countText(user[key]))}</strong></div>`).join('')}
+    </div>
+    <div class="admin-subtitle admin-scroll-section" id="admin-section-progress">進行状況</div>
+    <div class="admin-table-wrap admin-progress-table-wrap"><table class="admin-table admin-progress-table"><thead><tr><th>Progress Key</th><th class="admin-progress-clear-column">クリア</th><th>ベストms</th><th>最新ms</th><th>クリア数</th><th>失敗</th><th>ギブアップ</th><th>ヒント</th><th></th></tr></thead><tbody>${progress.slice(0,20).map(row=>{ const key=`${row.user_id}|${row.puzzle_id}`; return `<tr><td class="admin-progress-key-column">${escapeHtml(key)}</td><td class="admin-progress-clear-column admin-progress-clear-cell"><input type="checkbox" data-progress-cleared="${escapeHtml(key)}" ${row.cleared?'checked':''}></td><td><input class="admin-mini-input" data-progress-field="best_clear_time_ms" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.best_clear_time_ms??'')}"></td><td><input class="admin-mini-input" data-progress-field="latest_clear_time_ms" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.latest_clear_time_ms??'')}"></td><td><input class="admin-mini-input" data-progress-field="clear_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.clear_count??0)}"></td><td><input class="admin-mini-input" data-progress-field="fail_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.fail_count??0)}"></td><td><input class="admin-mini-input" data-progress-field="giveup_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.giveup_count??0)}"></td><td><input class="admin-mini-input" data-progress-field="hint_used_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.hint_used_count??0)}"></td><td><button class="btn btn-debug" data-save-progress="${escapeHtml(key)}">保存</button></td></tr>`; }).join('')||`<tr><td colspan="9">進行状況がありません</td></tr>`}</tbody></table></div>
+    <div class="admin-subtitle">プレイ履歴</div>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>結果</th><th>時間</th><th>ヒント</th><th>日時</th></tr></thead><tbody>${history.map(row=>`<tr><td>${escapeHtml(row.result)}</td><td>${formatMs(row.play_time_ms)}</td><td>${escapeHtml(row.hint_used_count??0)}</td><td>${escapeHtml(formatDateTimeForDisplay(row.created_at))}</td></tr>`).join('')||`<tr><td colspan="4">履歴がありません</td></tr>`}</tbody></table></div>
+  </div>`;
+}
+
+function adminRankingDetailHtml(row){
+  return `<div class="admin-detail"><div class="admin-section-title">ランキング詳細</div><div class="admin-edit-grid"><label>ベストタイムms<input id="adminRankingTime" class="text-input admin-input" value="${escapeHtml(row.clear_time_ms??0)}"></label><button class="btn btn-slim" id="saveAdminRanking">ランキング保存</button><button class="btn btn-slim btn-danger" id="deleteAdminRanking">削除</button></div><div class="admin-note">非表示フラグや備考欄は現スキーマに無いため未対応です。</div></div>`;
+}
+
+function adminDeleteRequestDetailHtml(row){
+  const pending=row.status==='pending';
+  return `<div class="admin-detail"><div class="admin-section-title">削除申請詳細</div>
+    <div class="admin-detail-grid">
+      <div><span>申請ID</span><strong>${escapeHtml(row.id)}</strong></div>
+      <div><span>ユーザーID</span><strong>${escapeHtml(row.user_id)}</strong></div>
+      <div><span>ユーザー名</span><strong>${escapeHtml(row.username||row.profile?.username||'-')}</strong></div>
+      <div><span>表示名</span><strong>${escapeHtml(row.display_name||row.profile?.display_name||'-')}</strong></div>
+      <div><span>メール</span><strong>${escapeHtml(row.email||row.profile?.email||'-')}</strong></div>
+      <div><span>申請日時</span><strong>${escapeHtml(formatDateTimeForDisplay(row.requested_at))}</strong></div>
+      <div><span>状態</span><strong>${escapeHtml(DELETE_REQUEST_STATUS_LABELS[row.status]||row.status||'-')}</strong></div>
+      <div><span>確認日時</span><strong>${escapeHtml(formatDateTimeForDisplay(row.reviewed_at))}</strong></div>
+      <div><span>確認者</span><strong>${escapeHtml(row.reviewed_by||'-')}</strong></div>
+    </div>
+    <label class="admin-subtitle">管理者メモ<textarea id="adminDeleteRequestNote" class="text-input admin-textarea">${escapeHtml(row.admin_note||'')}</textarea></label>
+    ${pending ? `<div class="admin-edit-grid"><button class="btn btn-slim" id="approveDeleteRequest">申請許可</button><button class="btn btn-slim btn-danger" id="rejectDeleteRequest">申請拒否</button></div>` : `<div class="admin-note">この申請は処理済みです。Authユーザーの物理削除は行っていません。</div>`}
+    <div class="admin-note">申請許可時は対象ユーザーを利用停止にします。Authユーザー、進行データ、ランキング記録は物理削除しません。</div>
+  </div>`;
+}
+
+function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest){
+  root.querySelector('#backAdmin').addEventListener('click',()=>actions.goto('menu'));
+  root.querySelector('#reloadAdmin').addEventListener('click',()=>actions.loadAdminData());
+  root.querySelector('#adminUserQuery').addEventListener('input',e=>actions.setAdminFilter('userQuery', e.target.value));
+  root.querySelector('#adminRoleFilter').addEventListener('change',e=>actions.setAdminFilter('roleFilter', e.target.value));
+  root.querySelectorAll('[data-admin-user]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminUser(btn.dataset.adminUser)));
+  root.querySelector('#saveAdminProfile')?.addEventListener('click',()=>actions.saveAdminProfile(selectedUser.id,{display_name:root.querySelector('#adminDisplayName').value,role:root.querySelector('#adminRole').value}));
+  root.querySelector('#reactivateAdminUser')?.addEventListener('click',()=>actions.reactivateAdminAccount(selectedUser.id));
+  root.querySelector('#sendAdminPasswordReset')?.addEventListener('click',()=>actions.requestAdminPasswordReset(selectedUser));
+  root.querySelector('#clearAdminPassword')?.addEventListener('click',()=>actions.requestAdminPasswordClear(selectedUser));
+  root.querySelectorAll('[data-save-progress]').forEach(btn=>btn.addEventListener('click',()=>actions.saveAdminProgress(btn.dataset.saveProgress, collectProgressPatch(root, btn.dataset.saveProgress))));
+  root.querySelector('#adminRankingDifficulty').addEventListener('change',e=>actions.setAdminFilter('rankingDifficulty', e.target.value));
+  root.querySelector('#adminRankingStage').addEventListener('input',e=>actions.setAdminFilter('rankingStage', e.target.value));
+  root.querySelector('#adminRankingQuery').addEventListener('input',e=>actions.setAdminFilter('rankingQuery', e.target.value));
+  root.querySelector('#adminRankingSort').addEventListener('change',e=>actions.setAdminFilter('rankingSort', e.target.value));
+  root.querySelectorAll('[data-admin-ranking]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminRanking(btn.dataset.adminRanking)));
+  root.querySelector('#saveAdminRanking')?.addEventListener('click',()=>actions.saveAdminRanking(selectedRanking.id,{clear_time_ms:root.querySelector('#adminRankingTime').value}));
+  root.querySelector('#deleteAdminRanking')?.addEventListener('click',()=>actions.deleteAdminRankingRecord(selectedRanking.id));
+  root.querySelector('#adminDeleteRequestStatus').addEventListener('change',e=>actions.setAdminFilter('deleteRequestStatus', e.target.value));
+  root.querySelector('#adminDeleteRequestQuery').addEventListener('input',e=>actions.setAdminFilter('deleteRequestQuery', e.target.value));
+  root.querySelectorAll('[data-admin-delete-request]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminDeleteRequest(btn.dataset.adminDeleteRequest)));
+  root.querySelector('#approveDeleteRequest')?.addEventListener('click',()=>actions.saveAdminDeleteRequestReview(selectedDeleteRequest.id,{status:'approved',user_id:selectedDeleteRequest.user_id,admin_note:root.querySelector('#adminDeleteRequestNote')?.value}));
+  root.querySelector('#rejectDeleteRequest')?.addEventListener('click',()=>actions.saveAdminDeleteRequestReview(selectedDeleteRequest.id,{status:'rejected',user_id:selectedDeleteRequest.user_id,admin_note:root.querySelector('#adminDeleteRequestNote')?.value}));
+  root.querySelector('#adminExportAll').addEventListener('click',()=>actions.exportUserDataJson());
+  root.querySelector('#adminExportCurrent').addEventListener('click',()=>actions.exportCurrentUserJson());
+  root.querySelector('#adminResetClear').addEventListener('click',()=>actions.resetClearFlags());
+  root.querySelector('#adminResetUser').addEventListener('click',()=>actions.resetUserData());
+  root.querySelectorAll('[data-admin-scroll]').forEach(button=>button.addEventListener('click',()=>{
+    root.querySelector(`#${button.dataset.adminScroll}`)?.scrollIntoView({behavior:'smooth', block:'start'});
+  }));
+  root.querySelector('#adminBackToTop').addEventListener('click',()=>root.querySelector('#admin-page-top')?.scrollIntoView({behavior:'smooth', block:'start'}));
+}
+
+function collectProgressPatch(root, id){
+  const patch={cleared:!!root.querySelector(`[data-progress-cleared="${cssEscape(id)}"]`)?.checked};
+  root.querySelectorAll(`[data-progress-id="${cssEscape(id)}"]`).forEach(input=>{ patch[input.dataset.progressField]=input.value; });
+  return patch;
+}
+
+function cssEscape(value){ return String(value).replace(/["\\]/g, '\\$&'); }
+function filterAdminProfiles(profiles, admin){
+  const q=String(admin.userQuery||'').toLowerCase();
+  return profiles.filter(user=>(admin.roleFilter==='all'||!admin.roleFilter||user.role===admin.roleFilter)&&(!q||[user.username,user.display_name,user.email].some(v=>String(v||'').toLowerCase().includes(q))));
+}
+function filterAdminRankings(rankings, admin){
+  const q=String(admin.rankingQuery||'').toLowerCase();
+  const stage=String(admin.rankingStage||'').trim();
+  const rows=rankings.filter(row=>(admin.rankingDifficulty==='all'||!admin.rankingDifficulty||row.difficulty===admin.rankingDifficulty)&&(!stage||String(row.stage_no)===stage)&&(!q||[row.profile?.username,row.profile?.display_name,row.profile?.email].some(v=>String(v||'').toLowerCase().includes(q))));
+  return rows.sort((a,b)=>admin.rankingSort==='date'?String(b.created_at||'').localeCompare(String(a.created_at||'')):(Number(a.clear_time_ms||0)-Number(b.clear_time_ms||0)));
+}
+function filterAccountDeleteRequests(requests, admin){
+  const q=String(admin.deleteRequestQuery||'').toLowerCase();
+  const status=admin.deleteRequestStatus||'all';
+  return (requests||[]).filter(row=>(status==='all'||row.status===status)&&(!q||[row.username,row.display_name,row.email,row.profile?.username,row.profile?.display_name,row.profile?.email].some(v=>String(v||'').toLowerCase().includes(q))));
 }
 
 function renderOptions(state, actions){
@@ -251,15 +553,12 @@ function renderCredits(state, actions){
 function renderSelect(state, actions){
   const root=state.root; setAlignTop(root,true);
   const mode=state.mode; const isLarge=(mode==='Hard'||mode==='Endless'); const per=isLarge?10:20; const cols=isLarge?5:4;
-  const pack=getPack(mode); const total=pack.puzzles.length; const pages=Math.max(1, Math.ceil(total/per));
+  const hasLoaded=!!state.selectLoaded?.[mode];
+  const loadedPuzzles=state.selectPuzzles?.[mode]||[];
+  const pack=hasLoaded ? {mode, puzzles:loadedPuzzles.map(p=>({id:String(p.stageNo??p.id), title:p.title, stageNo:p.stageNo}))} : getPack(mode);
+  const total=pack.puzzles.length; const pages=Math.max(1, Math.ceil(total/per));
   const isSolvedId=id=>state.solved[mode].has(id)||state.solved[mode].has(String(id));
   const solvedCount=pack.puzzles.reduce((sum,p)=>sum+(isSolvedId(p.id)?1:0),0);
-  const allSolvedCount=Object.values(state.solved).reduce((sum,set)=>sum+(set?.size||0),0);
-  const solvedIds=pack.puzzles.filter(p=>isSolvedId(p.id)).map(p=>`#${p.id}`).join(', ');
-  const currentUser=state.currentUser?.username||'guest';
-  const status=state.userDataStatus||{};
-  const storageLabel=status.storage || (state.currentUser?.source==='server'?'server users.json':'localStorage');
-  const fileSaveLabel=status.fileSave?`${SELECT_DEBUG.enabled} ${escapeHtml(status.filePath||`user/${currentUser}.json`)}`:`${SELECT_DEBUG.disabled} JSON出力で確認`;
   const page=Math.min(Math.max(1,state.page),pages); const start=(page-1)*per; const items=pack.puzzles.slice(start,start+per);
   const thumbSize=isLarge?'var(--thumb-lg)':'var(--thumb)'; const rowGap=isLarge?32:24;
   root.innerHTML = `<div class="screen select-screen has-bg">${renderBackgroundLayer('select')}
@@ -273,36 +572,12 @@ function renderSelect(state, actions){
         </div>
         <div class="progress-status">クリア数 ${solvedCount} / ${total}</div>
       </div>
-      <details class="select-debug">
-        <summary>${SELECT_DEBUG.title}</summary>
-        <div class="select-debug-body">
-          <div>${SELECT_DEBUG.clearState}: ${solvedIds || SELECT_DEBUG.none}</div>
-          <div>${SELECT_DEBUG.storage}: ${storageLabel}</div>
-          <div>${SELECT_DEBUG.fileSave}: ${fileSaveLabel}</div>
-          <div>${SELECT_DEBUG.storageKey}: picross_v2_user_data</div>
-          <div>${SELECT_DEBUG.userData}: ${escapeHtml(currentUser)}</div>
-          <div>最終読込: ${escapeHtml(status.lastLoad||'-')}</div>
-          <div>最終保存: ${escapeHtml(status.lastSave||'-')}</div>
-          <div>保存結果: ${escapeHtml(status.lastResult||'-')}</div>
-          <div>全件: ${allSolvedCount}</div>
-          <div class="select-debug-actions">
-            <button class="btn btn-debug" id="exportUserData">${SELECT_DEBUG.exportJson}</button>
-            <button class="btn btn-debug" id="exportCurrentUser">${SELECT_DEBUG.exportCurrent}</button>
-            <button class="btn btn-debug" id="resetClear">${SELECT_DEBUG.resetClear}</button>
-            <button class="btn btn-debug" id="resetUserData">${SELECT_DEBUG.resetUser}</button>
-          </div>
-        </div>
-      </details>
       <div class="thumb-grid" id="grid" style="--thumb-size:${thumbSize}; --select-cols:${cols}; --select-row-gap:${rowGap}px; max-width:calc((var(--thumb-size) * ${cols}) + (24px * ${cols - 1}));"></div>
     </div>`;
   root.querySelector('#back').addEventListener('click', ()=>actions.goto('menu'));
   const goPage = d => { const n=Math.min(Math.max(1,page+d),pages); if(n!==page) actions.setPage(n); };
   root.querySelector('#prev').addEventListener('click', ()=>goPage(-1));
   root.querySelector('#next').addEventListener('click', ()=>goPage(1));
-  root.querySelector('#exportUserData').addEventListener('click', ()=>actions.exportUserDataJson());
-  root.querySelector('#exportCurrentUser').addEventListener('click', ()=>actions.exportCurrentUserJson());
-  root.querySelector('#resetClear').addEventListener('click', ()=>actions.resetClearFlags());
-  root.querySelector('#resetUserData').addEventListener('click', ()=>actions.resetUserData());
   const modes=['Beginner','Easy','Normal','Hard','Endless']; const tabs=root.querySelector('#modes');
   modes.forEach(m=>{ const b=document.createElement('button'); b.className='btn'+(m===mode?' is-active':''); b.textContent=MODE_LABELS[m]; b.onclick=()=>{ if(m!==mode) actions.setMode(m); }; tabs.appendChild(b); });
   const grid=root.querySelector('#grid');
@@ -317,20 +592,30 @@ function renderSelect(state, actions){
     div.addEventListener('click', ev=>{ if(ev.shiftKey) actions.toggleSolved(mode,id); else actions.play(mode,id); });
     grid.appendChild(tile);
   }
-  loadPuzzles(mode).then(puzzles=>{
-    if(state.screen!=='select'||state.mode!==mode) return;
-    const puzzleMap=new Map();
-    for(const puzzle of puzzles){ puzzleMap.set(String(puzzle.id), puzzle); puzzleMap.set(String(puzzle.stageNo), puzzle); }
-    root.querySelectorAll('.thumb[data-puzzle-id]').forEach(thumb=>{
-      if(!thumb.classList.contains('solved')) return;
-      const puzzle=puzzleMap.get(String(thumb.dataset.puzzleId));
-      if(!puzzle) return;
-      const badge=thumb.querySelector('.badge');
-      thumb.replaceChildren(createPuzzleThumb(puzzle, {className:'select-thumb-generated', maxCells:50}));
-      if(badge) thumb.appendChild(badge);
-      const caption=thumb.closest('.tile')?.querySelector('.caption');
-      if(caption) caption.textContent=selectCaption(puzzle, true);
+  if(!state.selectLoaded?.[mode]&&!state.selectLoading?.[mode]){
+    state.selectLoading={...(state.selectLoading||{}), [mode]:true};
+    loadPuzzles(mode).then(puzzles=>{
+      if(state.screen!=='select'||state.mode!==mode) return;
+      state.selectPuzzles={...(state.selectPuzzles||{}), [mode]:puzzles};
+      state.selectLoaded={...(state.selectLoaded||{}), [mode]:true};
+      state.selectLoading={...(state.selectLoading||{}), [mode]:false};
+      render(state, actions);
+    }).catch(()=>{
+      state.selectLoaded={...(state.selectLoaded||{}), [mode]:true};
+      state.selectLoading={...(state.selectLoading||{}), [mode]:false};
     });
+  }
+  const puzzleMap=new Map();
+  for(const puzzle of loadedPuzzles||[]){ puzzleMap.set(String(puzzle.id), puzzle); puzzleMap.set(String(puzzle.stageNo), puzzle); }
+  root.querySelectorAll('.thumb[data-puzzle-id]').forEach(thumb=>{
+    if(!thumb.classList.contains('solved')) return;
+    const puzzle=puzzleMap.get(String(thumb.dataset.puzzleId));
+    if(!puzzle) return;
+    const badge=thumb.querySelector('.badge');
+    thumb.replaceChildren(createPuzzleThumb(puzzle, {className:'select-thumb-generated', maxCells:50}));
+    if(badge) thumb.appendChild(badge);
+    const caption=thumb.closest('.tile')?.querySelector('.caption');
+    if(caption) caption.textContent=selectCaption(puzzle, true);
   });
 }
 
@@ -501,6 +786,10 @@ function modeNameForKey(key){
 }
 function dateText(record, key){
   return record?.[`${key}Text`] || formatDateTimeForDisplay(record?.[key]);
+}
+function countText(value){
+  const n=Number(value);
+  return Number.isFinite(n) ? String(Math.max(0, Math.floor(n))) : '0';
 }
 function formatMs(ms){
   if(typeof ms!=='number') return '-';

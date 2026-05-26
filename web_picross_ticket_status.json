@@ -1,0 +1,693 @@
+{
+  "exportedAt": "2026-05-22T07:30:16.709Z",
+  "tickets": [
+    {
+      "number": "000",
+      "title": "Vercel / Supabase 公開構成計画",
+      "fileName": "000_architecture_plan.md",
+      "path": "docs/supabase/000_architecture_plan.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "001",
+      "title": "共通前提",
+      "fileName": "001_game_screen_layout_buttons.md",
+      "path": "docs/001_game_screen_layout_buttons.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "002",
+      "title": "共通前提",
+      "fileName": "002_responsive_board_cell_size.md",
+      "path": "docs/002_responsive_board_cell_size.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "003",
+      "title": "共通前提",
+      "fileName": "003_difficulty_timer.md",
+      "path": "docs/003_difficulty_timer.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "003",
+      "title": "Supabase Storage設計",
+      "fileName": "003_storage_design.md",
+      "path": "docs/supabase/003_storage_design.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "004",
+      "title": "共通前提",
+      "fileName": "004_editor_import_export_puzzle_data.md",
+      "path": "docs/004_editor_import_export_puzzle_data.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "005",
+      "title": "共通前提",
+      "fileName": "005_edit_play_mode.md",
+      "path": "docs/005_edit_play_mode.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "006",
+      "title": "共通前提",
+      "fileName": "006_difficulty_board_rules.md",
+      "path": "docs/006_difficulty_board_rules.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "007",
+      "title": "共通前提",
+      "fileName": "007_editor_size_candidates_by_difficulty.md",
+      "path": "docs/007_editor_size_candidates_by_difficulty.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "008",
+      "title": "共通前提",
+      "fileName": "008_editor_save_load_with_stage_number.md",
+      "path": "docs/008_editor_save_load_with_stage_number.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "009",
+      "title": "共通前提",
+      "fileName": "009_editor_16_color_palette_minecraft_order.md",
+      "path": "docs/009_editor_16_color_palette_minecraft_order.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "010",
+      "title": "共通前提",
+      "fileName": "010_game_color_palette_panel.md",
+      "path": "docs/010_game_color_palette_panel.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "011",
+      "title": "共通前提",
+      "fileName": "011_replace_alerts_with_in_game_modal.md",
+      "path": "docs/011_replace_alerts_with_in_game_modal.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "012",
+      "title": "共通前提",
+      "fileName": "012_editor_json_game_loader_compatibility.md",
+      "path": "docs/012_editor_json_game_loader_compatibility.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "013",
+      "title": "共通前提",
+      "fileName": "013_fix_hint_alignment_and_grid_spacing.md",
+      "path": "docs/013_fix_hint_alignment_and_grid_spacing.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "014",
+      "title": "共通前提",
+      "fileName": "014_editor_loaded_puzzle_list_column.md",
+      "path": "docs/014_editor_loaded_puzzle_list_column.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "015",
+      "title": "共通前提",
+      "fileName": "015_editor_mono_color_toggle_palette_state.md",
+      "path": "docs/015_editor_mono_color_toggle_palette_state.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "016",
+      "title": "共通前提",
+      "fileName": "016_beginner_easy_color_puzzle_support.md",
+      "path": "docs/016_beginner_easy_color_puzzle_support.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "017",
+      "title": "共通前提",
+      "fileName": "017_game_crosshair_hover_focus.md",
+      "path": "docs/017_game_crosshair_hover_focus.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "018",
+      "title": "共通前提",
+      "fileName": "018_editor_multi_puzzle_list_read_write.md",
+      "path": "docs/018_editor_multi_puzzle_list_read_write.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "019",
+      "title": "共通前提",
+      "fileName": "019_editor_100_slot_puzzle_management.md",
+      "path": "docs/019_editor_100_slot_puzzle_management.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "020",
+      "title": "共通前提",
+      "fileName": "020_editor_loaded_file_save_flow.md",
+      "path": "docs/020_editor_loaded_file_save_flow.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "021",
+      "title": "共通前提",
+      "fileName": "021_color_used_palette_and_colored_hints.md",
+      "path": "docs/021_color_used_palette_and_colored_hints.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "022",
+      "title": "共通前提",
+      "fileName": "022_editor_layout_move_up_and_file_ui.md",
+      "path": "docs/022_editor_layout_move_up_and_file_ui.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "023",
+      "title": "共通前提",
+      "fileName": "023_editor_same_name_json_export_remove_save_button.md",
+      "path": "docs/023_editor_same_name_json_export_remove_save_button.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "024",
+      "title": "共通前提",
+      "fileName": "024_game_hint_random_row_or_column.md",
+      "path": "docs/024_game_hint_random_row_or_column.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "025",
+      "title": "共通前提",
+      "fileName": "025_zero_hints_and_square_cells.md",
+      "path": "docs/025_zero_hints_and_square_cells.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "026",
+      "title": "共通前提",
+      "fileName": "026_editor_drag_fill_and_cross.md",
+      "path": "docs/026_editor_drag_fill_and_cross.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "027",
+      "title": "共通前提",
+      "fileName": "027_suppress_context_menu_keep_right_click_cross.md",
+      "path": "docs/027_suppress_context_menu_keep_right_click_cross.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "028",
+      "title": "共通前提",
+      "fileName": "028_user_registration_login_user_file.md",
+      "path": "docs/028_user_registration_login_user_file.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "029",
+      "title": "共通前提",
+      "fileName": "029_lock_board_after_clear.md",
+      "path": "docs/029_lock_board_after_clear.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "030",
+      "title": "共通前提",
+      "fileName": "030_editor_thumbnail_generation_and_select_display.md",
+      "path": "docs/030_editor_thumbnail_generation_and_select_display.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "031",
+      "title": "共通前提",
+      "fileName": "031_debug_clear_flags_and_reset_user_data.md",
+      "path": "docs/031_debug_clear_flags_and_reset_user_data.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "032",
+      "title": "共通前提",
+      "fileName": "032_separate_thumbnail_and_clear_state_debug_panel.md",
+      "path": "docs/032_separate_thumbnail_and_clear_state_debug_panel.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "033",
+      "title": "共通前提",
+      "fileName": "033_static_user_registration_and_user_data_export.md",
+      "path": "docs/033_static_user_registration_and_user_data_export.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "034",
+      "title": "共通前提",
+      "fileName": "034_pause_timer_while_game_modal_open.md",
+      "path": "docs/034_pause_timer_while_game_modal_open.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "035",
+      "title": "共通前提",
+      "fileName": "035_users_json_save_and_export_user_data.md",
+      "path": "docs/035_users_json_save_and_export_user_data.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "036",
+      "title": "共通前提",
+      "fileName": "036_hide_thumbnails_for_new_uncleared_users.md",
+      "path": "docs/036_hide_thumbnails_for_new_uncleared_users.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "037",
+      "title": "共通前提",
+      "fileName": "037_local_user_folder_json_save.md",
+      "path": "docs/037_local_user_folder_json_save.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "038",
+      "title": "共通前提",
+      "fileName": "038_user_data_create_write_timing.md",
+      "path": "docs/038_user_data_create_write_timing.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "039",
+      "title": "共通前提",
+      "fileName": "039_user_data_reference_screen.md",
+      "path": "docs/039_user_data_reference_screen.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "040",
+      "title": "共通前提",
+      "fileName": "040_human_readable_user_datetime.md",
+      "path": "docs/040_human_readable_user_datetime.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "041",
+      "title": "共通前提",
+      "fileName": "041_game_title_and_select_stage_label.md",
+      "path": "docs/041_game_title_and_select_stage_label.md",
+      "status": "修正済",
+      "note": ""
+    },
+    {
+      "number": "042",
+      "title": "共通前提",
+      "fileName": "042_registration_to_login_assist_and_remember_login.md",
+      "path": "docs/042_registration_to_login_assist_and_remember_login.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "043",
+      "title": "共通前提",
+      "fileName": "043_fix_ranking_screen_not_user_data.md",
+      "path": "docs/043_fix_ranking_screen_not_user_data.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "043",
+      "title": "共通前提",
+      "fileName": "043_ranking_screen_by_difficulty.md",
+      "path": "docs/043_ranking_screen_by_difficulty.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "044",
+      "title": "共通前提",
+      "fileName": "044_options_help_credits_pages.md",
+      "path": "docs/044_options_help_credits_pages.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "045",
+      "title": "共通前提",
+      "fileName": "045_game_background_image.md",
+      "path": "docs/045_game_background_image.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "046",
+      "title": "共通前提",
+      "fileName": "046_menu_ranking_background_image.md",
+      "path": "docs/046_menu_ranking_background_image.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "047",
+      "title": "共通前提",
+      "fileName": "047_assign_backgrounds_to_remaining_screens.md",
+      "path": "docs/047_assign_backgrounds_to_remaining_screens.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "48",
+      "title": "チケット48: ユーザーデータ画面・エディタ画面への背景画像設定",
+      "fileName": "048_background_for_user_data_and_editor.md",
+      "path": "docs/048_background_for_user_data_and_editor.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "49",
+      "title": "チケット49: ゲームセレクト画面のレイアウト崩れ修正",
+      "fileName": "049_fix_game_select_layout_with_background.md",
+      "path": "docs/049_fix_game_select_layout_with_background.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "50",
+      "title": "チケット50: タイトル画面へのビルドナンバー表示",
+      "fileName": "050_show_build_number_on_title.md",
+      "path": "docs/050_show_build_number_on_title.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "51",
+      "title": "チケット51: エディットモードでJSONファイル名に応じて難易度・盤面サイズ候補を自動連動する",
+      "fileName": "051_editor_auto_sync_difficulty_and_variable_board_size_options.md",
+      "path": "docs/051_editor_auto_sync_difficulty_and_variable_board_size_options.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "52",
+      "title": "チケット52: エディットモードで難易度混在JSONを作成・保存・読込できないようにする",
+      "fileName": "052_prevent_mixed_difficulty_puzzle_json.md",
+      "path": "docs/052_prevent_mixed_difficulty_puzzle_json.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "053",
+      "title": "共通前提",
+      "fileName": "053_hint_reveals_filled_and_cross_cells.md",
+      "path": "docs/053_hint_reveals_filled_and_cross_cells.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "054",
+      "title": "共通前提",
+      "fileName": "054_limit_hints_by_difficulty.md",
+      "path": "docs/054_limit_hints_by_difficulty.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "055",
+      "title": "共通前提",
+      "fileName": "055_game_side_buttons_behavior_update.md",
+      "path": "docs/055_game_side_buttons_behavior_update.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "056",
+      "title": "共通前提",
+      "fileName": "056_game_zoom_buttons_and_palette_display.md",
+      "path": "docs/056_game_zoom_buttons_and_palette_display.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "057",
+      "title": "共通前提",
+      "fileName": "057_fix_navigation_after_clear_ok.md",
+      "path": "docs/057_fix_navigation_after_clear_ok.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "058",
+      "title": "共通前提",
+      "fileName": "058_hide_puzzle_name_on_ranking_screen.md",
+      "path": "docs/058_hide_puzzle_name_on_ranking_screen.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "059",
+      "title": "共通前提",
+      "fileName": "059_debug_f1_instant_clear.md",
+      "path": "docs/059_debug_f1_instant_clear.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "060",
+      "title": "共通前提",
+      "fileName": "060_vercel_supabase_architecture_plan.md",
+      "path": "docs/060_vercel_supabase_architecture_plan.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "061",
+      "title": "共通前提",
+      "fileName": "061_supabase_database_schema.md",
+      "path": "docs/061_supabase_database_schema.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "062",
+      "title": "共通前提",
+      "fileName": "062_supabase_storage_design.md",
+      "path": "docs/062_supabase_storage_design.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "063",
+      "title": "共通前提",
+      "fileName": "063_supabase_client_env_config.md",
+      "path": "docs/063_supabase_client_env_config.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "064",
+      "title": "共通前提",
+      "fileName": "064_fix_local_supabase_config_route.md",
+      "path": "docs/064_fix_local_supabase_config_route.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "064",
+      "title": "共通前提",
+      "fileName": "064_fix2_supabase_auth_internal_email.md",
+      "path": "docs/064_fix2_supabase_auth_internal_email.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "064",
+      "title": "共通前提",
+      "fileName": "064_fix3_supabase_email_password_auth.md",
+      "path": "docs/064_fix3_supabase_email_password_auth.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "064",
+      "title": "共通前提",
+      "fileName": "064_supabase_auth_profiles.md",
+      "path": "docs/064_supabase_auth_profiles.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "065",
+      "title": "共通前提",
+      "fileName": "065_supabase_user_progress_ranking.md",
+      "path": "docs/065_supabase_user_progress_ranking.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "066",
+      "title": "共通前提",
+      "fileName": "066_supabase_puzzle_data_migration.md",
+      "path": "docs/066_supabase_puzzle_data_migration.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "067",
+      "title": "共通前提",
+      "fileName": "067_vercel_deploy_supabase_public_mode.md",
+      "path": "docs/067_vercel_deploy_supabase_public_mode.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "68",
+      "title": "チケット68: ログインUIと認証エラーメッセージ改善",
+      "fileName": "068_login_ui_auth_error_messages.md",
+      "path": "docs/068_login_ui_auth_error_messages.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "69",
+      "title": "チケット69: Supabaseランキング反映・表示確認",
+      "fileName": "069_supabase_ranking_reflection.md",
+      "path": "docs/069_supabase_ranking_reflection.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "70",
+      "title": "チケット70: ユーザーデータ管理画面の拡張",
+      "fileName": "070_user_account_management.md",
+      "path": "docs/070_user_account_management.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "71",
+      "title": "チケット71: パスワード強度メーターと弱いパスワード警告の追加",
+      "fileName": "071_password_strength_meter.md",
+      "path": "docs/071_password_strength_meter.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "72",
+      "title": "チケット72: ユーザー名・メールアドレス・パスワードの入力制限とエラー表示改善",
+      "fileName": "072_auth_input_validation.md",
+      "path": "docs/072_auth_input_validation.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "72",
+      "title": "チケット72: ユーザー名・メールアドレス・パスワードの入力制限とエラー表示改善",
+      "fileName": "072_fix_auth_input_validation_revised.md",
+      "path": "docs/072_fix_auth_input_validation_revised.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "72fix",
+      "title": "チケット72fix: パスワード表示 / 非表示切り替えボタンの追加",
+      "fileName": "072_fix2_password_visibility_toggle.md",
+      "path": "docs/072_fix2_password_visibility_toggle.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "72fix2",
+      "title": "チケット72fix2: パスワード表示 / 非表示ボタンのサイズ調整",
+      "fileName": "072_fix3_password_toggle_button_size.md",
+      "path": "docs/072_fix3_password_toggle_button_size.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "72fix4",
+      "title": "チケット72fix4: パスワード欄レイアウト調整と16文字制限の再修正",
+      "fileName": "072fix4_password_field_layout_and_16_limit.md",
+      "path": "docs/072fix4_password_field_layout_and_16_limit.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "73",
+      "title": "チケット73: ユーザーデータ画面の管理・デバッグ情報非表示化",
+      "fileName": "073_hide_user_debug_admin_info.md",
+      "path": "docs/073_hide_user_debug_admin_info.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "74",
+      "title": "チケット74: 管理者専用ページの追加",
+      "fileName": "074_admin_page_addition.md",
+      "path": "docs/074_admin_page_addition.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "75",
+      "title": "チケット75: 管理者専用ユーザーデータ編集機能",
+      "fileName": "075_admin_user_data_editing.md",
+      "path": "docs/075_admin_user_data_editing.md",
+      "status": "未修整",
+      "note": ""
+    },
+    {
+      "number": "76",
+      "title": "チケット76: 管理者専用ランキング修正・デバッグ機能",
+      "fileName": "076_admin_ranking_debug_tools.md",
+      "path": "docs/076_admin_ranking_debug_tools.md",
+      "status": "未修整",
+      "note": ""
+    }
+  ]
+}

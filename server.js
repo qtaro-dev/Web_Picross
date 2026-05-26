@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const http = require('node:http');
 const { readFile, writeFile, access, mkdir, readdir } = require('node:fs/promises');
 const path = require('node:path');
@@ -232,6 +234,16 @@ function sendJson(res, status, body){
   res.end(JSON.stringify(body));
 }
 
+function supabaseConfigBody(){
+  const supabaseUrl=String(process.env.SUPABASE_URL||'').trim();
+  const supabaseAnonKey=String(process.env.SUPABASE_ANON_KEY||'').trim();
+  return {
+    supabaseUrl,
+    supabaseAnonKey,
+    configured:Boolean(supabaseUrl&&supabaseAnonKey)
+  };
+}
+
 async function readBody(req){
   let body = '';
   for await (const chunk of req){
@@ -242,6 +254,10 @@ async function readBody(req){
 }
 
 async function handleApi(req, res){
+  if(req.method === 'GET' && req.url === '/api/supabase-config'){
+    sendJson(res, 200, supabaseConfigBody());
+    return;
+  }
   if(req.method === 'GET' && req.url?.startsWith('/api/ranking')){
     const url=new URL(req.url, `http://${req.headers.host||'127.0.0.1'}`);
     const data=await buildRanking(url.searchParams.get('difficulty')||'beginner', url.searchParams.get('username')||'');

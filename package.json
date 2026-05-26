@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "import:puzzles": "node scripts/importPuzzlesToSupabase.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,7 @@
   "homepage": "https://github.com/qtaro-dev/Web_Picross#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1"
   }
 }
