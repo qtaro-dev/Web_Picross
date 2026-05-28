@@ -26,11 +26,12 @@ $$;
 comment on function public.is_admin() is 'Checks admin role from profiles. Do not use local admin/admin credentials in production.';
 
 drop policy if exists "profiles_select_public" on public.profiles;
-create policy "profiles_select_public"
+drop policy if exists "profiles_select_own_or_admin" on public.profiles;
+create policy "profiles_select_own_or_admin"
 on public.profiles
 for select
-to anon, authenticated
-using (true);
+to authenticated
+using (id = auth.uid() or public.is_admin());
 
 drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"

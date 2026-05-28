@@ -11,6 +11,11 @@ const userDir = process.env.USER_DIR || path.join(rootDir, 'user');
 const devAdmin = { id:'user_admin', username: 'admin', password: 'admin', createdAt: '2026-05-17T00:00:00.000Z', source:'built-in' };
 const modeKeys = ['beginner', 'easy', 'normal', 'hard', 'endless', 'custom'];
 const historyLimit = 300;
+const supabaseConfigPlaceholders = new Set([
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_ANON_KEY',
+  'YOUR_SUPABASE_PUBLISHABLE_KEY',
+]);
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -237,10 +242,16 @@ function sendJson(res, status, body){
 function supabaseConfigBody(){
   const supabaseUrl=String(process.env.SUPABASE_URL||'').trim();
   const supabaseAnonKey=String(process.env.SUPABASE_ANON_KEY||'').trim();
+  const configured=Boolean(
+    supabaseUrl &&
+    supabaseAnonKey &&
+    !supabaseConfigPlaceholders.has(supabaseUrl) &&
+    !supabaseConfigPlaceholders.has(supabaseAnonKey)
+  );
   return {
     supabaseUrl,
     supabaseAnonKey,
-    configured:Boolean(supabaseUrl&&supabaseAnonKey)
+    configured
   };
 }
 

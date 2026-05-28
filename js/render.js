@@ -90,7 +90,16 @@ export function render(state, actions){
   else if(state.screen==='select') renderSelect(state, actions);
   else if(state.screen==='editor') renderEditor(state, actions);
   else renderGame(state, actions);
+  renderAdminBadge(state);
   renderModal(state, actions);
+}
+
+function renderAdminBadge(state){
+  if(!isAdminUser(state.currentUser) || ['title','login','passwordRecovery'].includes(state.screen)) return;
+  const badge=document.createElement('div');
+  badge.className='admin-badge';
+  badge.textContent='ADMIN';
+  state.root.appendChild(badge);
 }
 
 function renderTitle(state, actions){

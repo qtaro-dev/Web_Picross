@@ -165,6 +165,16 @@ create unique index if not exists account_delete_requests_one_pending_per_user
 on public.account_delete_requests (user_id)
 where status = 'pending';
 
+create or replace view public.public_profiles as
+select
+  id,
+  username,
+  display_name
+from public.profiles
+where account_status = 'active';
+
+grant select on public.public_profiles to anon, authenticated;
+
 drop trigger if exists trg_profiles_set_updated_at on public.profiles;
 create trigger trg_profiles_set_updated_at
 before update on public.profiles
@@ -186,6 +196,7 @@ before update on public.account_delete_requests
 for each row execute function public.set_updated_at();
 
 comment on table public.profiles is 'Supabase Auth user profile. Local admin/admin is development only and must not be used as production authentication.';
+comment on view public.public_profiles is 'Public-safe profile fields for rankings. Does not expose email, role, account status, counters, or password reset flags.';
 comment on table public.puzzles is 'Puzzle definitions migrated from data/*.json. solution stores mono/color answer cells as JSON.';
 comment on table public.user_progress is 'Per-user aggregate progress migrated from user/*.json.';
 comment on table public.play_history is 'Append-only play result history for clear, fail, and giveup events.';

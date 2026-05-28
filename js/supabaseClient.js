@@ -1,5 +1,12 @@
+import { ONLINE_FEATURE_TEXT, SUPABASE_PUBLIC_CONFIG } from './config.js';
+
 const SUPABASE_ESM_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const DEFAULT_CONFIG_ENDPOINT = '/api/supabase-config';
+const PLACEHOLDER_VALUES = new Set([
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_ANON_KEY',
+  'YOUR_SUPABASE_PUBLISHABLE_KEY',
+]);
 
 let configPromise = null;
 let clientPromise = null;
@@ -7,8 +14,8 @@ let clientPromise = null;
 function readGlobalConfig(){
   const root = globalThis.PICROSS_SUPABASE_CONFIG || {};
   return {
-    url: root.url || globalThis.SUPABASE_URL || '',
-    anonKey: root.anonKey || root.anon_key || globalThis.SUPABASE_ANON_KEY || '',
+    url: SUPABASE_PUBLIC_CONFIG.url || root.url || globalThis.SUPABASE_URL || '',
+    anonKey: SUPABASE_PUBLIC_CONFIG.anonKey || root.anonKey || root.anon_key || root.publishableKey || globalThis.SUPABASE_ANON_KEY || '',
   };
 }
 
@@ -38,10 +45,11 @@ async function fetchRuntimeConfig(){
 function normalizeConfig(config){
   const url = String(config?.url || '').trim();
   const anonKey = String(config?.anonKey || '').trim();
+  const placeholder = PLACEHOLDER_VALUES.has(url) || PLACEHOLDER_VALUES.has(anonKey);
   return {
-    url,
-    anonKey,
-    isConfigured: Boolean(url && anonKey),
+    url: placeholder ? '' : url,
+    anonKey: placeholder ? '' : anonKey,
+    isConfigured: Boolean(url && anonKey && !placeholder),
   };
 }
 
@@ -71,4 +79,8 @@ export async function getSupabaseClient(){
 export async function isSupabaseConfigured(){
   const config = await getSupabaseConfig();
   return config.isConfigured;
+}
+
+export function supabaseNotConfiguredMessage(detail=false){
+  return detail ? ONLINE_FEATURE_TEXT.supabaseSetupDetail : ONLINE_FEATURE_TEXT.supabaseNotConfigured;
 }

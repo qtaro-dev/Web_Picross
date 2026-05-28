@@ -141,7 +141,7 @@ export async function loadSupabaseRanking({ difficulty, currentUser } = {}){
   let profiles = [];
   if(ids.length){
     const { data: profileRows, error: profileError } = await client
-      .from('profiles')
+      .from('public_profiles')
       .select('id, username, display_name')
       .in('id', ids);
     if(profileError) throw profileError;

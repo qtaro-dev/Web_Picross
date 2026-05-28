@@ -1,10 +1,11 @@
 import { render } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
-import { AUTH_LIMITS, BOARD_ZOOM_LEVELS, DEBUG_CONFIG, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
+import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
 import { beginSupabasePasswordRecovery, completeSupabaseForcedPasswordChange, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, submitAccountDeleteRequest, updateSupabasePassword } from './supabaseAuth.js';
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
 import { deleteAdminRanking, isAdminUser, loadAdminSnapshot, markAdminPasswordClearRequired, reactivateAdminUser, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking } from './admin.js';
+import { supabaseNotConfiguredMessage } from './supabaseClient.js';
 const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'解けています', checkMessage:(mistakes,empty)=>`間違い: ${mistakes}個\n未入力: ${empty}個`, pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
 const AUTH_TEXT = { required:'ユーザー名またはメールアドレスとパスワードを入力してください', registerRequired:'ユーザー名、パスワード、メールアドレスを入力してください', emailRequired:'メールアドレスを入力してください', loginFailed:'ユーザー名、メールアドレス、またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。', duplicate:'同じユーザー名は登録できません', passwordMismatch:'新しいパスワードが一致しません', passwordShort:`パスワードは${AUTH_LIMITS.passwordMin}文字以上で入力してください`, passwordChanged:'パスワードを変更しました', supabaseOnly:'この操作はSupabaseログイン時のみ利用できます', deleteTitle:'アカウント削除申請', deleteMessage:'この画面ではアカウントを直接削除しません。\n削除申請として受け付け、管理者確認後に対応します。\n\nアカウント削除はAuthユーザー、プロフィール、進行データ、ランキング記録に影響します。安全のため、この画面では直接削除しません。', deleteRequestConfirm:'削除申請する', deleteRequested:'アカウント削除申請を受け付けました。\n管理者確認後に対応します。', deleteDuplicate:'すでにアカウント削除申請済みです。\n管理者確認後に対応します。', deleteFailed:'アカウント削除申請の保存に失敗しました。\n時間をおいて再度お試しください。' };
 const REGISTER_TEXT = { title:'ユーザー登録', message:'登録しました。\n登録したユーザでログインしますか？', yes:'はい', no:'いいえ' };
@@ -12,7 +13,7 @@ const DEV_USER = { username:'admin', password:'admin' };
 const DISABLED_ACCOUNT_TEXT = { title:'アカウント利用停止', message:'このアカウントは停止されています。\n管理者にお問い合わせください。' };
 const ADMIN_ACCESS_TEXT = { editorTitle:'エディタ', editorDenied:'エディタは管理者専用です。' };
 const EMAIL_VERIFICATION_TEXT = { registered:'確認メールを送信しました。\nメール内のリンクを開いて登録を完了してください。', required:'メールアドレスの確認が完了していません。\n確認メールを開いて登録を完了してください。', resent:'確認メールを再送しました。\nメールをご確認ください。', resendFailed:'確認メールの再送に失敗しました。\n時間をおいて再度お試しください。', unavailable:'Supabase未設定のため確認メールを送信できません。' };
-const PASSWORD_RESET_TEXT = { title:'パスワード再設定', success:'入力されたメールアドレスに一致するアカウントがある場合、再設定メールを送信します。', failed:'パスワード再設定メールの送信に失敗しました。\n時間をおいて再度お試しください。', unavailable:'Supabase未設定のため再設定メールを送信できません。', invalid:'パスワード再設定リンクが無効、または期限切れです。\n再度メールを送信してください。', updated:'パスワードを更新しました。\n新しいパスワードでログインしてください。' };
+const PASSWORD_RESET_TEXT = { title:'パスワード再設定', success:'入力されたメールアドレスに一致するアカウントがある場合、再設定メールを送信します。', failed:'パスワード再設定メールの送信に失敗しました。\n時間をおいて再度お試しください。', unavailable:supabaseNotConfiguredMessage(), invalid:'パスワード再設定リンクが無効、または期限切れです。\n再度メールを送信してください。', updated:'パスワードを更新しました。\n新しいパスワードでログインしてください。' };
 const ADMIN_PASSWORD_RESET_TEXT = { title:'パスワード再設定メール送信', denied:'この操作は管理者専用です。', missingEmail:'メールアドレスが登録されていないため送信できません。', confirm:user=>`このユーザーにパスワード再設定メールを送信しますか？\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}`, sent:'パスワード再設定メールを送信しました。' };
 const ADMIN_PASSWORD_CLEAR_TEXT = { title:'パスワードクリア', denied:'この操作は管理者専用です。', confirm:(user,isSelf)=>`${isSelf?'注意: 現在ログイン中の管理者自身が対象です。\n\n':''}このユーザーをパスワードクリア状態にします。\n次回ログイン時に新しいパスワードの設定が必要になります。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}\nユーザーID: ${user.id||'-'}\n\n実行しますか？`, completed:'パスワードクリア状態にしました。' };
 const FORCED_PASSWORD_TEXT = { notice:'管理者によりパスワードクリアが行われました。\n新しいパスワードを設定してください。' };
@@ -408,7 +409,7 @@ function requestAdminPasswordReset(user){
 async function runAdminMutation(task, successMessage){
   try{
     const result=await task();
-    stateRef.admin={...(stateRef.admin||{}), message:result?.available===false?'Supabase未設定のため操作できません':successMessage, error:''};
+    stateRef.admin={...(stateRef.admin||{}), message:result?.available===false?supabaseNotConfiguredMessage():successMessage, error:''};
     await loadAdminData();
   }catch(err){
     stateRef.admin={...(stateRef.admin||{}), message:'', error:`操作できませんでした: ${err.message||'RLSまたは権限設定を確認してください'}`};
@@ -702,7 +703,8 @@ function requestGameExit(target){
 function exitGame(target){ stopTimer(); stateRef.gameStatus='idle'; stateRef.playSession=null; stateRef.game=null; stateRef.screen=target||'select'; render(stateRef, actionsAPI); }
 function zoomBoard(delta){ const current=Number(stateRef.boardZoom||1); const idx=Math.max(0, BOARD_ZOOM_LEVELS.findIndex(v=>v===current)); const base=idx>=0?idx:BOARD_ZOOM_LEVELS.indexOf(1); const next=BOARD_ZOOM_LEVELS[Math.max(0, Math.min(BOARD_ZOOM_LEVELS.length-1, base+delta))]; stateRef.boardZoom=next||1; render(stateRef, actionsAPI); }
 function debugInstantClear(){
-  if(!DEBUG_CONFIG.enableF1InstantClear || stateRef.screen!=='game' || !stateRef.game || stateRef.modal || stateRef.gameStatus!=='playing') return false;
+  if(!ADMIN_DEBUG_CONFIG.enableF1InstantClear || stateRef.screen!=='game' || !stateRef.game || stateRef.modal || stateRef.gameStatus!=='playing') return false;
+  if(accountDisabled() || passwordClearRequired()) return false;
   if(!isAdminUser(stateRef.currentUser)) return false;
   const G=stateRef.game;
   stateRef.filled.clear();

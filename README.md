@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000106` です。
+- 現在のビルドは `Build #0000110` です。
 
 ## 公開構成方針
 
@@ -56,10 +56,17 @@
 
 Supabase接続は `js/supabaseClient.js` で管理します。未設定時はSupabaseへ接続せず、既存のローカルJSON / localStorage 動作へフォールバックします。
 
+静的公開で直接Supabaseへ接続する場合は、[js/config.js](js/config.js) の `SUPABASE_PUBLIC_CONFIG` にSupabase URLとanon keyだけを設定できます。anon keyは公開前提のキーですが、service role key、DB password、JWT secretは絶対に入れません。未設定の場合、オンライン機能は「オンライン機能の設定が未完了です。管理者にお問い合わせください。」という案内で失敗します。
+
+`YOUR_SUPABASE_URL`、`YOUR_SUPABASE_ANON_KEY`、`YOUR_SUPABASE_PUBLISHABLE_KEY` のような雛形文字列は未設定として扱います。公開表示で必要なプロフィール情報は `public_profiles` ビューの `id`、`username`、`display_name` だけを参照し、`profiles` 本体のSELECTは本人または管理者に限定します。
+
 ローカル用の雛形は `.env.example` を使います。`.env` と `.env.*` はGit管理しません。
 
 ```env
+# Public Supabase project URL. It is safe to expose, but do not commit real secrets.
 SUPABASE_URL=
+
+# Public anon key only. Never put service role key in frontend/public config.
 SUPABASE_ANON_KEY=
 ```
 
@@ -105,6 +112,8 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 Supabaseで `profiles` に `account_status` などの列を追加した直後に画面へ反映されない場合は、SQL Editorで `NOTIFY pgrst, 'reload schema';` を実行してPostgRESTのスキーマキャッシュを更新してください。
 
 パスワードクリア機能には `profiles` の `password_clear_required`、`password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count`、`last_password_changed_at` 列が必要です。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用し、既存の `profiles_update_own_or_admin` RLSポリシーが有効であることを確認してください。ローカル確認でも実ユーザーのログイン制御が変わるため、テストユーザーだけで実行してください。
+
+Vercel公開後のSupabase設定、メール確認、パスワード再設定、管理者ログイン、ランキング保存、パスワードクリアの本番確認手順は [docs/vercel_supabase_production_checklist.md](docs/vercel_supabase_production_checklist.md) に整理しています。
 
 ローカル `npm start` でSupabase Authを確認する手順:
 
@@ -194,8 +203,9 @@ http://127.0.0.1:8000/
 
 - ゲームプレイ中に `F1` キーを押すと、Supabase管理者ユーザー専用の開発・動作確認用機能として現在の面を即時クリアできます。
 - 未ログイン、一般ユーザー、ローカル保存ユーザー、固定ユーザー `admin` / `admin` ではF1即時クリアは無効です。
+- 管理者ログイン中は画面左上に `ADMIN` バッジを表示します。停止ユーザーやパスワード再設定強制中の画面では表示しません。
 - F1即時クリアは通常クリアと同じ記録処理を通り、クリアダイアログ、ユーザーデータ、ランキング、クリア済み表示に反映されます。
-- この機能は `js/config.js` の `DEBUG_CONFIG.enableF1InstantClear` でON/OFFできます。
+- F1即時クリアの内部設定は `ADMIN_DEBUG_CONFIG` に分離していますが、実行には必ずSupabase管理者判定が必要です。
 
 ## ランキング表示
 

@@ -3,7 +3,7 @@ import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient.js';
 const ADMIN_LIMIT = 100;
 
 export function isAdminUser(user){
-  return user?.source === 'supabase' && user?.role === 'admin';
+  return user?.source === 'supabase' && user?.role === 'admin' && user?.account_status !== 'disabled';
 }
 
 async function adminClient(){

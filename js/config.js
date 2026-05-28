@@ -6,8 +6,16 @@ export const DIFFICULTY_RULES = {
   endless: { key:'endless', modeKey:'Endless', label:'エンドレス', sizes:[[20,20],[25,25],[30,30],[40,40],[50,50]], color:true, min:20, max:50 },
 };
 
-export const BUILD_INFO = { number: 106, label: 'Build #0000106' };
-export const DEBUG_CONFIG = { enableF1InstantClear: true };
+export const BUILD_INFO = { number: 110, label: 'Build #0000110' };
+export const SUPABASE_PUBLIC_CONFIG = {
+  url: '',
+  anonKey: '',
+};
+export const ONLINE_FEATURE_TEXT = {
+  supabaseNotConfigured: 'オンライン機能の設定が未完了です。管理者にお問い合わせください。',
+  supabaseSetupDetail: 'Supabase設定が未設定です。管理者は Supabase URL と anon key を設定してください。',
+};
+export const ADMIN_DEBUG_CONFIG = { enableF1InstantClear: true };
 export const AUTH_LIMITS = {
   usernameMin: 1,
   usernameMax: 10,

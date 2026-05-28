@@ -989,6 +989,42 @@
       "status": "修正済",
       "note": "管理者ページ上部の6項目を対応セクションへスクロールするボタンに変更しました。\n各対象にIDとスクロール余白を付与し、管理者ページ左下に一番上へ戻る固定ボタンを追加しました。\n管理処理や権限判定の動作は変更していません。",
       "updatedAt": "2026-05-25T23:16:21.1483899+09:00"
+    },
+    {
+      "number": "99",
+      "title": "チケット99：profiles公開SELECTポリシーの見直し",
+      "fileName": "099_profiles_public_select_policy_review.md",
+      "path": "docs/099_profiles_public_select_policy_review.md",
+      "status": "修正済",
+      "note": "profiles本体の公開SELECTを廃止し、本人またはSupabase管理者だけが参照できるRLSへ変更しました。\nランキングなどの公開表示は id / username / display_name だけを返す public_profiles ビュー参照へ切り替えました。",
+      "updatedAt": "2026-05-28T16:33:49.0276910+09:00"
+    },
+    {
+      "number": "100",
+      "title": "チケット100：Supabase公開接続設定の追加と未設定時エラー整理",
+      "fileName": "100_supabase_public_config_setup.md",
+      "path": "docs/100_supabase_public_config_setup.md",
+      "status": "修正済",
+      "note": "公開用のSupabase URL / anon key設定を js/config.js へ追加し、service role keyを扱わない構成に整理しました。\n未設定や雛形文字列を検出し、オンライン機能の未設定メッセージへ統一しました。",
+      "updatedAt": "2026-05-28T16:33:49.0276910+09:00"
+    },
+    {
+      "number": "101",
+      "title": "チケット101：管理者デバッグモード刷新とADMIN表示追加",
+      "fileName": "101_admin_debug_mode_refresh.md",
+      "path": "docs/101_admin_debug_mode_refresh.md",
+      "status": "修正済",
+      "note": "F1即時クリア設定をADMIN_DEBUG_CONFIGへ分離し、Supabase管理者かつactiveユーザーだけが実行できるようにしました。\n管理者ログイン中はログイン・タイトルなどを除く主要画面へADMINバッジを表示します。",
+      "updatedAt": "2026-05-28T16:33:49.0276910+09:00"
+    },
+    {
+      "number": "102",
+      "title": "チケット102：Vercel公開後のSupabase設定と本番確認手順整備",
+      "fileName": "102_vercel_supabase_production_checklist.md",
+      "path": "docs/102_vercel_supabase_production_checklist.md",
+      "status": "修正済",
+      "note": "Vercel公開URL、Supabase Redirect URL、メール確認、パスワード再設定、管理者ログイン、ランキング保存の確認手順を整理しました。\nDBテーブル・ビュー・カラムの事前確認、OK/NG基準、公開前チェックリストを追加しました。",
+      "updatedAt": "2026-05-28T16:33:49.0276910+09:00"
     }
   ]
 }
