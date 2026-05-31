@@ -15,7 +15,7 @@ function readGlobalConfig(){
   const root = globalThis.PICROSS_SUPABASE_CONFIG || {};
   return {
     url: SUPABASE_PUBLIC_CONFIG.url || root.url || globalThis.SUPABASE_URL || '',
-    anonKey: SUPABASE_PUBLIC_CONFIG.anonKey || root.anonKey || root.anon_key || root.publishableKey || globalThis.SUPABASE_ANON_KEY || '',
+    publishableKey: SUPABASE_PUBLIC_CONFIG.publishableKey || SUPABASE_PUBLIC_CONFIG.anonKey || root.publishableKey || root.supabasePublishableKey || root.anonKey || root.anon_key || globalThis.SUPABASE_PUBLISHABLE_KEY || globalThis.SUPABASE_ANON_KEY || '',
   };
 }
 
@@ -34,7 +34,7 @@ async function fetchRuntimeConfig(){
     }
     return {
       url: data.url || data.supabaseUrl || '',
-      anonKey: data.anonKey || data.supabaseAnonKey || '',
+      publishableKey: data.publishableKey || data.supabasePublishableKey || data.anonKey || data.supabaseAnonKey || '',
     };
   }catch{
     console.info('Supabase config fetch failed. Falling back to local mode.');
@@ -44,12 +44,13 @@ async function fetchRuntimeConfig(){
 
 function normalizeConfig(config){
   const url = String(config?.url || '').trim();
-  const anonKey = String(config?.anonKey || '').trim();
-  const placeholder = PLACEHOLDER_VALUES.has(url) || PLACEHOLDER_VALUES.has(anonKey);
+  const publishableKey = String(config?.publishableKey || config?.anonKey || '').trim();
+  const placeholder = PLACEHOLDER_VALUES.has(url) || PLACEHOLDER_VALUES.has(publishableKey);
   return {
     url: placeholder ? '' : url,
-    anonKey: placeholder ? '' : anonKey,
-    isConfigured: Boolean(url && anonKey && !placeholder),
+    publishableKey: placeholder ? '' : publishableKey,
+    anonKey: placeholder ? '' : publishableKey,
+    isConfigured: Boolean(url && publishableKey && !placeholder),
   };
 }
 
@@ -70,7 +71,7 @@ export async function getSupabaseClient(){
       const config = await getSupabaseConfig();
       if(!config.isConfigured) return null;
       const { createClient } = await import(SUPABASE_ESM_URL);
-      return createClient(config.url, config.anonKey);
+      return createClient(config.url, config.publishableKey);
     })();
   }
   return clientPromise;

@@ -4,18 +4,20 @@ module.exports = function handler(req, res){
     'YOUR_SUPABASE_URL',
     'YOUR_SUPABASE_ANON_KEY',
     'YOUR_SUPABASE_PUBLISHABLE_KEY',
+    'YOUR_SUPABASE_SECRET_KEY',
   ]);
   const supabaseUrl = String(process.env.SUPABASE_URL || '').trim();
-  const supabaseAnonKey = String(process.env.SUPABASE_ANON_KEY || '').trim();
+  const supabasePublishableKey = String(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
   const configured = Boolean(
     supabaseUrl &&
-    supabaseAnonKey &&
+    supabasePublishableKey &&
     !placeholders.has(supabaseUrl) &&
-    !placeholders.has(supabaseAnonKey)
+    !placeholders.has(supabasePublishableKey)
   );
   res.status(200).json({
     supabaseUrl,
-    supabaseAnonKey,
+    supabasePublishableKey,
+    supabaseAnonKey: supabasePublishableKey,
     configured,
   });
 };

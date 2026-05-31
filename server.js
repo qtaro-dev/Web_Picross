@@ -15,6 +15,7 @@ const supabaseConfigPlaceholders = new Set([
   'YOUR_SUPABASE_URL',
   'YOUR_SUPABASE_ANON_KEY',
   'YOUR_SUPABASE_PUBLISHABLE_KEY',
+  'YOUR_SUPABASE_SECRET_KEY',
 ]);
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -241,16 +242,17 @@ function sendJson(res, status, body){
 
 function supabaseConfigBody(){
   const supabaseUrl=String(process.env.SUPABASE_URL||'').trim();
-  const supabaseAnonKey=String(process.env.SUPABASE_ANON_KEY||'').trim();
+  const supabasePublishableKey=String(process.env.SUPABASE_PUBLISHABLE_KEY||process.env.SUPABASE_ANON_KEY||'').trim();
   const configured=Boolean(
     supabaseUrl &&
-    supabaseAnonKey &&
+    supabasePublishableKey &&
     !supabaseConfigPlaceholders.has(supabaseUrl) &&
-    !supabaseConfigPlaceholders.has(supabaseAnonKey)
+    !supabaseConfigPlaceholders.has(supabasePublishableKey)
   );
   return {
     supabaseUrl,
-    supabaseAnonKey,
+    supabasePublishableKey,
+    supabaseAnonKey:supabasePublishableKey,
     configured
   };
 }

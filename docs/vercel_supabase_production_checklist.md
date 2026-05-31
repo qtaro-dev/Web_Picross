@@ -30,14 +30,14 @@ NG: 確認メールやパスワード再設定メールのリンク先が `local
 
 ## Supabase公開接続設定
 
-Vercelで使う公開設定はSupabase URLとanon keyだけです。service role key、DB password、JWT secretはフロントエンドへ置きません。
+Vercelで使う公開設定はSupabase URLとpublishable keyだけです。secret key、DB password、JWT secretはフロントエンドへ置きません。
 
 確認する場所:
 
 ```text
 js/config.js
 → SUPABASE_PUBLIC_CONFIG.url
-→ SUPABASE_PUBLIC_CONFIG.anonKey
+→ SUPABASE_PUBLIC_CONFIG.publishableKey
 ```
 
 またはVercel Functionsで `/api/supabase-config` を使う場合:
@@ -46,8 +46,11 @@ js/config.js
 Vercel Project Settings
 → Environment Variables
 → SUPABASE_URL
-→ SUPABASE_ANON_KEY
+→ SUPABASE_PUBLISHABLE_KEY
+→ SUPABASE_SECRET_KEY
 ```
+
+`SUPABASE_SECRET_KEY` はチケット104以降の管理者専用サーバーAPIやローカルインポートスクリプトだけで使います。`/api/supabase-config` から返してよいのは `supabaseUrl`、`supabasePublishableKey`、`configured` だけで、`SUPABASE_SECRET_KEY` や `sb_secret_...` は返しません。
 
 ## 事前DB確認
 

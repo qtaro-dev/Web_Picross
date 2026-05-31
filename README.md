@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000110` です。
+- 現在のビルドは `Build #0000111` です。
 
 ## 公開構成方針
 
@@ -56,26 +56,29 @@
 
 Supabase接続は `js/supabaseClient.js` で管理します。未設定時はSupabaseへ接続せず、既存のローカルJSON / localStorage 動作へフォールバックします。
 
-静的公開で直接Supabaseへ接続する場合は、[js/config.js](js/config.js) の `SUPABASE_PUBLIC_CONFIG` にSupabase URLとanon keyだけを設定できます。anon keyは公開前提のキーですが、service role key、DB password、JWT secretは絶対に入れません。未設定の場合、オンライン機能は「オンライン機能の設定が未完了です。管理者にお問い合わせください。」という案内で失敗します。
+静的公開で直接Supabaseへ接続する場合は、[js/config.js](js/config.js) の `SUPABASE_PUBLIC_CONFIG` にSupabase URLとpublishable keyだけを設定できます。publishable keyは公開前提のキーですが、secret key、DB password、JWT secretは絶対に入れません。未設定の場合、オンライン機能は「オンライン機能の設定が未完了です。管理者にお問い合わせください。」という案内で失敗します。
 
-`YOUR_SUPABASE_URL`、`YOUR_SUPABASE_ANON_KEY`、`YOUR_SUPABASE_PUBLISHABLE_KEY` のような雛形文字列は未設定として扱います。公開表示で必要なプロフィール情報は `public_profiles` ビューの `id`、`username`、`display_name` だけを参照し、`profiles` 本体のSELECTは本人または管理者に限定します。
+`YOUR_SUPABASE_URL`、`YOUR_SUPABASE_PUBLISHABLE_KEY`、`YOUR_SUPABASE_ANON_KEY` のような雛形文字列は未設定として扱います。公開表示で必要なプロフィール情報は `public_profiles` ビューの `id`、`username`、`display_name` だけを参照し、`profiles` 本体のSELECTは本人または管理者に限定します。
 
 ローカル用の雛形は `.env.example` を使います。`.env` と `.env.*` はGit管理しません。
 
 ```env
 # Public Supabase project URL. It is safe to expose, but do not commit real secrets.
-SUPABASE_URL=
+SUPABASE_URL=https://your-project.supabase.co
 
-# Public anon key only. Never put service role key in frontend/public config.
-SUPABASE_ANON_KEY=
+# Public publishable key only. Never put secret key in frontend/public config.
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxx
+
+# Server-side admin API and import scripts only. Never expose this to browsers.
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 VercelではProject SettingsのEnvironment Variablesへ次の2つを設定します。
 
 - `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+- `SUPABASE_PUBLISHABLE_KEY`
 
-`SUPABASE_SERVICE_ROLE_KEY`、DBパスワード、JWT secretはフロントエンド、GitHub、Vercelの公開環境変数へ置きません。
+管理者専用サーバーAPIやインポートスクリプトを使う場合だけ、サーバー側環境変数として `SUPABASE_SECRET_KEY` を設定します。`SUPABASE_SECRET_KEY`、DBパスワード、JWT secretはフロントエンド、GitHub、Vercelの公開環境変数へ置きません。旧名 `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` は当面の互換用で、新規設定では使いません。
 
 Supabase設定済みの場合、既存のログイン画面からSupabase Authへ登録・ログインします。`profiles` には `username`、`display_name`、`role` を保存し、ログイン成功時のユーザー情報は `state.currentUser` に `loginSource: "supabase"` として保持します。Supabase未設定時は従来のローカルログインに戻ります。固定ユーザー `admin` / `admin` は開発用です。
 
@@ -118,7 +121,7 @@ Vercel公開後のSupabase設定、メール確認、パスワード再設定、
 ローカル `npm start` でSupabase Authを確認する手順:
 
 1. `E:\Dev\web_picross_Ver2\.env` を作成します。
-2. `SUPABASE_URL` と `SUPABASE_ANON_KEY` を設定します。
+2. `SUPABASE_URL` と `SUPABASE_PUBLISHABLE_KEY` を設定します。
 3. `npm start` でローカルサーバーを起動します。
 4. `http://127.0.0.1:8000/api/supabase-config` を開き、`configured: true` になることを確認します。
 5. アプリで新規ユーザー登録します。
@@ -129,7 +132,7 @@ Vercel公開後のSupabase設定、メール確認、パスワード再設定、
 
 Supabaseログイン中は、クリア、時間切れ、ギブアップ時に `user_progress` と `play_history` へ記録します。クリア時は `ranking_records` へベストタイムも保存します。F1デバッグクリアは `profiles.role = admin` のSupabase管理者ユーザーだけが利用でき、既存仕様と同じく通常クリア扱いで記録します。
 
-パズルデータは `npm run import:puzzles` で `data/*.json` からSupabase Databaseの `puzzles` へインポートできます。インポートにはローカル `.env` の `SUPABASE_SERVICE_ROLE_KEY` を使いますが、このキーはGitHub/Vercel/フロントエンドへ置きません。アプリ側はSupabase設定済みなら `puzzles.is_published = true` の問題だけを取得し、未設定時は従来どおり `data/*.json` を読み込みます。
+パズルデータは `npm run import:puzzles` で `data/*.json` からSupabase Databaseの `puzzles` へインポートできます。インポートにはローカル `.env` の `SUPABASE_SECRET_KEY` を使いますが、このキーはGitHub/Vercel/フロントエンドへ置きません。アプリ側はSupabase設定済みなら `puzzles.is_published = true` の問題だけを取得し、未設定時は従来どおり `data/*.json` を読み込みます。
 
 ## 起動方法
 

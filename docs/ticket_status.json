@@ -1025,6 +1025,15 @@
       "status": "修正済",
       "note": "Vercel公開URL、Supabase Redirect URL、メール確認、パスワード再設定、管理者ログイン、ランキング保存の確認手順を整理しました。\nDBテーブル・ビュー・カラムの事前確認、OK/NG基準、公開前チェックリストを追加しました。",
       "updatedAt": "2026-05-28T16:33:49.0276910+09:00"
+    },
+    {
+      "number": "103",
+      "title": "チケット103：Supabase新APIキー名への移行",
+      "fileName": "103_supabase_new_api_key_names.md",
+      "path": "docs/103_supabase_new_api_key_names.md",
+      "status": "修正済",
+      "note": "公開用キー名を SUPABASE_PUBLISHABLE_KEY 優先へ変更し、旧 SUPABASE_ANON_KEY は互換用フォールバックとして残しました。\n/api/supabase-config は supabasePublishableKey を返し、秘密キーを返さない構成にしました。\n管理者サーバー処理・インポート用のキー名を SUPABASE_SECRET_KEY としてREADMEとチェックリストへ整理しました。",
+      "updatedAt": "2026-05-31T14:40:23.3410710+09:00"
     }
   ]
 }

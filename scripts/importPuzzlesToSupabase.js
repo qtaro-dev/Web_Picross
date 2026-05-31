@@ -18,10 +18,13 @@ function printHelp(){
 
 Required for import:
   SUPABASE_URL
-  SUPABASE_SERVICE_ROLE_KEY
+  SUPABASE_SECRET_KEY
 
 Optional:
-  SUPABASE_IMPORT_PUBLISHED=true|false`);
+  SUPABASE_IMPORT_PUBLISHED=true|false
+
+Legacy fallback:
+  SUPABASE_SERVICE_ROLE_KEY`);
 }
 
 function normalizeColorId(value){
@@ -90,9 +93,9 @@ async function main(){
     return;
   }
   const supabaseUrl = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!supabaseUrl || !key){
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for puzzle import.');
+    throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required for puzzle import.');
   }
   const client = createClient(supabaseUrl, key);
   let total = 0;
