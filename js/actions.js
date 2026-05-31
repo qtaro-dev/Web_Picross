@@ -15,7 +15,6 @@ const ADMIN_ACCESS_TEXT = { editorTitle:'エディタ', editorDenied:'エディ�
 const EMAIL_VERIFICATION_TEXT = { registered:'確認メールを送信しました。\nメール内のリンクを開いて登録を完了してください。', required:'メールアドレスの確認が完了していません。\n確認メールを開いて登録を完了してください。', resent:'確認メールを再送しました。\nメールをご確認ください。', resendFailed:'確認メールの再送に失敗しました。\n時間をおいて再度お試しください。', unavailable:'Supabase未設定のため確認メールを送信できません。' };
 const PASSWORD_RESET_TEXT = { title:'パスワード再設定', success:'入力されたメールアドレスに一致するアカウントがある場合、再設定メールを送信します。', failed:'パスワード再設定メールの送信に失敗しました。\n時間をおいて再度お試しください。', unavailable:supabaseNotConfiguredMessage(), invalid:'パスワード再設定リンクが無効、または期限切れです。\n再度メールを送信してください。', updated:'パスワードを更新しました。\n新しいパスワードでログインしてください。' };
 const EMAIL_CHANGE_TEXT = { title:'メールアドレス変更', required:'新しいメールアドレスを入力してください', mismatch:'新しいメールアドレスと確認欄が一致しません', same:'現在のメールアドレスと同じです', sending:'メールアドレス変更申請を送信しています...', sent:'メールアドレス変更確認メールを送信しました。\n現在のメールアドレスと新しいメールアドレスに届く確認メールを確認してください。\n確認完了後、新しいメールアドレスでログインできるようになります。', unavailable:supabaseNotConfiguredMessage() };
-const ADMIN_PASSWORD_RESET_TEXT = { title:'パスワード再設定メール送信', denied:'この操作は管理者専用です。', missingEmail:'メールアドレスが登録されていないため送信できません。', confirm:user=>`このユーザーにパスワード再設定メールを送信しますか？\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}`, sent:'パスワード再設定メールを送信しました。' };
 const ADMIN_PASSWORD_CLEAR_TEXT = { title:'パスワード再設定メール送信', denied:'この操作は管理者専用です。', missingEmail:'このユーザーにはメールアドレスが登録されていないため、パスワード再設定メールを送信できません。先にメールアドレスを登録してください。', confirm:(user,isSelf)=>`${isSelf?'注意: 現在ログイン中の管理者自身が対象です。\n\n':''}対象ユーザーへパスワード再設定メールを送信します。\nユーザーはメール内リンクから新しいパスワードを設定します。\nログイン後の追加パスワード変更画面は表示しません。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}\nユーザーID: ${user.id||'-'}\nアカウント状態: ${user.account_status||'active'}\n\n実行しますか？`, completed:'パスワード再設定メールを送信しました。\n対象ユーザーはメール内リンクから新しいパスワードを設定してください。' };
 const ADMIN_RANKING_DELETE_TEXT = { title:'ユーザー別ランキング削除', confirm:(user,count)=>`このユーザーのランキング記録を削除します。\nこの操作は元に戻せません。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nユーザーID: ${user.id||'-'}\n削除対象件数: ${count}件\n\n実行しますか？`, completed:'対象ユーザーのランキング記録を削除しました。' };
 const TIMER_LIMITS = { Beginner:600, Easy:600, Normal:1800, Hard:1800, Endless:null, Custom:null };
@@ -27,7 +26,7 @@ const SAVED_PASSWORD_KEY = 'picross_saved_password';
 const OPTIONS_KEY = 'web_picross_options';
 const DEFAULT_OPTIONS = { crosshairColor:'#42a5f5', bgmVolume:50, seVolume:50, displayMode:'window' };
 const LS_KEY='picross_v2_solved'; let stateRef; let actionsAPI;
-export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordReset, requestAdminPasswordClear, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
+export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordClear, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
 function initializeAuthFlow(){
   const params = new URLSearchParams((globalThis.location?.hash || '').replace(/^#/, ''));
   if(params.get('type')!=='recovery'){
@@ -445,25 +444,6 @@ function requestAdminPasswordClear(user){
       render(stateRef, actionsAPI);
     }
   }, '実行する');
-  return true;
-}
-function requestAdminPasswordReset(user){
-  if(!isAdminUser(stateRef.currentUser)){
-    notify(ADMIN_PASSWORD_RESET_TEXT.title, ADMIN_PASSWORD_RESET_TEXT.denied);
-    return false;
-  }
-  if(!String(user?.email||'').trim()){
-    notify(ADMIN_PASSWORD_RESET_TEXT.title, ADMIN_PASSWORD_RESET_TEXT.missingEmail);
-    return false;
-  }
-  confirmModal(ADMIN_PASSWORD_RESET_TEXT.title, ADMIN_PASSWORD_RESET_TEXT.confirm(user), async()=>{
-    try{
-      const result=await requestSupabasePasswordReset(user.email);
-      notify(ADMIN_PASSWORD_RESET_TEXT.title, result?.available ? ADMIN_PASSWORD_RESET_TEXT.sent : PASSWORD_RESET_TEXT.unavailable);
-    }catch(err){
-      notify(ADMIN_PASSWORD_RESET_TEXT.title, err.message||PASSWORD_RESET_TEXT.failed);
-    }
-  }, '送信する');
   return true;
 }
 async function runAdminMutation(task, successMessage){

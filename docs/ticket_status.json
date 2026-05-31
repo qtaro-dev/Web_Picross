@@ -1090,6 +1090,15 @@
       "updatedAt": "2026-05-31T21:41:38.4096018+09:00"
     },
     {
+      "number": "106fix3",
+      "title": "チケット106fix3：旧パスワード再設定メール送信ボタンの削除",
+      "fileName": "106fix3_remove_legacy_password_reset_button.md",
+      "path": "docs/106fix3_remove_legacy_password_reset_button.md",
+      "status": "修正済",
+      "note": "管理者ユーザー詳細から旧「パスワード再設定メール送信」ボタンを削除しました。\n旧ボタン用のイベントハンドラ、確認モーダル、Supabaseクライアント直接送信アクションを削除しました。\n残る導線は /api/admin-reset-auth-user 経由の「管理者再設定メール送信」だけに統一しました。",
+      "updatedAt": "2026-05-31T22:06:47.0643530+09:00"
+    },
+    {
       "number": "107",
       "title": "チケット107：ユーザー本人による登録メールアドレス変更機能",
       "fileName": "107_user_email_change_flow.md",
