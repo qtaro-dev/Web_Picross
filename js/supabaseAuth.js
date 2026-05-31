@@ -206,12 +206,22 @@ export async function updateSupabaseEmail(email){
   if(!(await isSupabaseConfigured())) return { available:false };
   const client = await getSupabaseClient();
   if(!client) return { available:false };
-  const { error } = await client.auth.updateUser({ email: normalizeEmail(email) });
-  if(error){
-    console.info(`Supabase email update request failed: ${error.message}`);
-    throw authError(error.message);
+  const { data } = await client.auth.getSession();
+  const token = data?.session?.access_token;
+  if(!token) throw new Error('ログイン状態を確認できません');
+  const response = await fetch('/api/user-change-email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ newEmail:normalizeEmail(email) }),
+  });
+  const body = await response.json().catch(()=>({}));
+  if(!response.ok || body.ok === false){
+    throw new Error(body.message || 'メールアドレス変更確認メールの送信に失敗しました。時間をおいて再度お試しください。');
   }
-  return { available:true };
+  return { available:true, ...body };
 }
 
 export async function requestSupabasePasswordReset(email){

@@ -54,7 +54,7 @@ Vercel Project Settings
 
 `SUPABASE_SECRET_KEY` はチケット104以降の管理者専用サーバーAPIやローカルインポートスクリプトだけで使います。`/api/supabase-config` から返してよいのは `supabaseUrl`、`supabasePublishableKey`、`configured` だけで、`SUPABASE_SECRET_KEY` や `sb_secret_...` は返しません。
 
-`APP_BASE_URL` は管理者再設定メールのリンク戻り先です。本番では `https://web-picross.vercel.app/` を設定します。未設定の場合、メール送信と送信回数・送信日時の更新は実行されません。
+`APP_BASE_URL` は管理者再設定メールとメールアドレス変更確認メールのリンク戻り先です。本番では `https://web-picross.vercel.app/` を設定します。
 
 管理者サーバーAPI確認:
 
@@ -99,6 +99,7 @@ user_progress
 play_history
 ranking_records
 account_delete_requests
+email_change_request_logs
 ```
 
 `profiles` 本体のSELECTは本人または管理者だけです。ランキングなどの公開表示は `public_profiles` の `id`、`username`、`display_name` だけを使います。
@@ -205,7 +206,7 @@ NG:
 1. 一般ユーザーでProduction URLへログインする。
 2. メニュー画面からユーザーデータ画面を開く。
 3. 現在のメールアドレス、新しいメールアドレス、新しいメールアドレス確認欄が表示されることを確認する。
-4. 新しいメールアドレスと確認欄へ同じ有効なメールアドレスを入力する。メールアドレス変更欄は254文字まで入力できる。
+4. 新しいメールアドレスと確認欄へ同じ有効なメールアドレスを入力する。メールアドレス変更欄は254文字まで入力できる。`+` を含むGmailエイリアス形式も有効扱いにする。
 5. 「メールアドレス変更申請」を押す。
 6. 確認メール送信案内が出ることを確認する。
 7. Supabaseからの確認メールを開き、Production URLへ戻ることを確認する。
@@ -215,6 +216,7 @@ OK:
 
 ```text
 確認メール送信案内が表示される
+成功時に「メールアドレスの形式を確認してください」が残らない
 リンク先がProduction URLになる
 新しいメールアドレスでログインできる
 profiles.email がAuth側メールアドレスと一致する
@@ -226,6 +228,15 @@ NG:
 管理者ページから他ユーザーのメールアドレスを直接編集できる
 secret keyが画面やNetworkレスポンスに表示される
 確認メールなしでメールアドレスが変わる
+メール送信成功後に形式エラーが表示される
+```
+
+送信制限確認:
+
+```text
+同一ユーザーで1時間以内に6回メールアドレス変更申請する。
+1〜5回目は確認メールが送信される。
+6回目は1時間5回までのエラーになり、email_change_request_logs には成功分だけ記録される。
 ```
 
 ## 管理者ログイン確認
@@ -342,12 +353,13 @@ NG:
 ログイン後に追加のパスワード変更画面が出る
 ```
 
-## パスワード再設定メール設定
+## Supabaseメール設定
 
 Supabase Dashboardで次を確認します。
 
 ```text
 Authentication → Email Templates → Reset password
+Authentication → Emails → Templates → Change email address
 Authentication → Providers → Email → Email OTP Expiration
 ```
 
@@ -355,6 +367,7 @@ OK:
 
 ```text
 Reset passwordメールの件名または本文に Webピクロス と表示される
+Change email addressメールの件名または本文に Webピクロス と表示される
 本文のリンクに {{ .ConfirmationURL }} が残っている
 Email OTP Expiration が 600 秒になっている
 ```
@@ -363,7 +376,18 @@ NG:
 
 ```text
 Supabase標準文面だけでWebピクロス名がない
-再設定リンクの有効期限が長いままになっている
+再設定リンクまたはメールアドレス変更リンクの有効期限が長いままになっている
+```
+
+Change email addressテンプレート例:
+
+```html
+<h2>Webピクロス メールアドレス変更の確認</h2>
+<p>Webピクロスで、メールアドレス変更の申請が行われました。</p>
+<p>以下のボタンから、新しいメールアドレスへの変更を完了してください。</p>
+<p><a href="{{ .ConfirmationURL }}">メールアドレス変更を完了する</a></p>
+<p>この変更に心当たりがない場合は、このメールを破棄してください。</p>
+<p>Webピクロス</p>
 ```
 
 ## 管理者再設定メール送信制限確認
@@ -406,8 +430,11 @@ DB状態だけ更新される
 [ ] 管理者ページからユーザー別ランキング削除
 [ ] 管理者再設定メール送信
 [ ] パスワード再設定メールのWebピクロス文面
+[ ] メールアドレス変更確認メールのWebピクロス文面
 [ ] パスワード再設定リンクの10分有効期限
+[ ] メールアドレス変更確認リンクの10分有効期限
 [ ] 管理者再設定メールの1時間5回制限
+[ ] メールアドレス変更確認メールの1時間5回制限
 [ ] ログイン後の追加パスワード変更画面が出ない
 [ ] 一般ユーザーで管理者ページ不可
 [ ] 一般ユーザーでADMINバッジ非表示

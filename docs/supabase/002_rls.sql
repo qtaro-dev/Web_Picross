@@ -7,6 +7,7 @@ alter table public.user_progress enable row level security;
 alter table public.play_history enable row level security;
 alter table public.ranking_records enable row level security;
 alter table public.account_delete_requests enable row level security;
+alter table public.email_change_request_logs enable row level security;
 
 create or replace function public.is_admin()
 returns boolean
@@ -163,6 +164,13 @@ for update
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
+
+drop policy if exists "email_change_request_logs_select_admin" on public.email_change_request_logs;
+create policy "email_change_request_logs_select_admin"
+on public.email_change_request_logs
+for select
+to authenticated
+using (public.is_admin());
 
 -- Production authentication policy:
 -- - The current local fixed user admin/admin is for development only.

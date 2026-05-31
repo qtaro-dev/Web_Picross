@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000120` です。
+- 現在のビルドは `Build #0000121` です。
 
 ## 公開構成方針
 
@@ -86,7 +86,7 @@ VercelではProject SettingsのEnvironment Variablesへ次の3つを設定しま
 
 管理者サーバーAPIは `Authorization: Bearer <Supabase access_token>` を必須にし、サーバー側でJWT検証と `profiles.role = admin`、`profiles.account_status = active` を確認します。`SUPABASE_SECRET_KEY` はVercel Environment Variablesまたはローカル `.env` にだけ保存し、ブラウザ側JSや `js/config.js` には絶対に書きません。
 
-`APP_BASE_URL` は管理者が送るSupabaseパスワード再設定メールの戻り先です。本番では `https://web-picross.vercel.app/` を設定し、未設定時はメール送信と送信回数・送信日時の更新を中止します。
+`APP_BASE_URL` は管理者が送るSupabaseパスワード再設定メールと、ユーザー本人のメールアドレス変更確認メールの戻り先です。本番では `https://web-picross.vercel.app/` を設定します。
 
 Supabase設定済みの場合、既存のログイン画面からSupabase Authへ登録・ログインします。`profiles` には `username`、`display_name`、`role` を保存し、ログイン成功時のユーザー情報は `state.currentUser` に `loginSource: "supabase"` として保持します。Supabase未設定時は従来のローカルログインに戻ります。固定ユーザー `admin` / `admin` は開発用です。
 
@@ -114,9 +114,13 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 
 同一ユーザーへの管理者再設定メールは `password_reset_request_logs` を使って1時間5回までに制限します。6回目以降はメール送信、`password_clear_count` 加算、送信日時更新を行いません。Supabase Dashboardでは Authentication → URL Configuration のSite URLとRedirect URLsを本番URLへ設定し、Reset passwordメールテンプレートにWebピクロス名を入れ、Email OTP Expirationを600秒にしてください。
 
-ユーザー本人はユーザーデータ画面からメールアドレス変更申請を行えます。申請はログイン中のSupabaseセッションで `supabase.auth.updateUser({ email })` を呼び出す本人確認フローで、管理者が他ユーザーのメールアドレスを直接変更する機能はありません。確認メール完了後のログイン時に、Auth側メールアドレスを本人の `profiles.email` へ同期します。
+ユーザー本人はユーザーデータ画面からメールアドレス変更申請を行えます。申請はログイン中のSupabaseセッションを使って `/api/user-change-email` 経由で本人確認し、Supabase Authのメールアドレス変更確認メールを送信します。管理者が他ユーザーのメールアドレスを直接変更する機能はありません。確認メール完了後のログイン時に、Auth側メールアドレスを本人の `profiles.email` へ同期します。
 
 ユーザーデータ画面のメールアドレス変更欄は254文字まで入力できます。ログイン・登録画面の既存メール欄は従来どおり50文字までです。
+
+同一ユーザーのメールアドレス変更確認メールは `email_change_request_logs` を使って1時間5回までに制限します。送信成功時だけログを保存し、6回目以降はメール送信を行いません。Supabase Dashboardでは Authentication → URL Configuration のSite URLとRedirect URLsを本番URLへ設定し、Change email addressメールテンプレートにWebピクロス名を入れ、Email OTP Expirationを600秒にしてください。
+
+Change email addressメールテンプレートは Supabase Dashboard → Authentication → Emails → Templates → Change email address で設定します。件名は `【Webピクロス】メールアドレス変更の確認`、本文はWebピクロスでのメールアドレス変更申請であること、`{{ .ConfirmationURL }}` への確認リンク、心当たりがない場合は破棄する案内を含めてください。
 
 エディタはSupabase管理者ユーザー専用です。通常メニュー列には「お知らせ」を表示し、管理者だけがメニュー右側のショートカットからエディタと管理者ページを開けます。一般ユーザーが内部的にエディタ遷移を呼び出した場合も、メニューへ戻して利用を拒否します。
 
@@ -132,7 +136,7 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 
 Supabaseで `profiles` に `account_status` などの列を追加した直後に画面へ反映されない場合は、SQL Editorで `NOTIFY pgrst, 'reload schema';` を実行してPostgRESTのスキーマキャッシュを更新してください。
 
-管理者再設定メール送信には `profiles` の `password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count` 列と、送信制限用の `password_reset_request_logs` テーブルが必要です。旧仕様の互換用に `password_clear_required` は残しますが、主導線では使いません。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用してください。
+管理者再設定メール送信には `profiles` の `password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count` 列と、送信制限用の `password_reset_request_logs` テーブルが必要です。メールアドレス変更申請には `email_change_request_logs` テーブルが必要です。旧仕様の互換用に `password_clear_required` は残しますが、主導線では使いません。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用してください。
 
 Vercel公開後のSupabase設定、メール確認、パスワード再設定、管理者ログイン、ランキング保存、管理者再設定メール送信の本番確認手順は [docs/vercel_supabase_production_checklist.md](docs/vercel_supabase_production_checklist.md) に整理しています。
 

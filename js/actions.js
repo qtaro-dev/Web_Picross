@@ -14,7 +14,7 @@ const DISABLED_ACCOUNT_TEXT = { title:'アカウント利用停止', message:'�
 const ADMIN_ACCESS_TEXT = { editorTitle:'エディタ', editorDenied:'エディタは管理者専用です。' };
 const EMAIL_VERIFICATION_TEXT = { registered:'確認メールを送信しました。\nメール内のリンクを開いて登録を完了してください。', required:'メールアドレスの確認が完了していません。\n確認メールを開いて登録を完了してください。', resent:'確認メールを再送しました。\nメールをご確認ください。', resendFailed:'確認メールの再送に失敗しました。\n時間をおいて再度お試しください。', unavailable:'Supabase未設定のため確認メールを送信できません。' };
 const PASSWORD_RESET_TEXT = { title:'パスワード再設定', success:'入力されたメールアドレスに一致するアカウントがある場合、再設定メールを送信します。', failed:'パスワード再設定メールの送信に失敗しました。\n時間をおいて再度お試しください。', unavailable:supabaseNotConfiguredMessage(), invalid:'パスワード再設定リンクが無効、または期限切れです。\n再度メールを送信してください。', updated:'パスワードを更新しました。\n新しいパスワードでログインしてください。' };
-const EMAIL_CHANGE_TEXT = { title:'メールアドレス変更', required:'新しいメールアドレスを入力してください', mismatch:'新しいメールアドレスと確認欄が一致しません', same:'現在のメールアドレスと同じです', sending:'メールアドレス変更申請を送信しています...', sent:'メールアドレス変更確認メールを送信しました。\n現在のメールアドレスと新しいメールアドレスに届く確認メールを確認してください。\n確認完了後、新しいメールアドレスでログインできるようになります。', unavailable:supabaseNotConfiguredMessage() };
+const EMAIL_CHANGE_TEXT = { title:'メールアドレス変更', required:'新しいメールアドレスを入力してください', invalid:'メールアドレスの形式を確認してください', mismatch:'新しいメールアドレスと確認欄が一致しません', same:'現在のメールアドレスと同じです', sending:'メールアドレス変更申請を送信しています...', sent:'メールアドレス変更確認メールを送信しました。\n現在のメールアドレスと新しいメールアドレスに届く確認メールを確認してください。\n確認完了後、新しいメールアドレスでログインできるようになります。', unavailable:supabaseNotConfiguredMessage() };
 const ADMIN_PASSWORD_CLEAR_TEXT = { title:'パスワード再設定メール送信', denied:'この操作は管理者専用です。', missingEmail:'このユーザーにはメールアドレスが登録されていないため、パスワード再設定メールを送信できません。先にメールアドレスを登録してください。', confirm:(user,isSelf)=>`${isSelf?'注意: 現在ログイン中の管理者自身が対象です。\n\n':''}対象ユーザーへパスワード再設定メールを送信します。\nユーザーはメール内リンクから新しいパスワードを設定します。\nログイン後の追加パスワード変更画面は表示しません。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}\nユーザーID: ${user.id||'-'}\nアカウント状態: ${user.account_status||'active'}\n\n実行しますか？`, completed:'パスワード再設定メールを送信しました。\n対象ユーザーはメール内リンクから新しいパスワードを設定してください。' };
 const ADMIN_RANKING_DELETE_TEXT = { title:'ユーザー別ランキング削除', confirm:(user,count)=>`このユーザーのランキング記録を削除します。\nこの操作は元に戻せません。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nユーザーID: ${user.id||'-'}\n削除対象件数: ${count}件\n\n実行しますか？`, completed:'対象ユーザーのランキング記録を削除しました。' };
 const TIMER_LIMITS = { Beginner:600, Easy:600, Normal:1800, Hard:1800, Endless:null, Custom:null };
@@ -236,7 +236,7 @@ async function requestEmailChange(newEmail, confirmEmail){
   }
   const validation = authValidationMessage([validateEmail(email, { max:AUTH_LIMITS.emailChangeMax })]);
   if(validation){
-    setEmailChangeStatus(validation, true, false);
+    setEmailChangeStatus(validation.includes('形式') ? EMAIL_CHANGE_TEXT.invalid : validation, true, false);
     return false;
   }
   if(email!==confirm){
@@ -250,7 +250,7 @@ async function requestEmailChange(newEmail, confirmEmail){
   setEmailChangeStatus(EMAIL_CHANGE_TEXT.sending, false, true);
   try{
     const result=await updateSupabaseEmail(email);
-    setEmailChangeStatus(result?.available ? EMAIL_CHANGE_TEXT.sent : EMAIL_CHANGE_TEXT.unavailable, !result?.available, false);
+    setEmailChangeStatus(result?.available ? (result.message || EMAIL_CHANGE_TEXT.sent) : EMAIL_CHANGE_TEXT.unavailable, !result?.available, false);
     return !!result?.available;
   }catch(err){
     setEmailChangeStatus(err.message||AUTH_TEXT.loginFailed, true, false);

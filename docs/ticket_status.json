@@ -1115,6 +1115,15 @@
       "status": "修正済",
       "note": "ユーザーデータ画面のメールアドレス変更欄だけ maxlength と表示を254文字へ変更しました。\nメール変更申請時のvalidateEmailも254文字上限で判定するようにしました。\nログイン・登録画面の既存メール欄は従来の50文字制限のまま維持しています。",
       "updatedAt": "2026-05-31T22:35:06.7892794+09:00"
+    },
+    {
+      "number": "107fix2",
+      "title": "チケット107fix2：メールアドレス変更申請の表示整理・送信制限・メール文面改善",
+      "fileName": "107fix2_email_change_request_security_and_template.md",
+      "path": "docs/107fix2_email_change_request_security_and_template.md",
+      "status": "修正済",
+      "note": "メールアドレス変更申請を /api/user-change-email 経由に変更し、本人セッション確認とサーバー側検証を追加しました。\nemail_change_request_logs を追加し、同一ユーザーの確認メール送信を1時間5回までに制限します。\n成功時はサーバーの成功メッセージを表示し、READMEと本番チェックリストにOTP 600秒とChange email addressテンプレート手順を追記しました。",
+      "updatedAt": "2026-05-31T23:06:33.0188243+09:00"
     }
   ]
 }

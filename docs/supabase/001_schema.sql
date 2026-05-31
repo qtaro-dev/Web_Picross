@@ -79,6 +79,20 @@ on public.password_reset_request_logs (target_user_id, request_type, requested_a
 
 alter table public.password_reset_request_logs enable row level security;
 
+create table if not exists public.email_change_request_logs (
+  id uuid primary key default gen_random_uuid(),
+  target_user_id uuid not null references public.profiles(id) on delete cascade,
+  old_email text,
+  new_email text not null,
+  requested_at timestamptz not null default now(),
+  request_type text not null default 'user_email_change'
+);
+
+create index if not exists email_change_request_logs_rate_limit_idx
+on public.email_change_request_logs (target_user_id, request_type, requested_at desc);
+
+alter table public.email_change_request_logs enable row level security;
+
 alter table public.profiles
 drop constraint if exists profiles_account_status_check;
 
@@ -216,3 +230,4 @@ comment on table public.user_progress is 'Per-user aggregate progress migrated f
 comment on table public.play_history is 'Append-only play result history for clear, fail, and giveup events.';
 comment on table public.ranking_records is 'Leaderboard records separated from local user JSON files.';
 comment on table public.account_delete_requests is 'User-submitted account deletion requests. This table records requests only; Auth user deletion is handled by later admin-only workflow.';
+comment on table public.email_change_request_logs is 'Audit and rate-limit log for user requested Supabase Auth email change confirmation mails.';
