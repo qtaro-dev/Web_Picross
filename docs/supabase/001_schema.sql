@@ -93,6 +93,24 @@ on public.email_change_request_logs (target_user_id, request_type, requested_at 
 
 alter table public.email_change_request_logs enable row level security;
 
+create table if not exists public.admin_email_repair_logs (
+  id uuid primary key default gen_random_uuid(),
+  target_user_id uuid not null references public.profiles(id) on delete cascade,
+  admin_user_id uuid not null references public.profiles(id) on delete cascade,
+  old_email text,
+  new_email text not null,
+  repaired_at timestamptz not null default now(),
+  reason text
+);
+
+create index if not exists admin_email_repair_logs_target_repaired_idx
+on public.admin_email_repair_logs (target_user_id, repaired_at desc);
+
+create index if not exists admin_email_repair_logs_admin_repaired_idx
+on public.admin_email_repair_logs (admin_user_id, repaired_at desc);
+
+alter table public.admin_email_repair_logs enable row level security;
+
 alter table public.profiles
 drop constraint if exists profiles_account_status_check;
 
@@ -231,3 +249,4 @@ comment on table public.play_history is 'Append-only play result history for cle
 comment on table public.ranking_records is 'Leaderboard records separated from local user JSON files.';
 comment on table public.account_delete_requests is 'User-submitted account deletion requests. This table records requests only; Auth user deletion is handled by later admin-only workflow.';
 comment on table public.email_change_request_logs is 'Audit and rate-limit log for user requested Supabase Auth email change confirmation mails.';
+comment on table public.admin_email_repair_logs is 'Admin audit log for repairing invalid or inconsistent Supabase Auth and profiles email addresses.';

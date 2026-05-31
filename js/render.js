@@ -414,7 +414,14 @@ function adminUserDetailHtml(user, progress, history, rankings=[]){
   const rankingCount = rankings.length;
   return `<div class="admin-detail"><div class="admin-section-title">ユーザー詳細</div>
     <div class="admin-edit-grid"><label>表示名<input id="adminDisplayName" class="text-input admin-input" value="${escapeHtml(user.display_name||'')}"></label><label>権限<select id="adminRole" class="text-input admin-input"><option value="user" ${user.role!=='admin'?'selected':''}>user</option><option value="admin" ${user.role==='admin'?'selected':''}>admin</option></select></label><div class="admin-status-label ${disabled?'is-disabled':''}">状態: ${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</div><button class="btn btn-slim" id="saveAdminProfile">ユーザー情報保存</button>${disabled?'<button class="btn btn-slim" id="reactivateAdminUser">利用停止解除</button>':''}<button class="btn btn-slim btn-danger admin-password-reset-btn" id="clearAdminPassword" ${String(user.email||'').trim()?'':'disabled'}>${ADMIN_UI.passwordClear}</button></div>
-    <div class="admin-note">メールアドレス変更はユーザー本人のユーザーデータ画面から行います。</div>
+    <div class="admin-note">メールアドレス変更は通常、ユーザー本人のユーザーデータ画面から行います。</div>
+    <div class="admin-subtitle">管理者メール修復</div>
+    <div class="admin-note">この操作は、架空メールや不整合データを修復するための管理者専用操作です。通常のメールアドレス変更は、ユーザー本人のユーザーデータ画面から行ってください。</div>
+    <div class="admin-edit-grid">
+      <div class="admin-status-label">現在のメールアドレス: ${escapeHtml(user.email||'-')}</div>
+      <label>修復後メールアドレス<input id="adminRepairEmail" class="text-input admin-input" type="email" maxlength="${AUTH_LIMITS.emailChangeMax}" placeholder="example+repair@gmail.com"></label>
+      <button class="btn btn-slim btn-danger" id="repairAdminEmail">管理者メール修復を実行</button>
+    </div>
     <div class="admin-account-status-grid">
       <div class="${disabled?'is-disabled':''}"><span>アカウント状態</span><strong>${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</strong></div>
       <div class="${disabled?'is-disabled':''}"><span>利用停止日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.disabled_at)||'-')}</strong></div>
@@ -473,6 +480,7 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   root.querySelector('#saveAdminProfile')?.addEventListener('click',()=>actions.saveAdminProfile(selectedUser.id,{display_name:root.querySelector('#adminDisplayName').value,role:root.querySelector('#adminRole').value}));
   root.querySelector('#reactivateAdminUser')?.addEventListener('click',()=>actions.reactivateAdminAccount(selectedUser.id));
   root.querySelector('#clearAdminPassword')?.addEventListener('click',()=>actions.requestAdminPasswordClear(selectedUser));
+  root.querySelector('#repairAdminEmail')?.addEventListener('click',()=>actions.requestAdminEmailRepair(selectedUser, root.querySelector('#adminRepairEmail')?.value));
   root.querySelector('#deleteAdminUserRankings')?.addEventListener('click',()=>actions.requestDeleteAdminUserRankings(selectedUser, selectedUserRankingCount));
   root.querySelectorAll('[data-save-progress]').forEach(btn=>btn.addEventListener('click',()=>actions.saveAdminProgress(btn.dataset.saveProgress, collectProgressPatch(root, btn.dataset.saveProgress))));
   root.querySelector('#adminRankingDifficulty').addEventListener('change',e=>actions.setAdminFilter('rankingDifficulty', e.target.value));

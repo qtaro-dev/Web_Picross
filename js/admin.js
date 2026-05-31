@@ -106,6 +106,25 @@ export async function requestAdminPasswordClearReset(userId){
   return { available:true, ...body };
 }
 
+export async function repairAdminAuthEmail(userId, newEmail){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const { data } = await client.auth.getSession();
+  const token = data?.session?.access_token;
+  if(!token) throw new Error('ログインセッションを確認できません');
+  const response = await fetch('/api/admin-update-auth-email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId, newEmail }),
+  });
+  const body = await response.json().catch(()=>({}));
+  if(!response.ok || body.ok === false) throw new Error(body.message || `HTTP ${response.status}`);
+  return { available:true, ...body };
+}
+
 export async function updateAdminProfile(id, patch){
   const client = await adminClient();
   if(!client) return { available:false };

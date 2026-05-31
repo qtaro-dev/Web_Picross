@@ -100,6 +100,7 @@ play_history
 ranking_records
 account_delete_requests
 email_change_request_logs
+admin_email_repair_logs
 ```
 
 `profiles` 本体のSELECTは本人または管理者だけです。ランキングなどの公開表示は `public_profiles` の `id`、`username`、`display_name` だけを使います。
@@ -302,6 +303,45 @@ public.profiles.role = admin
 public.profiles.account_status = active
 ```
 
+## 管理者メール修復確認
+
+手順:
+
+1. Supabase管理者ユーザーでログインする。
+2. 管理者ページを開く。
+3. 架空メールや不整合があるユーザーを選択する。
+4. 「管理者メール修復」欄に有効なメールアドレスを入力する。
+5. 「管理者メール修復を実行」を押す。
+6. 確認モーダルの対象ユーザー、ユーザーID、現在メール、修復後メールを確認して実行する。
+
+OK:
+
+```text
+確認モーダルを経由して実行される
+管理者ページのメール欄が新メールアドレスになる
+Auth email と profiles.email が一致する
+admin_email_repair_logs に修復履歴が追加される
+```
+
+NG:
+
+```text
+通常のユーザー情報保存だけでメールが変わる
+確認なしで即実行される
+一般ユーザーがメール修復できる
+```
+
+ログ保存確認SQL:
+
+```sql
+select *
+from public.admin_email_repair_logs
+order by repaired_at desc
+limit 10;
+```
+
+不正メール形式では `メールアドレスの形式を確認してください。` が表示され、Auth email / profiles.email は変更されないことを確認します。既存ユーザーと重複するメールでは `このメールアドレスはすでに別ユーザーで使用されています。` が表示されることを確認します。
+
 ## ランキング保存確認
 
 手順:
@@ -450,6 +490,7 @@ DB状態だけ更新される
 [ ] ADMINバッジ表示
 [ ] 管理者ページ表示
 [ ] 管理者ページ内リンク
+[ ] 管理者メール修復
 [ ] ランキング保存
 [ ] public_profiles経由のランキング表示
 [ ] 管理者ユーザーのランキング除外

@@ -1133,6 +1133,15 @@
       "status": "修正済",
       "note": "/api/user-change-email のログ保存前に対象profiles行を保証し、email_change_request_logs のcount/insert失敗時は原因コード付きで返すようにしました。\n送信ログinsertはSUPABASE_SECRET_KEY側クライアントで実行し、insert結果のid取得まで確認してから成功レスポンスを返します。\nREADMEと本番チェックリストにemail_change_request_logs確認SQLと期待項目を追記しました。",
       "updatedAt": "2026-05-31T23:32:05.2092300+09:00"
+    },
+    {
+      "number": "107fix4",
+      "title": "チケット107fix4：架空メールで作成された既存ユーザーのメールアドレス修復機能",
+      "fileName": "107fix4_admin_email_repair.md",
+      "path": "docs/107fix4_admin_email_repair.md",
+      "status": "修正済",
+      "note": "管理者ページのユーザー詳細に、通常の本人メール変更とは別の管理者メール修復UIを追加しました。\n/api/admin-update-auth-email を実装し、管理者認証後にSupabase Auth emailとprofiles.emailを同時に即時更新します。\nadmin_email_repair_logs を追加し、修復履歴をDB監査ログとして保存するようにしました。",
+      "updatedAt": "2026-05-31T23:58:21.3676572+09:00"
     }
   ]
 }

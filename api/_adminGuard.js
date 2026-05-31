@@ -75,7 +75,7 @@ async function guarded(req, res, handler){
     return handler(context);
   }catch(error){
     const status = Number(error.status || 500);
-    return json(res, status, { ok:false, message:error.message || '管理者APIエラー' });
+    return json(res, status, { ok:false, message:error.message || '管理者APIエラー', code:error.code || undefined });
   }
 }
 

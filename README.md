@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000122` です。
+- 現在のビルドは `Build #0000123` です。
 
 ## 公開構成方針
 
@@ -124,6 +124,8 @@ Change email addressメールテンプレートは Supabase Dashboard → Authen
 
 メールアドレス変更申請のログ保存確認は、Supabase SQL Editorで `select * from public.email_change_request_logs order by requested_at desc limit 10;` を実行します。申請成功後に `target_user_id`、`old_email`、`new_email`、`request_type = user_email_change` の行が追加されていることを確認してください。
 
+架空メールやAuth email / `profiles.email` の不整合がある既存テストユーザーは、管理者ページの「管理者メール修復」から救済できます。この操作は管理者専用の確認モーダル経由で実行し、Supabase Auth email と `profiles.email` を同時に即時更新します。通常のメールアドレス変更は、引き続きユーザー本人のユーザーデータ画面から行います。修復履歴は `admin_email_repair_logs` に保存します。
+
 エディタはSupabase管理者ユーザー専用です。通常メニュー列には「お知らせ」を表示し、管理者だけがメニュー右側のショートカットからエディタと管理者ページを開けます。一般ユーザーが内部的にエディタ遷移を呼び出した場合も、メニューへ戻して利用を拒否します。
 
 ログイン画面の「パスワードを忘れた場合」から、Supabase Authのパスワード再設定メールを要求できます。登録有無を推測されにくくするため、要求後の表示は入力メールが登録済みの場合に送信するという共通案内です。メール内リンクでアプリへ戻ると新パスワード設定画面を表示し、更新完了後はセッションを終了して新しいパスワードでのログインを求めます。管理者ページでは、管理者だけがユーザー詳細からサーバーAPI経由の「管理者再設定メール送信」を実行できます。旧「パスワード再設定メール送信」ボタンは削除し、管理者が迷わないよう導線を1つに統一しています。
@@ -138,7 +140,7 @@ Change email addressメールテンプレートは Supabase Dashboard → Authen
 
 Supabaseで `profiles` に `account_status` などの列を追加した直後に画面へ反映されない場合は、SQL Editorで `NOTIFY pgrst, 'reload schema';` を実行してPostgRESTのスキーマキャッシュを更新してください。
 
-管理者再設定メール送信には `profiles` の `password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count` 列と、送信制限用の `password_reset_request_logs` テーブルが必要です。メールアドレス変更申請には `email_change_request_logs` テーブルが必要です。旧仕様の互換用に `password_clear_required` は残しますが、主導線では使いません。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用してください。
+管理者再設定メール送信には `profiles` の `password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count` 列と、送信制限用の `password_reset_request_logs` テーブルが必要です。メールアドレス変更申請には `email_change_request_logs` テーブル、管理者メール修復には `admin_email_repair_logs` テーブルが必要です。旧仕様の互換用に `password_clear_required` は残しますが、主導線では使いません。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用してください。
 
 Vercel公開後のSupabase設定、メール確認、パスワード再設定、管理者ログイン、ランキング保存、管理者再設定メール送信の本番確認手順は [docs/vercel_supabase_production_checklist.md](docs/vercel_supabase_production_checklist.md) に整理しています。
 
