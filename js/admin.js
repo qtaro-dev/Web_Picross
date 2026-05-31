@@ -87,6 +87,25 @@ export async function checkAdminServerApi(){
   }
 }
 
+export async function requestAdminPasswordClearReset(userId){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const { data } = await client.auth.getSession();
+  const token = data?.session?.access_token;
+  if(!token) throw new Error('ログインセッションを確認できません');
+  const response = await fetch('/api/admin-reset-auth-user', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId }),
+  });
+  const body = await response.json().catch(()=>({}));
+  if(!response.ok || body.ok === false) throw new Error(body.message || `HTTP ${response.status}`);
+  return { available:true, ...body };
+}
+
 export async function updateAdminProfile(id, patch){
   const client = await adminClient();
   if(!client) return { available:false };
@@ -215,7 +234,7 @@ export async function markAdminPasswordClearRequired(id, requestedBy){
   const { error } = await client
     .from('profiles')
     .update({
-      password_clear_required: true,
+      password_clear_required: false,
       password_clear_requested_at: new Date().toISOString(),
       password_clear_requested_by: requestedBy || null,
       password_clear_count: Math.max(0, Number(profile.password_clear_count || 0) + 1),

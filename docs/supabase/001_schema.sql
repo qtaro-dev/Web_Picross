@@ -66,6 +66,19 @@ add column if not exists password_clear_requested_by uuid references public.prof
 add column if not exists password_clear_count integer not null default 0,
 add column if not exists last_password_changed_at timestamptz;
 
+create table if not exists public.password_reset_request_logs (
+  id uuid primary key default gen_random_uuid(),
+  target_user_id uuid not null references public.profiles(id) on delete cascade,
+  requested_by uuid not null references public.profiles(id) on delete cascade,
+  requested_at timestamptz not null default now(),
+  request_type text not null default 'admin_password_clear'
+);
+
+create index if not exists password_reset_request_logs_rate_limit_idx
+on public.password_reset_request_logs (target_user_id, request_type, requested_at desc);
+
+alter table public.password_reset_request_logs enable row level security;
+
 alter table public.profiles
 drop constraint if exists profiles_account_status_check;
 

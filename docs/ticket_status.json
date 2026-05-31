@@ -1072,6 +1072,24 @@
       "updatedAt": "2026-05-31T15:51:06.9513583+09:00"
     },
     {
+      "number": "106fix1",
+      "title": "チケット106fix1：パスワード再設定メール導線の本番URL化・文面改善・有効期限短縮・送信回数制限",
+      "fileName": "106_fix1_password_reset_mail_security.md",
+      "path": "docs/106_fix1_password_reset_mail_security.md",
+      "status": "修正済",
+      "note": "管理者パスワードクリアをサーバーAPI経由に変更し、APP_BASE_URL を redirectTo に指定して再設定メールを送信するようにしました。\npassword_reset_request_logs を追加し、同一対象ユーザーへの送信を1時間5回までに制限します。\nメール送信成功後だけ password_clear_required とカウントを更新し、READMEと本番チェックリストにSupabase側設定を追記しました。",
+      "updatedAt": "2026-05-31T17:57:35.2421656+09:00"
+    },
+    {
+      "number": "106fix2",
+      "title": "チケット106fix2：管理者パスワードクリア後の二重パスワード変更導線を廃止する",
+      "fileName": "106fix2_password_reset_flow_unification.md",
+      "path": "docs/106fix2_password_reset_flow_unification.md",
+      "status": "修正済",
+      "note": "管理者再設定メール送信では password_clear_required を true にせず、送信回数・送信日時・ログだけを更新するようにしました。\nログイン後の強制パスワード変更分岐を無効化し、既存の true フラグはログイン時に false へ戻すようにしました。\n管理者UIとREADME、本番チェックリストをReset passwordメール導線に一本化した文言へ更新しました。",
+      "updatedAt": "2026-05-31T21:41:38.4096018+09:00"
+    },
+    {
       "number": "107",
       "title": "チケット107：ユーザー本人による登録メールアドレス変更機能",
       "fileName": "107_user_email_change_flow.md",

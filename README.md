@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000116` です。
+- 現在のビルドは `Build #0000118` です。
 
 ## 公開構成方針
 
@@ -71,16 +71,22 @@ SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxx
 
 # Server-side admin API and import scripts only. Never expose this to browsers.
 SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxx
+
+# Password reset redirect destination used by admin password clear.
+APP_BASE_URL=https://web-picross.vercel.app/
 ```
 
-VercelではProject SettingsのEnvironment Variablesへ次の2つを設定します。
+VercelではProject SettingsのEnvironment Variablesへ次の3つを設定します。
 
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY`
+- `APP_BASE_URL`
 
 管理者専用サーバーAPIやインポートスクリプトを使う場合だけ、サーバー側環境変数として `SUPABASE_SECRET_KEY` を設定します。`SUPABASE_SECRET_KEY`、DBパスワード、JWT secretはフロントエンド、GitHub、Vercelの公開環境変数へ置きません。旧名 `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` は当面の互換用で、新規設定では使いません。
 
 管理者サーバーAPIは `Authorization: Bearer <Supabase access_token>` を必須にし、サーバー側でJWT検証と `profiles.role = admin`、`profiles.account_status = active` を確認します。`SUPABASE_SECRET_KEY` はVercel Environment Variablesまたはローカル `.env` にだけ保存し、ブラウザ側JSや `js/config.js` には絶対に書きません。
+
+`APP_BASE_URL` は管理者が送るSupabaseパスワード再設定メールの戻り先です。本番では `https://web-picross.vercel.app/` を設定し、未設定時はメール送信と送信回数・送信日時の更新を中止します。
 
 Supabase設定済みの場合、既存のログイン画面からSupabase Authへ登録・ログインします。`profiles` には `username`、`display_name`、`role` を保存し、ログイン成功時のユーザー情報は `state.currentUser` に `loginSource: "supabase"` として保持します。Supabase未設定時は従来のローカルログインに戻ります。固定ユーザー `admin` / `admin` は開発用です。
 
@@ -102,9 +108,11 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 
 管理者ユーザーのクリア記録はランキングへ新規保存しません。ランキング画面では `public_profiles` で公開される一般ユーザーだけを順位対象にし、管理者ページから選択ユーザーの `ranking_records` を確認モーダル付きで一括削除できます。
 
-管理者ページの「パスワードクリア」は、対象ユーザーの `profiles.password_clear_required` を有効にします。対象ユーザーは次回のSupabaseログイン後、通常メニューやゲームへ進まず、新しいパスワードの設定を完了する必要があります。更新完了時は `password_clear_required` を解除して `last_password_changed_at` を保存し、一度サインアウトします。本実装は既存RLSにより認証済み管理者が状態を更新する方式で、管理者がAuthパスワードを直接参照・上書きする処理やservice role keyのブラウザ配布は行いません。
+管理者ページの「管理者再設定メール送信」は、対象ユーザーの登録メールアドレスへSupabase Authのパスワード再設定メールを送ります。ユーザーはメール内リンクから新しいパスワードを設定し、その後は新しいパスワードで通常ログインします。管理者がAuthパスワードを直接参照・上書きする処理やservice role keyのブラウザ配布は行いません。
 
-パスワードクリア実行時は、対象ユーザーの登録メールアドレスへSupabase Authのパスワード再設定メールを送信してから `password_clear_required` を有効にします。メールアドレスがない場合や再設定メール送信に失敗した場合は、ユーザーがログイン不能のまま残らないよう `password_clear_required` は更新しません。
+管理者による再設定メール送信では `password_clear_required = true` を新規設定しません。ログイン後のアプリ側強制パスワード変更画面は使用せず、Supabase Reset passwordメールの導線だけで完結させます。既存データに `password_clear_required = true` が残っている場合は、ログイン成功時に可能な範囲で `false` へ戻します。
+
+同一ユーザーへの管理者再設定メールは `password_reset_request_logs` を使って1時間5回までに制限します。6回目以降はメール送信、`password_clear_count` 加算、送信日時更新を行いません。Supabase Dashboardでは Authentication → URL Configuration のSite URLとRedirect URLsを本番URLへ設定し、Reset passwordメールテンプレートにWebピクロス名を入れ、Email OTP Expirationを600秒にしてください。
 
 ユーザー本人はユーザーデータ画面からメールアドレス変更申請を行えます。申請はログイン中のSupabaseセッションで `supabase.auth.updateUser({ email })` を呼び出す本人確認フローで、管理者が他ユーザーのメールアドレスを直接変更する機能はありません。確認メール完了後のログイン時に、Auth側メールアドレスを本人の `profiles.email` へ同期します。
 
@@ -122,9 +130,9 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 
 Supabaseで `profiles` に `account_status` などの列を追加した直後に画面へ反映されない場合は、SQL Editorで `NOTIFY pgrst, 'reload schema';` を実行してPostgRESTのスキーマキャッシュを更新してください。
 
-パスワードクリア機能には `profiles` の `password_clear_required`、`password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count`、`last_password_changed_at` 列が必要です。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用し、既存の `profiles_update_own_or_admin` RLSポリシーが有効であることを確認してください。ローカル確認でも実ユーザーのログイン制御が変わるため、テストユーザーだけで実行してください。
+管理者再設定メール送信には `profiles` の `password_clear_requested_at`、`password_clear_requested_by`、`password_clear_count` 列と、送信制限用の `password_reset_request_logs` テーブルが必要です。旧仕様の互換用に `password_clear_required` は残しますが、主導線では使いません。[docs/supabase/001_schema.sql](docs/supabase/001_schema.sql) の追加定義を適用してください。
 
-Vercel公開後のSupabase設定、メール確認、パスワード再設定、管理者ログイン、ランキング保存、パスワードクリアの本番確認手順は [docs/vercel_supabase_production_checklist.md](docs/vercel_supabase_production_checklist.md) に整理しています。
+Vercel公開後のSupabase設定、メール確認、パスワード再設定、管理者ログイン、ランキング保存、管理者再設定メール送信の本番確認手順は [docs/vercel_supabase_production_checklist.md](docs/vercel_supabase_production_checklist.md) に整理しています。
 
 ローカル `npm start` でSupabase Authを確認する手順:
 
@@ -216,7 +224,7 @@ http://127.0.0.1:8000/
 
 - ゲームプレイ中に `F1` キーを押すと、Supabase管理者ユーザー専用の開発・動作確認用機能として現在の面を即時クリアできます。
 - 未ログイン、一般ユーザー、ローカル保存ユーザー、固定ユーザー `admin` / `admin` ではF1即時クリアは無効です。
-- 管理者ログイン中は画面左上に `ADMIN` バッジを表示します。停止ユーザーやパスワード再設定強制中の画面では表示しません。
+- 管理者ログイン中は画面左上に `ADMIN` バッジを表示します。停止ユーザーの画面では表示しません。
 - F1即時クリアは通常クリアと同じ記録処理を通り、クリアダイアログ、ユーザーデータ、ランキング、クリア済み表示に反映されます。
 - F1即時クリアの内部設定は `ADMIN_DEBUG_CONFIG` に分離していますが、実行には必ずSupabase管理者判定が必要です。
 

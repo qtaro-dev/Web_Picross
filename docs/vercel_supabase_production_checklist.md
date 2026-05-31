@@ -15,13 +15,14 @@ Supabase Dashboardで次を開きます。
 ```text
 Authentication
 → URL Configuration
-→ Redirect URLs
+→ Site URL / Redirect URLs
 ```
 
 次のURLを登録します。
 
 ```text
 https://web-picross.vercel.app/
+https://web-picross.vercel.app/**
 https://web-picross-f7uyvvoxs-qtaro-devs-projects.vercel.app/
 http://127.0.0.1:8000/
 ```
@@ -48,9 +49,12 @@ Vercel Project Settings
 → SUPABASE_URL
 → SUPABASE_PUBLISHABLE_KEY
 → SUPABASE_SECRET_KEY
+→ APP_BASE_URL
 ```
 
 `SUPABASE_SECRET_KEY` はチケット104以降の管理者専用サーバーAPIやローカルインポートスクリプトだけで使います。`/api/supabase-config` から返してよいのは `supabaseUrl`、`supabasePublishableKey`、`configured` だけで、`SUPABASE_SECRET_KEY` や `sb_secret_...` は返しません。
+
+`APP_BASE_URL` は管理者再設定メールのリンク戻り先です。本番では `https://web-picross.vercel.app/` を設定します。未設定の場合、メール送信と送信回数・送信日時の更新は実行されません。
 
 管理者サーバーAPI確認:
 
@@ -298,38 +302,85 @@ public.ranking_records.clear_time_ms
 public.public_profiles.username / display_name
 ```
 
-## パスワードクリア確認
+## 管理者再設定メール送信確認
 
 手順:
 
 1. 管理者アカウントでログインする。
 2. 管理者ページを開く。
 3. 対象ユーザーの詳細を開く。
-4. 「パスワードクリア」を押す。
+4. 「管理者再設定メール送信」を押す。
 5. 確認モーダルで対象ユーザー名、メールアドレス、ユーザーIDが合っていることを確認する。
 6. 「実行する」を押す。
-7. Supabaseの `profiles` テーブルを開く。
-8. 対象ユーザーの `password_clear_required` が `true` になっていることを確認する。
-9. 対象ユーザーでログインする。
-10. 新パスワード設定画面が出ることを確認する。
-11. 新パスワードを設定する。
-12. Supabaseの `profiles` テーブルを再確認する。
-13. 対象ユーザーの `password_clear_required` が `false` になり、`last_password_changed_at` が入っていることを確認する。
+7. 再設定メールが届くことを確認する。
+8. メール内リンクが `https://web-picross.vercel.app/` に戻ることを確認する。
+9. Supabaseの `profiles` テーブルを開く。
+10. 対象ユーザーの `password_clear_count` と `password_clear_requested_at` が更新されていることを確認する。
+11. 対象ユーザーの `password_clear_required` が `true` へ新規設定されていないことを確認する。
+12. 対象ユーザーで新しいパスワードを設定する。
+13. ログイン画面へ戻ることを確認する。
+14. 新しいパスワードでログインする。
+15. 通常メニューへ進み、追加のパスワード変更画面が出ないことを確認する。
 
 OK:
 
 ```text
-password_clear_required が true になる
-true の間は通常メニューへ入れない
-新パスワード設定後に false へ戻る
+再設定メールリンクが本番URLへ戻る
+送信回数と送信日時が更新される
+password_clear_required が true へ新規設定されない
+新パスワードでログイン後に通常メニューへ進める
 ```
 
 NG:
 
 ```text
-password_clear_required が true にならない
-true なのに通常メニューへ入れる
-新パスワード設定後も false に戻らない
+リンク先がlocalhostになる
+メール送信失敗時に送信回数や送信日時だけ更新される
+ログイン後に追加のパスワード変更画面が出る
+```
+
+## パスワード再設定メール設定
+
+Supabase Dashboardで次を確認します。
+
+```text
+Authentication → Email Templates → Reset password
+Authentication → Providers → Email → Email OTP Expiration
+```
+
+OK:
+
+```text
+Reset passwordメールの件名または本文に Webピクロス と表示される
+本文のリンクに {{ .ConfirmationURL }} が残っている
+Email OTP Expiration が 600 秒になっている
+```
+
+NG:
+
+```text
+Supabase標準文面だけでWebピクロス名がない
+再設定リンクの有効期限が長いままになっている
+```
+
+## 管理者再設定メール送信制限確認
+
+同じ対象ユーザーに対して1時間以内に6回「管理者再設定メール送信」を実行します。
+
+OK:
+
+```text
+1〜5回目はメール送信される
+6回目は1時間5回までのエラーになる
+6回目で password_clear_count と password_clear_requested_at が更新されない
+```
+
+NG:
+
+```text
+6回目以降もメールが送信される
+エラー表示がない
+DB状態だけ更新される
 ```
 
 ## 最終チェック欄
@@ -350,8 +401,11 @@ true なのに通常メニューへ入れる
 [ ] public_profiles経由のランキング表示
 [ ] 管理者ユーザーのランキング除外
 [ ] 管理者ページからユーザー別ランキング削除
-[ ] 管理者パスワードクリア後の再設定メール送信
-[ ] パスワードクリア
+[ ] 管理者再設定メール送信
+[ ] パスワード再設定メールのWebピクロス文面
+[ ] パスワード再設定リンクの10分有効期限
+[ ] 管理者再設定メールの1時間5回制限
+[ ] ログイン後の追加パスワード変更画面が出ない
 [ ] 一般ユーザーで管理者ページ不可
 [ ] 一般ユーザーでADMINバッジ非表示
 ```

@@ -89,6 +89,21 @@ async function syncOwnProfileEmail(client, authUser, profile){
   return data || profile;
 }
 
+async function clearLegacyPasswordClearRequired(client, authUser, profile){
+  if(!authUser?.id || profile?.password_clear_required !== true) return profile;
+  const { data, error } = await client
+    .from('profiles')
+    .update({ password_clear_required:false })
+    .eq('id', authUser.id)
+    .select(PROFILE_SELECT)
+    .maybeSingle();
+  if(error){
+    console.info(`Supabase legacy password clear flag sync skipped: ${error.message}`);
+    return { ...profile, password_clear_required:false };
+  }
+  return data || { ...profile, password_clear_required:false };
+}
+
 async function upsertProfile(client, authUser, username){
   const name = normalizeUsername(username);
   const payload = {
@@ -163,6 +178,7 @@ export async function loginSupabaseUser(email, password){
   let profile = await getProfile(client, data.user.id);
   if(!profile) profile = await upsertProfile(client, data.user, data.user.user_metadata?.username || data.user.email);
   profile = await syncOwnProfileEmail(client, data.user, profile);
+  profile = await clearLegacyPasswordClearRequired(client, data.user, profile);
   return { available:true, user:publicProfile(profile, data.user, profile?.username) };
 }
 
@@ -195,28 +211,6 @@ export async function updateSupabaseEmail(email){
     console.info(`Supabase email update request failed: ${error.message}`);
     throw authError(error.message);
   }
-  return { available:true };
-}
-
-export async function completeSupabaseForcedPasswordChange(password){
-  if(!(await isSupabaseConfigured())) return { available:false };
-  const client = await getSupabaseClient();
-  if(!client) return { available:false };
-  const { data, error } = await client.auth.updateUser({ password });
-  if(error){
-    console.info(`Supabase forced password update failed: ${error.message}`);
-    throw authError(error.message);
-  }
-  const userId = data?.user?.id;
-  if(!userId) throw new Error('パスワード更新後のユーザー確認に失敗しました');
-  const { error:profileError } = await client
-    .from('profiles')
-    .update({
-      password_clear_required: false,
-      last_password_changed_at: new Date().toISOString(),
-    })
-    .eq('id', userId);
-  if(profileError) throw new Error('パスワード再設定状態の解除に失敗しました');
   return { available:true };
 }
 

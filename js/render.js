@@ -14,7 +14,7 @@ const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConf
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
 const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', currentEmail:'現在のメールアドレス', newEmail:'新しいメールアドレス', confirmEmail:'新しいメールアドレス確認', requestEmailChange:'メールアドレス変更申請', emailChangeHelp:'確認メールの完了後に新しいメールアドレスへ反映されます。', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
 const RANKING_UI = { title:'ランキング', back:'← 戻る', current:'現在の自分の順位', empty:'まだランキングデータがありません。パズルをクリアするとランキングに表示されます。', noUserRank:'まだこの難易度のクリア記録がありません。', sourceLocal:'Live Server環境では現在ユーザーのlocalStorage内データのみを表示します。' };
-const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', debug:'デバッグ操作', system:'システム情報', supabaseConfigStatus:'Supabase設定確認', passwordReset:'パスワード再設定メール送信', passwordClear:'パスワードクリア', backToTop:'一番上へ戻る' };
+const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', debug:'デバッグ操作', system:'システム情報', supabaseConfigStatus:'Supabase設定確認', passwordReset:'パスワード再設定メール送信', passwordClear:'管理者再設定メール送信', backToTop:'一番上へ戻る' };
 const ADMIN_SECTIONS = [
   ['admin-section-users', ADMIN_UI.users],
   ['admin-section-progress', ADMIN_UI.progress],
@@ -419,10 +419,10 @@ function adminUserDetailHtml(user, progress, history, rankings=[]){
       <div class="${disabled?'is-disabled':''}"><span>アカウント状態</span><strong>${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</strong></div>
       <div class="${disabled?'is-disabled':''}"><span>利用停止日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.disabled_at)||'-')}</strong></div>
       <div class="${disabled?'is-disabled':''}"><span>利用停止理由</span><strong>${escapeHtml(user.disabled_reason||'-')}</strong></div>
-      <div class="${passwordClearRequired?'is-disabled':''}"><span>パスワード再設定</span><strong>${passwordClearRequired?'必須':'不要'}</strong></div>
-      <div><span>パスワードクリア日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.password_clear_requested_at)||'-')}</strong></div>
+      <div class="${passwordClearRequired?'is-disabled':''}"><span>旧強制変更フラグ</span><strong>${passwordClearRequired?'残存':'なし'}</strong></div>
+      <div><span>再設定メール送信日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.password_clear_requested_at)||'-')}</strong></div>
       <div><span>最終パスワード変更日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.last_password_changed_at)||'-')}</strong></div>
-      <div><span>パスワードクリア回数</span><strong>${escapeHtml(countText(user.password_clear_count))}</strong></div>
+      <div><span>再設定メール送信回数</span><strong>${escapeHtml(countText(user.password_clear_count))}</strong></div>
     </div>
     <div class="admin-subtitle">削除申請・利用停止カウント</div>
     <div class="admin-account-counter-grid">
