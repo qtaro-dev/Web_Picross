@@ -6,7 +6,7 @@ export const DIFFICULTY_RULES = {
   endless: { key:'endless', modeKey:'Endless', label:'エンドレス', sizes:[[20,20],[25,25],[30,30],[40,40],[50,50]], color:true, min:20, max:50 },
 };
 
-export const BUILD_INFO = { number: 119, label: 'Build #0000119' };
+export const BUILD_INFO = { number: 120, label: 'Build #0000120' };
 export const SUPABASE_PUBLIC_CONFIG = {
   url: '',
   publishableKey: '',
@@ -21,6 +21,7 @@ export const AUTH_LIMITS = {
   usernameMin: 1,
   usernameMax: 10,
   emailMax: 50,
+  emailChangeMax: 254,
   passwordMin: 8,
   passwordMax: 16,
 };
@@ -119,11 +120,11 @@ export function validateUsername(value){
   return { ok:errors.length === 0, value:username, errors };
 }
 
-export function validateEmail(value, { required = true } = {}){
+export function validateEmail(value, { required = true, max = AUTH_LIMITS.emailMax } = {}){
   const email = String(value || '').trim();
   const errors = [];
   if(required && !email) errors.push('メールアドレスを入力してください');
-  if(email.length > AUTH_LIMITS.emailMax) errors.push(`メールアドレスは${AUTH_LIMITS.emailMax}文字以内で入力してください`);
+  if(email.length > max) errors.push(`メールアドレスは${max}文字以内で入力してください`);
   if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('メールアドレスの形式が正しくありません');
   return { ok:errors.length === 0, value:email, errors };
 }

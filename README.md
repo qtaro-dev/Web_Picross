@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000119` です。
+- 現在のビルドは `Build #0000120` です。
 
 ## 公開構成方針
 
@@ -115,6 +115,8 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 同一ユーザーへの管理者再設定メールは `password_reset_request_logs` を使って1時間5回までに制限します。6回目以降はメール送信、`password_clear_count` 加算、送信日時更新を行いません。Supabase Dashboardでは Authentication → URL Configuration のSite URLとRedirect URLsを本番URLへ設定し、Reset passwordメールテンプレートにWebピクロス名を入れ、Email OTP Expirationを600秒にしてください。
 
 ユーザー本人はユーザーデータ画面からメールアドレス変更申請を行えます。申請はログイン中のSupabaseセッションで `supabase.auth.updateUser({ email })` を呼び出す本人確認フローで、管理者が他ユーザーのメールアドレスを直接変更する機能はありません。確認メール完了後のログイン時に、Auth側メールアドレスを本人の `profiles.email` へ同期します。
+
+ユーザーデータ画面のメールアドレス変更欄は254文字まで入力できます。ログイン・登録画面の既存メール欄は従来どおり50文字までです。
 
 エディタはSupabase管理者ユーザー専用です。通常メニュー列には「お知らせ」を表示し、管理者だけがメニュー右側のショートカットからエディタと管理者ページを開けます。一般ユーザーが内部的にエディタ遷移を呼び出した場合も、メニューへ戻して利用を拒否します。
 

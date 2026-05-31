@@ -234,7 +234,7 @@ async function requestEmailChange(newEmail, confirmEmail){
     setEmailChangeStatus(EMAIL_CHANGE_TEXT.required, true, false);
     return false;
   }
-  const validation = authValidationMessage([validateEmail(email)]);
+  const validation = authValidationMessage([validateEmail(email, { max:AUTH_LIMITS.emailChangeMax })]);
   if(validation){
     setEmailChangeStatus(validation, true, false);
     return false;

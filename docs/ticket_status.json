@@ -1106,6 +1106,15 @@
       "status": "修正済",
       "note": "ユーザーデータ画面に現在メール表示、新メール、確認入力、メールアドレス変更申請ボタンを追加しました。\nSupabase Authの本人セッションで updateUser({ email }) を呼び、確認メール送信後の案内と二重送信防止を入れました。\nログイン成功時にAuth側メールを本人の profiles.email へ同期し、管理者ページでは直接編集不可の補足を表示します。",
       "updatedAt": "2026-05-31T16:28:34.7104456+09:00"
+    },
+    {
+      "number": "107fix1",
+      "title": "チケット107fix1：メールアドレス変更フォームの文字数制限修正",
+      "fileName": "107fix1_email_address_length_limit.md",
+      "path": "docs/107fix1_email_address_length_limit.md",
+      "status": "修正済",
+      "note": "ユーザーデータ画面のメールアドレス変更欄だけ maxlength と表示を254文字へ変更しました。\nメール変更申請時のvalidateEmailも254文字上限で判定するようにしました。\nログイン・登録画面の既存メール欄は従来の50文字制限のまま維持しています。",
+      "updatedAt": "2026-05-31T22:35:06.7892794+09:00"
     }
   ]
 }

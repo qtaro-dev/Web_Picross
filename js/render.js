@@ -247,8 +247,8 @@ function renderUserData(state, actions){
       <div class="user-data-section-title">${USER_DATA_UI.accountTitle}</div>
       ${isSupabase ? `<div class="account-email-section">
         <div class="login-field">${USER_DATA_UI.currentEmail}<input class="text-input" value="${escapeHtml(account.email||payload.user.email||'')}" disabled></div>
-        <div class="login-field">${USER_DATA_UI.newEmail}<input id="newEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}" value="${escapeHtml(status.emailChangeNew||'')}"><span class="input-help">50文字まで</span></div>
-        <div class="login-field">${USER_DATA_UI.confirmEmail}<input id="confirmEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}" value="${escapeHtml(status.emailChangeConfirm||'')}"><span class="input-help">${USER_DATA_UI.emailChangeHelp}</span></div>
+        <div class="login-field">${USER_DATA_UI.newEmail}<input id="newEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailChangeMax}" value="${escapeHtml(status.emailChangeNew||'')}"><span class="input-help">${AUTH_LIMITS.emailChangeMax}文字まで</span></div>
+        <div class="login-field">${USER_DATA_UI.confirmEmail}<input id="confirmEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailChangeMax}" value="${escapeHtml(status.emailChangeConfirm||'')}"><span class="input-help">${AUTH_LIMITS.emailChangeMax}文字まで / ${USER_DATA_UI.emailChangeHelp}</span></div>
         <button class="btn btn-slim" id="requestEmailChange" ${status.emailChangeLoading?'disabled':''}>${USER_DATA_UI.requestEmailChange}</button>
         <div class="account-email-status ${status.emailChangeError?'is-error':''}" aria-live="polite">${escapeHtml(status.emailChangeResult||'')}</div>
       </div>
