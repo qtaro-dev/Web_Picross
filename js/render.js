@@ -12,7 +12,7 @@ const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エデ
 const MENU_UI = { notice:'お知らせ', noticePending:'お知らせ機能は準備中です。', editor:'エディタ' };
 const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConfirmation:'確認メールを再送する' };
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
-const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
+const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', currentEmail:'現在のメールアドレス', newEmail:'新しいメールアドレス', confirmEmail:'新しいメールアドレス確認', requestEmailChange:'メールアドレス変更申請', emailChangeHelp:'確認メールの完了後に新しいメールアドレスへ反映されます。', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
 const RANKING_UI = { title:'ランキング', back:'← 戻る', current:'現在の自分の順位', empty:'まだランキングデータがありません。パズルをクリアするとランキングに表示されます。', noUserRank:'まだこの難易度のクリア記録がありません。', sourceLocal:'Live Server環境では現在ユーザーのlocalStorage内データのみを表示します。' };
 const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', debug:'デバッグ操作', system:'システム情報', supabaseConfigStatus:'Supabase設定確認', passwordReset:'パスワード再設定メール送信', passwordClear:'パスワードクリア', backToTop:'一番上へ戻る' };
 const ADMIN_SECTIONS = [
@@ -245,7 +245,14 @@ function renderUserData(state, actions){
     </section>
     <section class="user-data-panel user-account-panel">
       <div class="user-data-section-title">${USER_DATA_UI.accountTitle}</div>
-      ${isSupabase ? `<div class="login-field">${USER_DATA_UI.newPassword}<span class="password-input-wrap"><input id="newPassword" class="text-input" type="password" autocomplete="new-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}"><button class="password-toggle" type="button" data-toggle-password="#newPassword" aria-label="パスワードを表示">表示</button></span><span class="input-help">${AUTH_LIMITS.passwordMin}〜${AUTH_LIMITS.passwordMax}文字 / 半角英数字・記号</span></div>
+      ${isSupabase ? `<div class="account-email-section">
+        <div class="login-field">${USER_DATA_UI.currentEmail}<input class="text-input" value="${escapeHtml(account.email||payload.user.email||'')}" disabled></div>
+        <div class="login-field">${USER_DATA_UI.newEmail}<input id="newEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}" value="${escapeHtml(status.emailChangeNew||'')}"><span class="input-help">50文字まで</span></div>
+        <div class="login-field">${USER_DATA_UI.confirmEmail}<input id="confirmEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}" value="${escapeHtml(status.emailChangeConfirm||'')}"><span class="input-help">${USER_DATA_UI.emailChangeHelp}</span></div>
+        <button class="btn btn-slim" id="requestEmailChange" ${status.emailChangeLoading?'disabled':''}>${USER_DATA_UI.requestEmailChange}</button>
+        <div class="account-email-status ${status.emailChangeError?'is-error':''}" aria-live="polite">${escapeHtml(status.emailChangeResult||'')}</div>
+      </div>
+      <div class="login-field">${USER_DATA_UI.newPassword}<span class="password-input-wrap"><input id="newPassword" class="text-input" type="password" autocomplete="new-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}"><button class="password-toggle" type="button" data-toggle-password="#newPassword" aria-label="パスワードを表示">表示</button></span><span class="input-help">${AUTH_LIMITS.passwordMin}〜${AUTH_LIMITS.passwordMax}文字 / 半角英数字・記号</span></div>
       ${passwordStrengthHtml('', account.username||payload.user.username||'', account.email||payload.user.email||'')}
       <div class="login-field">${USER_DATA_UI.confirmPassword}<span class="password-input-wrap"><input id="confirmPassword" class="text-input" type="password" autocomplete="new-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}"><button class="password-toggle" type="button" data-toggle-password="#confirmPassword" aria-label="パスワードを表示">表示</button></span></div>
       ${accountDeleteRequestHtml(deleteRequest)}
@@ -277,6 +284,9 @@ function renderUserData(state, actions){
   root.querySelector('#reloadUserData').addEventListener('click', ()=>actions.reloadUserData());
   root.querySelector('#changePassword')?.addEventListener('click', ()=>{
     actions.changePassword(root.querySelector('#newPassword')?.value, root.querySelector('#confirmPassword')?.value);
+  });
+  root.querySelector('#requestEmailChange')?.addEventListener('click', ()=>{
+    actions.requestEmailChange(root.querySelector('#newEmail')?.value, root.querySelector('#confirmEmail')?.value);
   });
   root.querySelector('#newPassword')?.addEventListener('input', e=>updatePasswordStrength(root, e.target.value, account.username||payload.user.username||'', account.email||payload.user.email||''));
   root.querySelector('#requestAccountDeletion')?.addEventListener('click', ()=>actions.requestAccountDeletion());
@@ -332,6 +342,7 @@ function renderAdmin(state, actions){
   const selectedUser=(data.profiles||[]).find(user=>user.id===admin.selectedUserId)||profiles[0]||null;
   const selectedProgress=(data.progress||[]).filter(row=>!selectedUser||row.user_id===selectedUser.id);
   const selectedHistory=(data.history||[]).filter(row=>!selectedUser||row.user_id===selectedUser.id).slice(0,20);
+  const selectedUserRankings=(data.rankings||[]).filter(row=>selectedUser&&row.user_id===selectedUser.id);
   const rankings=filterAdminRankings(data.rankings||[], admin);
   const selectedRanking=(data.rankings||[]).find(row=>row.id===admin.selectedRankingId)||rankings[0]||null;
   const deleteRequests=filterAccountDeleteRequests(data.deleteRequests||[], admin);
@@ -351,7 +362,7 @@ function renderAdmin(state, actions){
         <select id="adminRoleFilter" class="text-input admin-input"><option value="all" ${admin.roleFilter==='all'?'selected':''}>全権限</option><option value="admin" ${admin.roleFilter==='admin'?'selected':''}>admin</option><option value="user" ${admin.roleFilter==='user'?'selected':''}>user</option></select>
       </div>
       <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>ユーザー名</th><th>表示名</th><th>メール</th><th>権限</th><th>状態</th><th>削除申請</th><th>停止</th><th>復活</th><th>登録日時</th><th>ユーザーID</th><th></th></tr></thead><tbody>${profiles.map(user=>`<tr class="${selectedUser?.id===user.id?'is-current-user':''} ${user.account_status==='disabled'?'is-disabled-user':''}"><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.display_name||'-')}</td><td>${escapeHtml(user.email||'-')}</td><td>${escapeHtml(user.role||'-')}</td><td>${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</td><td>${escapeHtml(countText(user.delete_request_count))}</td><td>${escapeHtml(countText(user.account_disabled_count))}</td><td>${escapeHtml(countText(user.account_reactivated_count))}</td><td>${escapeHtml(formatDateTimeForDisplay(user.created_at))}</td><td>${escapeHtml(user.id)}</td><td><button class="btn btn-debug" data-admin-user="${escapeHtml(user.id)}">詳細</button></td></tr>`).join('')||`<tr><td colspan="11">ユーザーがありません</td></tr>`}</tbody></table></div>
-      ${selectedUser?adminUserDetailHtml(selectedUser, selectedProgress, selectedHistory):''}
+      ${selectedUser?adminUserDetailHtml(selectedUser, selectedProgress, selectedHistory, selectedUserRankings):''}
     </section>
     <section class="admin-panel admin-scroll-section" id="admin-section-rankings">
       <div class="admin-section-title">${ADMIN_UI.ranking}</div>
@@ -387,18 +398,23 @@ function renderAdmin(state, actions){
     <section class="admin-panel admin-scroll-section" id="admin-section-system">
       <div class="admin-section-title">${ADMIN_UI.system}</div>
       <div class="admin-system-actions"><a class="btn btn-slim" href="/api/supabase-config-status" target="_blank" rel="noopener">${ADMIN_UI.supabaseConfigStatus}</a></div>
+      <div class="admin-detail-grid">
+        <div><span>管理者サーバーAPI</span><strong>${escapeHtml(adminServerApiLabel(admin.serverApi))}</strong></div>
+      </div>
       <div class="admin-note">secret keyはフロントでは使用しません。更新・削除はSupabase RLSで許可された範囲だけ実行します。</div>
     </section>
     <button class="btn admin-back-to-top" type="button" id="adminBackToTop" title="${ADMIN_UI.backToTop}" aria-label="${ADMIN_UI.backToTop}">↑</button>
   </div>`;
-  bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest);
+  bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest, selectedUserRankings.length);
 }
 
-function adminUserDetailHtml(user, progress, history){
+function adminUserDetailHtml(user, progress, history, rankings=[]){
   const disabled = user.account_status === 'disabled';
   const passwordClearRequired = user.password_clear_required === true;
+  const rankingCount = rankings.length;
   return `<div class="admin-detail"><div class="admin-section-title">ユーザー詳細</div>
     <div class="admin-edit-grid"><label>表示名<input id="adminDisplayName" class="text-input admin-input" value="${escapeHtml(user.display_name||'')}"></label><label>権限<select id="adminRole" class="text-input admin-input"><option value="user" ${user.role!=='admin'?'selected':''}>user</option><option value="admin" ${user.role==='admin'?'selected':''}>admin</option></select></label><div class="admin-status-label ${disabled?'is-disabled':''}">状態: ${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</div><button class="btn btn-slim" id="saveAdminProfile">ユーザー情報保存</button>${disabled?'<button class="btn btn-slim" id="reactivateAdminUser">利用停止解除</button>':''}<button class="btn btn-slim admin-password-reset-btn" id="sendAdminPasswordReset" ${String(user.email||'').trim()?'':'disabled'}>${ADMIN_UI.passwordReset}</button><button class="btn btn-slim btn-danger admin-password-reset-btn" id="clearAdminPassword">${ADMIN_UI.passwordClear}</button></div>
+    <div class="admin-note">メールアドレス変更はユーザー本人のユーザーデータ画面から行います。</div>
     <div class="admin-account-status-grid">
       <div class="${disabled?'is-disabled':''}"><span>アカウント状態</span><strong>${escapeHtml(ACCOUNT_STATUS_LABELS[user.account_status]||user.account_status||'通常')}</strong></div>
       <div class="${disabled?'is-disabled':''}"><span>利用停止日時</span><strong>${escapeHtml(formatDateTimeForDisplay(user.disabled_at)||'-')}</strong></div>
@@ -412,6 +428,11 @@ function adminUserDetailHtml(user, progress, history){
     <div class="admin-account-counter-grid">
       ${ACCOUNT_COUNTER_LABELS.map(([key,label,type])=>`<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(type==='date' ? (formatDateTimeForDisplay(user[key])||'-') : countText(user[key]))}</strong></div>`).join('')}
     </div>
+    <div class="admin-subtitle">ランキング記録</div>
+    <div class="admin-detail-grid">
+      <div><span>対象ユーザーのランキング件数</span><strong>${escapeHtml(countText(rankingCount))}</strong></div>
+    </div>
+    <div class="admin-edit-grid"><button class="btn btn-slim btn-danger" id="deleteAdminUserRankings" ${rankingCount?'':'disabled'}>このユーザーのランキング記録を削除</button></div>
     <div class="admin-subtitle admin-scroll-section" id="admin-section-progress">進行状況</div>
     <div class="admin-table-wrap admin-progress-table-wrap"><table class="admin-table admin-progress-table"><thead><tr><th>Progress Key</th><th class="admin-progress-clear-column">クリア</th><th>ベストms</th><th>最新ms</th><th>クリア数</th><th>失敗</th><th>ギブアップ</th><th>ヒント</th><th></th></tr></thead><tbody>${progress.slice(0,20).map(row=>{ const key=`${row.user_id}|${row.puzzle_id}`; return `<tr><td class="admin-progress-key-column">${escapeHtml(key)}</td><td class="admin-progress-clear-column admin-progress-clear-cell"><input type="checkbox" data-progress-cleared="${escapeHtml(key)}" ${row.cleared?'checked':''}></td><td><input class="admin-mini-input" data-progress-field="best_clear_time_ms" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.best_clear_time_ms??'')}"></td><td><input class="admin-mini-input" data-progress-field="latest_clear_time_ms" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.latest_clear_time_ms??'')}"></td><td><input class="admin-mini-input" data-progress-field="clear_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.clear_count??0)}"></td><td><input class="admin-mini-input" data-progress-field="fail_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.fail_count??0)}"></td><td><input class="admin-mini-input" data-progress-field="giveup_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.giveup_count??0)}"></td><td><input class="admin-mini-input" data-progress-field="hint_used_count" data-progress-id="${escapeHtml(key)}" value="${escapeHtml(row.hint_used_count??0)}"></td><td><button class="btn btn-debug" data-save-progress="${escapeHtml(key)}">保存</button></td></tr>`; }).join('')||`<tr><td colspan="9">進行状況がありません</td></tr>`}</tbody></table></div>
     <div class="admin-subtitle">プレイ履歴</div>
@@ -443,7 +464,7 @@ function adminDeleteRequestDetailHtml(row){
   </div>`;
 }
 
-function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest){
+function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest, selectedUserRankingCount=0){
   root.querySelector('#backAdmin').addEventListener('click',()=>actions.goto('menu'));
   root.querySelector('#reloadAdmin').addEventListener('click',()=>actions.loadAdminData());
   root.querySelector('#adminUserQuery').addEventListener('input',e=>actions.setAdminFilter('userQuery', e.target.value));
@@ -453,6 +474,7 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   root.querySelector('#reactivateAdminUser')?.addEventListener('click',()=>actions.reactivateAdminAccount(selectedUser.id));
   root.querySelector('#sendAdminPasswordReset')?.addEventListener('click',()=>actions.requestAdminPasswordReset(selectedUser));
   root.querySelector('#clearAdminPassword')?.addEventListener('click',()=>actions.requestAdminPasswordClear(selectedUser));
+  root.querySelector('#deleteAdminUserRankings')?.addEventListener('click',()=>actions.requestDeleteAdminUserRankings(selectedUser, selectedUserRankingCount));
   root.querySelectorAll('[data-save-progress]').forEach(btn=>btn.addEventListener('click',()=>actions.saveAdminProgress(btn.dataset.saveProgress, collectProgressPatch(root, btn.dataset.saveProgress))));
   root.querySelector('#adminRankingDifficulty').addEventListener('change',e=>actions.setAdminFilter('rankingDifficulty', e.target.value));
   root.querySelector('#adminRankingStage').addEventListener('input',e=>actions.setAdminFilter('rankingStage', e.target.value));
@@ -497,6 +519,15 @@ function filterAccountDeleteRequests(requests, admin){
   const q=String(admin.deleteRequestQuery||'').toLowerCase();
   const status=admin.deleteRequestStatus||'all';
   return (requests||[]).filter(row=>(status==='all'||row.status===status)&&(!q||[row.username,row.display_name,row.email,row.profile?.username,row.profile?.display_name,row.profile?.email].some(v=>String(v||'').toLowerCase().includes(q))));
+}
+
+function adminServerApiLabel(serverApi){
+  if(!serverApi) return '確認中';
+  if(serverApi.status==='ok') return '利用可能';
+  if(serverApi.status==='unconfigured') return '未設定';
+  if(serverApi.status==='unauthorized') return '未ログイン';
+  if(serverApi.status==='forbidden') return '権限エラー';
+  return serverApi.message || '確認できません';
 }
 
 function renderOptions(state, actions){

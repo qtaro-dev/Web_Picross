@@ -171,7 +171,8 @@ select
   username,
   display_name
 from public.profiles
-where account_status = 'active';
+where account_status = 'active'
+  and role <> 'admin';
 
 grant select on public.public_profiles to anon, authenticated;
 

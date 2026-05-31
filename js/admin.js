@@ -65,6 +65,28 @@ export async function loadAdminSnapshot(){
   };
 }
 
+export async function checkAdminServerApi(){
+  const client = await adminClient();
+  if(!client) return { available:false, status:'unconfigured', message:'Supabase未設定' };
+  const { data } = await client.auth.getSession();
+  const token = data?.session?.access_token;
+  if(!token) return { available:true, status:'unauthorized', message:'ログインセッションを確認できません' };
+  try{
+    const response = await fetch('/api/admin-auth-check', {
+      method: 'GET',
+      headers: { Authorization:`Bearer ${token}` },
+    });
+    const body = await response.json().catch(()=>({}));
+    if(response.ok && body.admin) return { available:true, status:'ok', message:'利用可能', body };
+    if(response.status === 401) return { available:true, status:'unauthorized', message:body.message||'未ログイン' };
+    if(response.status === 403) return { available:true, status:'forbidden', message:body.message||'権限エラー' };
+    if(response.status === 503) return { available:true, status:'unconfigured', message:body.message||'未設定' };
+    return { available:true, status:'error', message:body.message||`HTTP ${response.status}` };
+  }catch{
+    return { available:true, status:'error', message:'管理者サーバーAPIに接続できません' };
+  }
+}
+
 export async function updateAdminProfile(id, patch){
   const client = await adminClient();
   if(!client) return { available:false };
@@ -110,6 +132,14 @@ export async function deleteAdminRanking(id){
   const client = await adminClient();
   if(!client) return { available:false };
   const { error } = await client.from('ranking_records').delete().eq('id', id);
+  if(error) throw error;
+  return { available:true };
+}
+
+export async function deleteAdminRankingsForUser(userId){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const { error } = await client.from('ranking_records').delete().eq('user_id', userId);
   if(error) throw error;
   return { available:true };
 }

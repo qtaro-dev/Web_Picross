@@ -1043,6 +1043,42 @@
       "status": "修正済",
       "note": "/api/supabase-config はJSONのまま維持し、人間向け確認用に /api/supabase-config-status を追加しました。\nSupabase URL、publishable key、旧anon互換、configuredをテーブル表示し、secret keyの値は表示しないようにしました。\n管理者ページのシステム情報から設定確認ページを別タブで開ける導線を追加しました。",
       "updatedAt": "2026-05-31T15:09:42.8937216+09:00"
+    },
+    {
+      "number": "104",
+      "title": "チケット104：管理者専用サーバーAPI基盤追加",
+      "fileName": "104_admin_server_api_base.md",
+      "path": "docs/104_admin_server_api_base.md",
+      "status": "修正済",
+      "note": "Authorization Bearer token を検証し、profiles.role=admin かつ active だけを通す管理者APIガードを追加しました。\n/api/admin-auth-check と Auth操作用スタブAPIを追加し、secret keyはサーバー側でだけ読む構成にしました。\n管理者ページのシステム情報に管理者サーバーAPI疎通状態を表示します。",
+      "updatedAt": "2026-05-31T15:51:06.9513583+09:00"
+    },
+    {
+      "number": "105",
+      "title": "チケット105：管理者ランキング除外とユーザー別ランキング削除",
+      "fileName": "105_admin_ranking_exclusion_and_user_ranking_delete.md",
+      "path": "docs/105_admin_ranking_exclusion_and_user_ranking_delete.md",
+      "status": "修正済",
+      "note": "管理者ユーザーのクリア結果は ranking_records へ新規保存しないようにしました。\npublic_profiles を一般ユーザー公開用に絞り、ランキング表示と現在順位から管理者記録を除外しました。\n管理者ページで選択ユーザーのランキング件数を表示し、確認モーダル付きで一括削除できるようにしました。",
+      "updatedAt": "2026-05-31T15:51:06.9513583+09:00"
+    },
+    {
+      "number": "106",
+      "title": "チケット106：管理者パスワードクリア後の再設定メール送信導線を追加",
+      "fileName": "106_admin_password_clear_reset_email_flow.md",
+      "path": "docs/106_admin_password_clear_reset_email_flow.md",
+      "status": "修正済",
+      "note": "管理者パスワードクリア時に対象メールアドレスへSupabase再設定メールを送信してから password_clear_required を有効にします。\nメールアドレス未登録またはメール送信失敗時は password_clear_required を更新しないようにしました。\n確認モーダルと完了メッセージに再設定メール送信の説明を追加しました。",
+      "updatedAt": "2026-05-31T15:51:06.9513583+09:00"
+    },
+    {
+      "number": "107",
+      "title": "チケット107：ユーザー本人による登録メールアドレス変更機能",
+      "fileName": "107_user_email_change_flow.md",
+      "path": "docs/107_user_email_change_flow.md",
+      "status": "修正済",
+      "note": "ユーザーデータ画面に現在メール表示、新メール、確認入力、メールアドレス変更申請ボタンを追加しました。\nSupabase Authの本人セッションで updateUser({ email }) を呼び、確認メール送信後の案内と二重送信防止を入れました。\nログイン成功時にAuth側メールを本人の profiles.email へ同期し、管理者ページでは直接編集不可の補足を表示します。",
+      "updatedAt": "2026-05-31T16:28:34.7104456+09:00"
     }
   ]
 }

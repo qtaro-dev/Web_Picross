@@ -594,11 +594,29 @@
 
     function extractTitle(text, fileName) {
       const lines = text.split(/\r?\n/);
-      const heading = lines.find(line => /^#\s+/.test(line.trim()));
-      if (heading) return heading.replace(/^#\s+/, "").trim();
+      const headings = lines
+        .map(line => line.trim())
+        .filter(line => /^#\s+/.test(line));
+
+      const ticketHeading = headings.find(line =>
+        /^#\s*チケット\s*[0-9０-９]/.test(line)
+      );
+
+      if (ticketHeading) {
+        return ticketHeading.replace(/^#\s+/, "").trim();
+      }
+
+      const nonCommonHeading = headings.find(line => {
+        const title = line.replace(/^#\s+/, "").trim();
+        return title !== "共通前提";
+      });
+
+      if (nonCommonHeading) {
+        return nonCommonHeading.replace(/^#\s+/, "").trim();
+      }
+
       return fileName.replace(/\.(md|markdown)$/i, "");
     }
-
     function extractTicketNumber(title, fileName) {
       const source = `${title} ${fileName}`;
       const match = source.match(/チケット\s*([0-9]+(?:fix[0-9]*)?|[0-9]+_fix[0-9]*)/i)

@@ -17,9 +17,10 @@ function playTimeMsFrom(entry){
 
 function formatRankingRows(rows, profiles, currentUser){
   const profileMap = new Map((profiles || []).map(profile => [profile.id, profile]));
-  const ranked = (rows || []).map((row, index) => {
+  const visibleRows = (rows || []).filter(row => profileMap.has(row.user_id));
+  const ranked = visibleRows.map((row, index) => {
     const profile = profileMap.get(row.user_id) || {};
-    const username = profile.display_name || profile.username || (row.user_id === currentUser?.user_id ? currentUser?.username : '') || 'user';
+    const username = profile.display_name || profile.username || 'user';
     return {
       rank: index + 1,
       username,
@@ -30,7 +31,7 @@ function formatRankingRows(rows, profiles, currentUser){
       clearedAt: row.created_at,
     };
   });
-  return ranked.map(row => ({ ...row, total: ranked.length }));
+  return ranked.slice(0, 100).map(row => ({ ...row, total: ranked.length }));
 }
 
 async function findPuzzle(client, game){
@@ -107,7 +108,7 @@ export async function saveSupabaseGameResult({ user, game, entry, type, hintUsed
     });
   if(historyError) throw historyError;
 
-  if(type === 'clear'){
+  if(type === 'clear' && user.role !== 'admin'){
     const { error: rankingError } = await client
       .from('ranking_records')
       .upsert({
@@ -134,7 +135,7 @@ export async function loadSupabaseRanking({ difficulty, currentUser } = {}){
     .eq('difficulty', key)
     .order('clear_time_ms', { ascending:true })
     .order('created_at', { ascending:true })
-    .limit(100);
+    .limit(300);
   if(error) throw error;
 
   const ids = [...new Set((rows || []).map(row => row.user_id).filter(Boolean))];
@@ -149,7 +150,7 @@ export async function loadSupabaseRanking({ difficulty, currentUser } = {}){
   }
 
   const rankings = formatRankingRows(rows || [], profiles, currentUser);
-  const currentId = currentUser?.user_id || currentUser?.id || '';
+  const currentId = currentUser?.role === 'admin' ? '' : (currentUser?.user_id || currentUser?.id || '');
   const currentUserRanks = rankings
     .filter(row => currentId && row.userId === currentId)
     .map(row => ({

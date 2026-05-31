@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000112` です。
+- 現在のビルドは `Build #0000116` です。
 
 ## 公開構成方針
 
@@ -80,6 +80,8 @@ VercelではProject SettingsのEnvironment Variablesへ次の2つを設定しま
 
 管理者専用サーバーAPIやインポートスクリプトを使う場合だけ、サーバー側環境変数として `SUPABASE_SECRET_KEY` を設定します。`SUPABASE_SECRET_KEY`、DBパスワード、JWT secretはフロントエンド、GitHub、Vercelの公開環境変数へ置きません。旧名 `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` は当面の互換用で、新規設定では使いません。
 
+管理者サーバーAPIは `Authorization: Bearer <Supabase access_token>` を必須にし、サーバー側でJWT検証と `profiles.role = admin`、`profiles.account_status = active` を確認します。`SUPABASE_SECRET_KEY` はVercel Environment Variablesまたはローカル `.env` にだけ保存し、ブラウザ側JSや `js/config.js` には絶対に書きません。
+
 Supabase設定済みの場合、既存のログイン画面からSupabase Authへ登録・ログインします。`profiles` には `username`、`display_name`、`role` を保存し、ログイン成功時のユーザー情報は `state.currentUser` に `loginSource: "supabase"` として保持します。Supabase未設定時は従来のローカルログインに戻ります。固定ユーザー `admin` / `admin` は開発用です。
 
 Supabase Authでは正規のメールアドレス + パスワードで登録・ログインします。登録時はユーザー名、メールアドレス、パスワードを入力し、ログイン時はメールアドレスとパスワードを使います。ユーザー表示と `profiles.username` には入力されたユーザー名を保存します。
@@ -98,7 +100,13 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 
 管理者ページではユーザー一覧、進行状況、プレイ履歴、ランキング記録、デバッグ操作、システム情報を確認できます。上部のセクションボタンで各管理領域へ移動でき、左下の矢印ボタンでページ上部へ戻れます。表示名・権限・進行状況・ランキングタイムの更新とランキング記録削除は、Supabase RLSで許可された範囲だけ実行します。service role keyはフロントエンドでは使用しません。F1デバッグクリアはSupabase管理者ユーザー専用です。ランキングの非表示フラグ、備考、F1デバッグクリアの `debug_clear` 分離は現スキーマに無いため後続チケットで扱います。
 
+管理者ユーザーのクリア記録はランキングへ新規保存しません。ランキング画面では `public_profiles` で公開される一般ユーザーだけを順位対象にし、管理者ページから選択ユーザーの `ranking_records` を確認モーダル付きで一括削除できます。
+
 管理者ページの「パスワードクリア」は、対象ユーザーの `profiles.password_clear_required` を有効にします。対象ユーザーは次回のSupabaseログイン後、通常メニューやゲームへ進まず、新しいパスワードの設定を完了する必要があります。更新完了時は `password_clear_required` を解除して `last_password_changed_at` を保存し、一度サインアウトします。本実装は既存RLSにより認証済み管理者が状態を更新する方式で、管理者がAuthパスワードを直接参照・上書きする処理やservice role keyのブラウザ配布は行いません。
+
+パスワードクリア実行時は、対象ユーザーの登録メールアドレスへSupabase Authのパスワード再設定メールを送信してから `password_clear_required` を有効にします。メールアドレスがない場合や再設定メール送信に失敗した場合は、ユーザーがログイン不能のまま残らないよう `password_clear_required` は更新しません。
+
+ユーザー本人はユーザーデータ画面からメールアドレス変更申請を行えます。申請はログイン中のSupabaseセッションで `supabase.auth.updateUser({ email })` を呼び出す本人確認フローで、管理者が他ユーザーのメールアドレスを直接変更する機能はありません。確認メール完了後のログイン時に、Auth側メールアドレスを本人の `profiles.email` へ同期します。
 
 エディタはSupabase管理者ユーザー専用です。通常メニュー列には「お知らせ」を表示し、管理者だけがメニュー右側のショートカットからエディタと管理者ページを開けます。一般ユーザーが内部的にエディタ遷移を呼び出した場合も、メニューへ戻して利用を拒否します。
 

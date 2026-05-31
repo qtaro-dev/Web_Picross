@@ -1,6 +1,7 @@
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient.js';
 
 const DEFAULT_ROLE = 'user';
+const PROFILE_SELECT = 'id, username, email, display_name, role, account_status, disabled_at, disabled_reason, delete_request_count, delete_approved_count, delete_rejected_count, account_disabled_count, account_reactivated_count, last_delete_requested_at, last_disabled_at, last_reactivated_at, password_clear_required, password_clear_requested_at, password_clear_requested_by, password_clear_count, last_password_changed_at, created_at';
 
 function normalizeUsername(username){
   return String(username || '').trim();
@@ -65,11 +66,27 @@ function authError(message){
 async function getProfile(client, userId){
   const { data, error } = await client
     .from('profiles')
-    .select('id, username, email, display_name, role, account_status, disabled_at, disabled_reason, delete_request_count, delete_approved_count, delete_rejected_count, account_disabled_count, account_reactivated_count, last_delete_requested_at, last_disabled_at, last_reactivated_at, password_clear_required, password_clear_requested_at, password_clear_requested_by, password_clear_count, last_password_changed_at, created_at')
+    .select(PROFILE_SELECT)
     .eq('id', userId)
     .maybeSingle();
   if(error) throw authError(error.message);
   return data;
+}
+
+async function syncOwnProfileEmail(client, authUser, profile){
+  const authEmail = normalizeEmail(authUser?.email);
+  if(!authUser?.id || !authEmail || normalizeEmail(profile?.email)===authEmail) return profile;
+  const { data, error } = await client
+    .from('profiles')
+    .update({ email:authEmail })
+    .eq('id', authUser.id)
+    .select(PROFILE_SELECT)
+    .maybeSingle();
+  if(error){
+    console.info(`Supabase profile email sync skipped: ${error.message}`);
+    return profile;
+  }
+  return data || profile;
 }
 
 async function upsertProfile(client, authUser, username){
@@ -84,7 +101,7 @@ async function upsertProfile(client, authUser, username){
   const { data, error } = await client
     .from('profiles')
     .upsert(payload, { onConflict: 'id' })
-    .select('id, username, email, display_name, role, account_status, disabled_at, disabled_reason, delete_request_count, delete_approved_count, delete_rejected_count, account_disabled_count, account_reactivated_count, last_delete_requested_at, last_disabled_at, last_reactivated_at, password_clear_required, password_clear_requested_at, password_clear_requested_by, password_clear_count, last_password_changed_at, created_at')
+    .select(PROFILE_SELECT)
     .single();
   if(error) throw authError(error.message);
   return data;
@@ -145,6 +162,7 @@ export async function loginSupabaseUser(email, password){
   }
   let profile = await getProfile(client, data.user.id);
   if(!profile) profile = await upsertProfile(client, data.user, data.user.user_metadata?.username || data.user.email);
+  profile = await syncOwnProfileEmail(client, data.user, profile);
   return { available:true, user:publicProfile(profile, data.user, profile?.username) };
 }
 
@@ -163,6 +181,18 @@ export async function updateSupabasePassword(password){
   const { error } = await client.auth.updateUser({ password });
   if(error){
     console.info(`Supabase password update failed: ${error.message}`);
+    throw authError(error.message);
+  }
+  return { available:true };
+}
+
+export async function updateSupabaseEmail(email){
+  if(!(await isSupabaseConfigured())) return { available:false };
+  const client = await getSupabaseClient();
+  if(!client) return { available:false };
+  const { error } = await client.auth.updateUser({ email: normalizeEmail(email) });
+  if(error){
+    console.info(`Supabase email update request failed: ${error.message}`);
     throw authError(error.message);
   }
   return { available:true };

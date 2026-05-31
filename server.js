@@ -4,6 +4,10 @@ const http = require('node:http');
 const { readFile, writeFile, access, mkdir, readdir } = require('node:fs/promises');
 const path = require('node:path');
 const { publicConfigJson, renderConfigStatusHtml } = require('./api/_supabaseConfigStatus');
+const adminAuthCheckHandler = require('./api/admin-auth-check');
+const adminDeleteAuthUserHandler = require('./api/admin-delete-auth-user');
+const adminUpdateAuthEmailHandler = require('./api/admin-update-auth-email');
+const adminResetAuthUserHandler = require('./api/admin-reset-auth-user');
 
 const rootDir = __dirname;
 const port = Number(process.env.PORT || 8000);
@@ -235,6 +239,24 @@ function sendJson(res, status, body){
   res.end(JSON.stringify(body));
 }
 
+async function invokeApiHandler(handler, req, res){
+  const headers = {};
+  const wrapper = {
+    setHeader(name, value){ headers[name] = value; },
+    statusCode: 200,
+    status(status){ this.statusCode = status; return this; },
+    json(body){
+      res.writeHead(this.statusCode || 200, { 'Content-Type':'application/json; charset=utf-8', ...headers });
+      res.end(JSON.stringify(body));
+    },
+    send(body){
+      res.writeHead(this.statusCode || 200, headers);
+      res.end(body);
+    },
+  };
+  await handler(req, wrapper);
+}
+
 async function readBody(req){
   let body = '';
   for await (const chunk of req){
@@ -252,6 +274,22 @@ async function handleApi(req, res){
   if(req.method === 'GET' && req.url === '/api/supabase-config-status'){
     res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' });
     res.end(renderConfigStatusHtml());
+    return;
+  }
+  if(req.method === 'GET' && req.url === '/api/admin-auth-check'){
+    await invokeApiHandler(adminAuthCheckHandler, req, res);
+    return;
+  }
+  if(req.method === 'POST' && req.url === '/api/admin-delete-auth-user'){
+    await invokeApiHandler(adminDeleteAuthUserHandler, req, res);
+    return;
+  }
+  if(req.method === 'POST' && req.url === '/api/admin-update-auth-email'){
+    await invokeApiHandler(adminUpdateAuthEmailHandler, req, res);
+    return;
+  }
+  if(req.method === 'POST' && req.url === '/api/admin-reset-auth-user'){
+    await invokeApiHandler(adminResetAuthUserHandler, req, res);
     return;
   }
   if(req.method === 'GET' && req.url?.startsWith('/api/ranking')){
