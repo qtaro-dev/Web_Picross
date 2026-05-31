@@ -52,6 +52,21 @@ Vercel Project Settings
 
 `SUPABASE_SECRET_KEY` はチケット104以降の管理者専用サーバーAPIやローカルインポートスクリプトだけで使います。`/api/supabase-config` から返してよいのは `supabaseUrl`、`supabasePublishableKey`、`configured` だけで、`SUPABASE_SECRET_KEY` や `sb_secret_...` は返しません。
 
+人間が設定状態を確認する場合は、次を開きます。`/api/supabase-config` はアプリ用JSONのため、通常確認はこの設定確認ページを使います。
+
+```text
+https://web-picross.vercel.app/api/supabase-config-status
+```
+
+OK:
+
+```text
+Supabase接続設定: OK
+SUPABASE_URL: OK
+SUPABASE_PUBLISHABLE_KEY: OK
+SUPABASE_SECRET_KEY は値が表示されない
+```
+
 ## 事前DB確認
 
 Supabase SQL Editorで `docs/supabase/001_schema.sql` と `docs/supabase/002_rls.sql` の最新版を適用します。

@@ -14,7 +14,7 @@ const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConf
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
 const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
 const RANKING_UI = { title:'ランキング', back:'← 戻る', current:'現在の自分の順位', empty:'まだランキングデータがありません。パズルをクリアするとランキングに表示されます。', noUserRank:'まだこの難易度のクリア記録がありません。', sourceLocal:'Live Server環境では現在ユーザーのlocalStorage内データのみを表示します。' };
-const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', debug:'デバッグ操作', system:'システム情報', passwordReset:'パスワード再設定メール送信', passwordClear:'パスワードクリア', backToTop:'一番上へ戻る' };
+const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', debug:'デバッグ操作', system:'システム情報', supabaseConfigStatus:'Supabase設定確認', passwordReset:'パスワード再設定メール送信', passwordClear:'パスワードクリア', backToTop:'一番上へ戻る' };
 const ADMIN_SECTIONS = [
   ['admin-section-users', ADMIN_UI.users],
   ['admin-section-progress', ADMIN_UI.progress],
@@ -384,7 +384,11 @@ function renderAdmin(state, actions){
       </div>
       <div class="admin-note">F1デバッグクリアはSupabase管理者ユーザー専用です。実行時は現状、通常クリアとしてランキング対象です。debug_clear フラグ分離は後続チケットで扱います。</div>
     </section>
-    <section class="admin-panel admin-scroll-section" id="admin-section-system"><div class="admin-section-title">${ADMIN_UI.system}</div><div class="admin-note">service role keyはフロントでは使用しません。更新・削除はSupabase RLSで許可された範囲だけ実行します。</div></section>
+    <section class="admin-panel admin-scroll-section" id="admin-section-system">
+      <div class="admin-section-title">${ADMIN_UI.system}</div>
+      <div class="admin-system-actions"><a class="btn btn-slim" href="/api/supabase-config-status" target="_blank" rel="noopener">${ADMIN_UI.supabaseConfigStatus}</a></div>
+      <div class="admin-note">secret keyはフロントでは使用しません。更新・削除はSupabase RLSで許可された範囲だけ実行します。</div>
+    </section>
     <button class="btn admin-back-to-top" type="button" id="adminBackToTop" title="${ADMIN_UI.backToTop}" aria-label="${ADMIN_UI.backToTop}">↑</button>
   </div>`;
   bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest);

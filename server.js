@@ -3,6 +3,7 @@ require('dotenv').config();
 const http = require('node:http');
 const { readFile, writeFile, access, mkdir, readdir } = require('node:fs/promises');
 const path = require('node:path');
+const { publicConfigJson, renderConfigStatusHtml } = require('./api/_supabaseConfigStatus');
 
 const rootDir = __dirname;
 const port = Number(process.env.PORT || 8000);
@@ -11,12 +12,6 @@ const userDir = process.env.USER_DIR || path.join(rootDir, 'user');
 const devAdmin = { id:'user_admin', username: 'admin', password: 'admin', createdAt: '2026-05-17T00:00:00.000Z', source:'built-in' };
 const modeKeys = ['beginner', 'easy', 'normal', 'hard', 'endless', 'custom'];
 const historyLimit = 300;
-const supabaseConfigPlaceholders = new Set([
-  'YOUR_SUPABASE_URL',
-  'YOUR_SUPABASE_ANON_KEY',
-  'YOUR_SUPABASE_PUBLISHABLE_KEY',
-  'YOUR_SUPABASE_SECRET_KEY',
-]);
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -240,23 +235,6 @@ function sendJson(res, status, body){
   res.end(JSON.stringify(body));
 }
 
-function supabaseConfigBody(){
-  const supabaseUrl=String(process.env.SUPABASE_URL||'').trim();
-  const supabasePublishableKey=String(process.env.SUPABASE_PUBLISHABLE_KEY||process.env.SUPABASE_ANON_KEY||'').trim();
-  const configured=Boolean(
-    supabaseUrl &&
-    supabasePublishableKey &&
-    !supabaseConfigPlaceholders.has(supabaseUrl) &&
-    !supabaseConfigPlaceholders.has(supabasePublishableKey)
-  );
-  return {
-    supabaseUrl,
-    supabasePublishableKey,
-    supabaseAnonKey:supabasePublishableKey,
-    configured
-  };
-}
-
 async function readBody(req){
   let body = '';
   for await (const chunk of req){
@@ -268,7 +246,12 @@ async function readBody(req){
 
 async function handleApi(req, res){
   if(req.method === 'GET' && req.url === '/api/supabase-config'){
-    sendJson(res, 200, supabaseConfigBody());
+    sendJson(res, 200, publicConfigJson());
+    return;
+  }
+  if(req.method === 'GET' && req.url === '/api/supabase-config-status'){
+    res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' });
+    res.end(renderConfigStatusHtml());
     return;
   }
   if(req.method === 'GET' && req.url?.startsWith('/api/ranking')){

@@ -1034,6 +1034,15 @@
       "status": "修正済",
       "note": "公開用キー名を SUPABASE_PUBLISHABLE_KEY 優先へ変更し、旧 SUPABASE_ANON_KEY は互換用フォールバックとして残しました。\n/api/supabase-config は supabasePublishableKey を返し、秘密キーを返さない構成にしました。\n管理者サーバー処理・インポート用のキー名を SUPABASE_SECRET_KEY としてREADMEとチェックリストへ整理しました。",
       "updatedAt": "2026-05-31T14:40:23.3410710+09:00"
+    },
+    {
+      "number": "103fix1",
+      "title": "チケット103fix1：Supabase設定確認を人間向けテーブル表示にする",
+      "fileName": "103_fix1_supabase_config_status_table.md",
+      "path": "docs/103_fix1_supabase_config_status_table.md",
+      "status": "修正済",
+      "note": "/api/supabase-config はJSONのまま維持し、人間向け確認用に /api/supabase-config-status を追加しました。\nSupabase URL、publishable key、旧anon互換、configuredをテーブル表示し、secret keyの値は表示しないようにしました。\n管理者ページのシステム情報から設定確認ページを別タブで開ける導線を追加しました。",
+      "updatedAt": "2026-05-31T15:09:42.8937216+09:00"
     }
   ]
 }

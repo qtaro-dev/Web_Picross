@@ -109,6 +109,8 @@ a { color: #42a5f5; }
 .admin-section-title { font-size:18px; font-weight:700; margin-bottom:10px; }
 .admin-subtitle { font-weight:700; margin:14px 0 8px; }
 .admin-filters, .admin-edit-grid, .admin-debug-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:10px; }
+.admin-system-actions { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.admin-system-actions .btn { text-decoration:none; }
 .admin-edit-grid { --admin-action-height:49px; }
 .admin-edit-grid > .btn-slim { height:var(--admin-action-height); min-height:var(--admin-action-height); }
 .admin-input { max-width:260px; font-size:15px; padding:8px 10px; }

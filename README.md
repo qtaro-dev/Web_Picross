@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000111` です。
+- 現在のビルドは `Build #0000112` です。
 
 ## 公開構成方針
 
@@ -129,6 +129,8 @@ Vercel公開後のSupabase設定、メール確認、パスワード再設定、
 7. Supabase Dashboard の Table Editor → public → profiles に `username` が増えることを確認します。
 
 `.env` が未設定または空の場合、`/api/supabase-config` は `configured: false` を返し、既存のローカル登録・ログインへフォールバックします。
+
+Supabase接続状態を人間向けに確認する場合は `/api/supabase-config-status` を開きます。`/api/supabase-config` はアプリ用JSONのため、通常確認は設定確認ページを使います。secret keyは設定確認ページにもJSON APIにも表示しません。
 
 Supabaseログイン中は、クリア、時間切れ、ギブアップ時に `user_progress` と `play_history` へ記録します。クリア時は `ranking_records` へベストタイムも保存します。F1デバッグクリアは `profiles.role = admin` のSupabase管理者ユーザーだけが利用でき、既存仕様と同じく通常クリア扱いで記録します。
 
