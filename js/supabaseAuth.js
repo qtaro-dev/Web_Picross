@@ -219,7 +219,8 @@ export async function updateSupabaseEmail(email){
   });
   const body = await response.json().catch(()=>({}));
   if(!response.ok || body.ok === false){
-    throw new Error(body.message || 'メールアドレス変更確認メールの送信に失敗しました。時間をおいて再度お試しください。');
+    if(response.status === 401) throw new Error('ログイン状態を確認できませんでした。再ログインしてください。');
+    throw new Error(body.message || 'メールアドレス変更確認メールの送信に失敗しました。\n時間をおいて再度お試しください。');
   }
   return { available:true, ...body };
 }

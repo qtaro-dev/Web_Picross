@@ -239,6 +239,32 @@ secret keyが画面やNetworkレスポンスに表示される
 6回目は1時間5回までのエラーになり、email_change_request_logs には成功分だけ記録される。
 ```
 
+ログ保存確認SQL:
+
+```sql
+select *
+from public.email_change_request_logs
+order by requested_at desc
+limit 10;
+```
+
+OK:
+
+```text
+メールアドレス変更申請ごとにログが追加される
+target_user_id が対象ユーザーになっている
+old_email が変更前メールアドレスになっている
+new_email が申請先メールアドレスになっている
+request_type が user_email_change になっている
+```
+
+NG:
+
+```text
+メールは届いているのにログが0件のまま
+ログ保存失敗時の原因コードが確認できない
+```
+
 ## 管理者ログイン確認
 
 手順:

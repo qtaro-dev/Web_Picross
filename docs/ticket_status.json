@@ -1124,6 +1124,15 @@
       "status": "修正済",
       "note": "メールアドレス変更申請を /api/user-change-email 経由に変更し、本人セッション確認とサーバー側検証を追加しました。\nemail_change_request_logs を追加し、同一ユーザーの確認メール送信を1時間5回までに制限します。\n成功時はサーバーの成功メッセージを表示し、READMEと本番チェックリストにOTP 600秒とChange email addressテンプレート手順を追記しました。",
       "updatedAt": "2026-05-31T23:06:33.0188243+09:00"
+    },
+    {
+      "number": "107fix3",
+      "title": "チケット107fix3：メールアドレス変更確認メールの成功判定と送信ログ保存修正",
+      "fileName": "107fix3_email_change_log_and_success_result.md",
+      "path": "docs/107fix3_email_change_log_and_success_result.md",
+      "status": "修正済",
+      "note": "/api/user-change-email のログ保存前に対象profiles行を保証し、email_change_request_logs のcount/insert失敗時は原因コード付きで返すようにしました。\n送信ログinsertはSUPABASE_SECRET_KEY側クライアントで実行し、insert結果のid取得まで確認してから成功レスポンスを返します。\nREADMEと本番チェックリストにemail_change_request_logs確認SQLと期待項目を追記しました。",
+      "updatedAt": "2026-05-31T23:32:05.2092300+09:00"
     }
   ]
 }

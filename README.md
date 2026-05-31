@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000121` です。
+- 現在のビルドは `Build #0000122` です。
 
 ## 公開構成方針
 
@@ -121,6 +121,8 @@ Authentication のURL Configurationには、ローカル確認用の `http://127
 同一ユーザーのメールアドレス変更確認メールは `email_change_request_logs` を使って1時間5回までに制限します。送信成功時だけログを保存し、6回目以降はメール送信を行いません。Supabase Dashboardでは Authentication → URL Configuration のSite URLとRedirect URLsを本番URLへ設定し、Change email addressメールテンプレートにWebピクロス名を入れ、Email OTP Expirationを600秒にしてください。
 
 Change email addressメールテンプレートは Supabase Dashboard → Authentication → Emails → Templates → Change email address で設定します。件名は `【Webピクロス】メールアドレス変更の確認`、本文はWebピクロスでのメールアドレス変更申請であること、`{{ .ConfirmationURL }}` への確認リンク、心当たりがない場合は破棄する案内を含めてください。
+
+メールアドレス変更申請のログ保存確認は、Supabase SQL Editorで `select * from public.email_change_request_logs order by requested_at desc limit 10;` を実行します。申請成功後に `target_user_id`、`old_email`、`new_email`、`request_type = user_email_change` の行が追加されていることを確認してください。
 
 エディタはSupabase管理者ユーザー専用です。通常メニュー列には「お知らせ」を表示し、管理者だけがメニュー右側のショートカットからエディタと管理者ページを開けます。一般ユーザーが内部的にエディタ遷移を呼び出した場合も、メニューへ戻して利用を拒否します。
 

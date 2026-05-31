@@ -73,7 +73,7 @@ async function guardedUser(req, res, handler){
     return handler(context);
   }catch(error){
     const status = Number(error.status || 500);
-    return json(res, status, { ok:false, message:error.message || '認証APIエラー' });
+    return json(res, status, { ok:false, message:error.message || '認証APIエラー', code:error.code || undefined });
   }
 }
 

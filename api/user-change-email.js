@@ -18,6 +18,7 @@ module.exports = async function handler(req, res){
     }
 
     const secretClient = createSecretClient();
+    const logProfile = await ensureProfileForEmailChangeLog(secretClient, user, profile, currentEmail);
     const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
     const { count, error:countError } = await secretClient
       .from('email_change_request_logs')
@@ -25,29 +26,38 @@ module.exports = async function handler(req, res){
       .eq('target_user_id', user.id)
       .eq('request_type', REQUEST_TYPE)
       .gte('requested_at', windowStart);
-    if(countError) throw Object.assign(new Error('メールアドレス変更確認メール送信履歴の確認に失敗しました'), { status:500 });
+    if(countError){
+      console.error('email_change_request_logs count failed', safeDbError(countError));
+      throw apiError('メールアドレス変更確認メール送信履歴の確認に失敗しました', 500, 'EMAIL_CHANGE_LOG_COUNT_FAILED');
+    }
     if(Number(count || 0) >= RATE_LIMIT_MAX){
-      return json(res, 429, { ok:false, message:'メールアドレス変更確認メールの送信は1時間に5回までです。時間をおいて再度お試しください。' });
+      return json(res, 429, { ok:false, code:'EMAIL_CHANGE_RATE_LIMITED', message:'メールアドレス変更確認メールの送信は1時間に5回までです。時間をおいて再度お試しください。' });
     }
 
     const appBaseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
     const updateResult = await requestSupabaseEmailChange({ supabaseUrl, publishableKey, token, newEmail, appBaseUrl });
     if(!updateResult.ok){
       console.info(`Supabase user email change failed: ${updateResult.message}`);
-      throw Object.assign(new Error(localizeEmailChangeError(updateResult.message)), { status:502 });
+      throw apiError(localizeEmailChangeError(updateResult.message), 502, 'EMAIL_CHANGE_SEND_FAILED');
     }
 
     const now = new Date().toISOString();
-    const { error:logError } = await secretClient
+    const logPayload = {
+      target_user_id: logProfile.id,
+      old_email: currentEmail || null,
+      new_email: newEmail,
+      requested_at: now,
+      request_type: REQUEST_TYPE,
+    };
+    const { data:logRow, error:logError } = await secretClient
       .from('email_change_request_logs')
-      .insert({
-        target_user_id: user.id,
-        old_email: currentEmail || null,
-        new_email: newEmail,
-        requested_at: now,
-        request_type: REQUEST_TYPE,
-      });
-    if(logError) throw Object.assign(new Error('メールアドレス変更確認メール送信履歴の保存に失敗しました'), { status:500 });
+      .insert(logPayload)
+      .select('id')
+      .single();
+    if(logError || !logRow?.id){
+      console.error('email_change_request_logs insert failed', safeDbError(logError), { target_user_id:user.id, request_type:REQUEST_TYPE });
+      throw apiError('メールアドレス変更確認メールの送信後、送信履歴の保存に失敗しました。時間をおいて再度お試しください。', 500, 'EMAIL_CHANGE_LOG_INSERT_FAILED');
+    }
 
     return json(res, 200, {
       ok:true,
@@ -56,6 +66,54 @@ module.exports = async function handler(req, res){
     });
   });
 };
+
+async function ensureProfileForEmailChangeLog(client, user, profile, currentEmail){
+  if(profile?.id) return profile;
+  const fallbackUsername = safeUsername(user?.user_metadata?.username || user?.email || user?.id);
+  const payload = {
+    id: user.id,
+    username: fallbackUsername,
+    email: currentEmail || normalizeEmail(user?.email) || null,
+    display_name: user?.user_metadata?.display_name || user?.user_metadata?.username || fallbackUsername,
+    role: 'user',
+  };
+  const { data, error } = await client
+    .from('profiles')
+    .upsert(payload, { onConflict:'id' })
+    .select('id, email')
+    .maybeSingle();
+  if(!error && data?.id) return data;
+  const retryPayload = { ...payload, username:`user_${String(user.id).replace(/-/g, '').slice(0, 12)}` };
+  const { data:retryData, error:retryError } = await client
+    .from('profiles')
+    .upsert(retryPayload, { onConflict:'id' })
+    .select('id, email')
+    .maybeSingle();
+  if(retryError || !retryData?.id){
+    console.error('profiles upsert for email change log failed', safeDbError(retryError || error), { user_id:user.id });
+    throw apiError('メールアドレス変更確認メール送信履歴の保存準備に失敗しました', 500, 'EMAIL_CHANGE_PROFILE_UPSERT_FAILED');
+  }
+  return retryData;
+}
+
+function safeUsername(value){
+  const base = String(value || 'user').trim().toLowerCase().replace(/@.*$/, '').replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+  return base || 'user';
+}
+
+function apiError(message, status, code){
+  return Object.assign(new Error(message), { status, code });
+}
+
+function safeDbError(error){
+  if(!error) return null;
+  return {
+    code: error.code || '',
+    message: error.message || '',
+    details: error.details || '',
+    hint: error.hint || '',
+  };
+}
 
 function normalizeEmail(value){
   return String(value || '').trim().toLowerCase();
