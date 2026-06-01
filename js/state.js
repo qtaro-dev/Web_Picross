@@ -18,6 +18,7 @@ export const state = {
   timer: { limit:null, remaining:null, running:false, intervalId:null, expired:false, paused:false, pauseReason:null },
   hints: { limit:0, remaining:0 },
   boardZoom: 1,
+  gamePanelCollapsed: null,
   modal: null,
   currentUser: null,
   userDataStatus: { storage:'localStorage', fileSave:false, filePath:null, lastLoad:null, lastSave:null, lastResult:'' },

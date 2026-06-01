@@ -264,25 +264,31 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
 .caption { width:100%; max-width:100%; padding:4px 8px; border-radius:8px; background:rgba(0,0,0,.74); font-size:20px; color:#fff; line-height:1.25; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* Game */
-.game-screen { width:min(1180px, 96vw); }
-.game-layout { width:100%; display:grid; grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(140px, 180px); gap:24px; align-items:start; justify-content:center; }
-.game-panel { display:flex; flex-direction:column; gap:14px; width:100%; }
+.game-screen { width:min(1360px, 98vw); padding:16px 0; }
+.game-layout { width:100%; display:grid; grid-template-columns: minmax(168px, 210px) minmax(0, 1fr); gap:16px; align-items:start; justify-content:center; }
+.game-layout.is-large-board { grid-template-columns:minmax(152px, 190px) minmax(0, 1fr); gap:12px; }
+.game-layout.is-panel-collapsed { grid-template-columns:auto minmax(0, 1fr); }
+.game-panel { display:flex; flex-direction:column; gap:10px; width:100%; }
+.game-panel-content { display:flex; flex-direction:column; gap:12px; }
+.game-panel-toggle { width:100%; padding:8px 10px; font-size:15px; }
+.game-layout.is-panel-collapsed .game-panel { width:86px; }
+.game-layout.is-panel-collapsed .game-panel-content { display:none; }
 .timer-box { border:2px solid #555; background:rgba(11,11,11,.94); border-radius:10px; padding:12px; text-align:center; }
 .timer-label { font-size:16px; opacity:.85; }
 .timer-value { font-size:28px; font-weight:700; line-height:1.2; }
 .game-actions { display:flex; flex-direction:column; gap:10px; }
-.game-actions .btn { width:100%; padding:12px 14px; font-size:18px; border-radius:12px; }
+.game-actions .btn { width:100%; padding:10px 12px; font-size:17px; border-radius:12px; }
 .game-main { min-width:0; display:flex; flex-direction:column; align-items:center; gap:12px; }
 .zoom-controls { display:flex; gap:10px; align-items:center; justify-content:center; }
 .zoom-label { min-width:58px; padding:6px 10px; border:1px solid #444; border-radius:8px; background:rgba(11,11,11,.94); text-align:center; font-weight:700; }
-.game-palette-panel { border:2px solid #555; background:rgba(11,11,11,.94); border-radius:10px; padding:12px; min-height:80px; }
+.game-palette-panel { border:2px solid #555; background:rgba(11,11,11,.94); border-radius:10px; padding:10px; min-height:0; max-height:184px; overflow:auto; }
 .palette-title { font-size:16px; text-align:center; margin-bottom:8px; opacity:.9; }
-.game-palette { display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; }
-.palette-btn { min-width:0; height:32px; border:2px solid #555; border-radius:7px; cursor:pointer; font-weight:700; font-size:0; color:transparent; }
+.game-palette { display:grid; grid-template-columns: repeat(auto-fit, minmax(28px, 1fr)); gap:6px; }
+.palette-btn { min-width:0; height:28px; border:2px solid #555; border-radius:7px; cursor:pointer; font-weight:700; font-size:0; color:transparent; }
 .palette-btn.is-active { border-color:#fff; box-shadow:0 0 0 3px rgba(66,165,245,.7), 0 0 14px rgba(66,165,245,.85); transform:scale(1.08); }
-.mono-palette-note { text-align:center; font-size:18px; }
 .game-title { min-width:220px; max-width:100%; padding:8px 22px; border:2px solid #555; border-radius:10px; background:rgba(11,11,11,.94); color:#fff; text-align:center; font-size:20px; font-weight:700; line-height:1.25; }
-.game-board { background:rgba(17,17,17,.96); padding:8px; border-radius:10px; overflow:auto; max-width:100%; }
+.game-board { background:rgba(17,17,17,.96); padding:8px; border-radius:10px; overflow:auto; max-width:100%; max-height:calc(100vh - 172px); }
+.game-layout.is-large-board .game-board { max-height:calc(100vh - 148px); }
 .game-help { opacity:.8; margin:0; text-align:center; }
 .board { display:grid; gap:2px; }
 .clue-cell { display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; padding:0; margin:0; font-size:clamp(12px, calc(var(--clue-size, 22px) * .64), 15px); line-height:1; }
@@ -317,7 +323,7 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
   .game-layout { grid-template-columns: 1fr; }
   .game-panel { order:2; }
   .game-main { order:1; }
-  .game-palette-panel { order:3; }
+  .game-layout.is-panel-collapsed .game-panel { width:100%; }
   .game-actions { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .menu-account, .user-data-topbar { grid-template-columns:1fr; }
   .ranking-topbar { grid-template-columns:1fr; }

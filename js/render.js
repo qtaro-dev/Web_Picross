@@ -8,7 +8,8 @@ import { exportCurrentUserPayload, formatDateTimeForDisplay } from './userData.j
 import { isAdminUser } from './admin.js';
 const MODE_LABELS = { Beginner:'ビギナー', Easy:'イージー', Normal:'ノーマル', Hard:'ハード', Endless:'エンドレス' };
 const MODE_EN_LABELS = { Beginner:'Beginner', Easy:'Easy', Normal:'Normal', Hard:'Hard', Endless:'Endless', Custom:'Custom', EditPlay:'EditPlay' };
-const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
+const GAME_PANEL_COLLAPSED_KEY = 'web_picross_game_panel_collapsed';
+const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', panelHide:'操作パネルを隠す', panelShow:'操作パネルを表示', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
 const MENU_UI = { notice:'お知らせ', noticePending:'お知らせ機能は準備中です。', editor:'エディタ' };
 const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConfirmation:'確認メールを再送する' };
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
@@ -728,20 +729,31 @@ function renderGame(state, actions){
   const showPalette=G.colorMode==='color';
   const gameColors=showPalette?usedPaletteColors(solution):MC_COLORS;
   const gameLocked=state.gameStatus==='cleared'||state.gameStatus==='timeout'||state.gameStatus==='giveup';
+  if(typeof state.gamePanelCollapsed !== 'boolean') state.gamePanelCollapsed=readStoredBoolean(GAME_PANEL_COLLAPSED_KEY, false);
+  const panelCollapsed=state.gamePanelCollapsed;
+  const largeBoard=boardSize>=20;
+  const paletteHtml=showPalette ? `<div class="game-palette-panel">
+          <div class="palette-title">パレット</div>
+          <div class="game-palette">${gameColors.map(c=>`<button class="palette-btn ${state.selectedColor===c.id?'is-active':''}" data-color="${c.id}" title="${c.id} ${escapeHtml(c.label)}" aria-label="${c.id} ${escapeHtml(c.label)}" style="background:${c.hex}; color:${textColorFor(c.id)}"></button>`).join('')}</div>
+        </div>` : '';
   root.innerHTML = `<div class="screen game-screen has-bg" style="--crosshair-color:${escapeHtml(state.options?.crosshairColor||'#42a5f5')}">${renderBackgroundLayer('game')}
-    <div class="game-layout">
+    <div class="game-layout ${panelCollapsed?'is-panel-collapsed':''} ${largeBoard?'is-large-board':''}">
       <aside class="game-panel">
-        <div class="timer-box">
-          <div class="timer-label">${GAME_UI.timeLabel}</div>
-          <div class="timer-value">${timerText}</div>
-        </div>
-        <div class="game-actions">
-          <button class="btn" id="clear" ${gameLocked?'disabled':''}>${GAME_UI.clear}</button>
-          <button class="btn" id="check" ${gameLocked?'disabled':''}>${GAME_UI.check}</button>
-          <button class="btn" id="hint" ${gameLocked||state.hints?.remaining<=0?'disabled':''}>${GAME_UI.hint} ${state.hints?.remaining??0}</button>
-          <button class="btn" id="giveup" ${gameLocked?'disabled':''}>${GAME_UI.giveUp}</button>
-          <button class="btn" id="menu">${GAME_UI.backMenu}</button>
-          <button class="btn" id="back">${backLabel}</button>
+        <button class="btn btn-slim game-panel-toggle" id="toggleGamePanel" aria-expanded="${!panelCollapsed}">${panelCollapsed?GAME_UI.panelShow:GAME_UI.panelHide}</button>
+        <div class="game-panel-content">
+          ${paletteHtml}
+          <div class="timer-box">
+            <div class="timer-label">${GAME_UI.timeLabel}</div>
+            <div class="timer-value">${timerText}</div>
+          </div>
+          <div class="game-actions">
+            <button class="btn" id="clear" ${gameLocked?'disabled':''}>${GAME_UI.clear}</button>
+            <button class="btn" id="check" ${gameLocked?'disabled':''}>${GAME_UI.check}</button>
+            <button class="btn" id="hint" ${gameLocked||state.hints?.remaining<=0?'disabled':''}>${GAME_UI.hint} ${state.hints?.remaining??0}</button>
+            <button class="btn" id="giveup" ${gameLocked?'disabled':''}>${GAME_UI.giveUp}</button>
+            <button class="btn" id="menu">${GAME_UI.backMenu}</button>
+            <button class="btn" id="back">${backLabel}</button>
+          </div>
         </div>
       </aside>
       <div class="game-main">
@@ -756,9 +768,6 @@ function renderGame(state, actions){
           grid-template-rows: repeat(${maxColLen}, var(--clue-size)) repeat(${h}, var(--cell-size));"></div>
         <p class="game-help">${GAME_UI.inputHelp}</p>
       </div>
-      <aside class="game-palette-panel">
-        ${showPalette ? `<div class="palette-title">パレット</div><div class="game-palette">${gameColors.map(c=>`<button class="palette-btn ${state.selectedColor===c.id?'is-active':''}" data-color="${c.id}" title="${c.id} ${escapeHtml(c.label)}" aria-label="${c.id} ${escapeHtml(c.label)}" style="background:${c.hex}; color:${textColorFor(c.id)}"></button>`).join('')}</div>` : `<div class="palette-title">モノクロ</div><div class="mono-palette-note">■ 塗り</div>`}
-      </aside>
     </div></div>`;
   const wrap=root.querySelector('#gamewrap');
   root.querySelector('.game-screen').addEventListener('contextmenu', e=>e.preventDefault());
@@ -810,6 +819,7 @@ function renderGame(state, actions){
   wrap.addEventListener('mouseleave',()=>{ actions.cancelDrag(); actions.clearHoverCell(); });
   window.addEventListener('pointerup',()=>actions.cancelDrag(),{once:true});
   window.addEventListener('mouseup',()=>actions.cancelDrag(),{once:true});
+  root.querySelector('#toggleGamePanel').onclick=()=>{ state.gamePanelCollapsed=!state.gamePanelCollapsed; writeStoredValue(GAME_PANEL_COLLAPSED_KEY, state.gamePanelCollapsed?'1':'0'); render(state, actions); };
   root.querySelector('#back').onclick=()=>actions.requestGameExit(backTarget);
   root.querySelector('#menu').onclick=()=>actions.requestGameExit('menu');
   root.querySelector('#clear').onclick=()=>actions.clear();
@@ -913,6 +923,12 @@ function applyClue(el, clue, colorMode){
     el.style.background=MC_COLOR_MAP[color]?.hex||'#111';
     el.style.color=textColorFor(color);
   }
+}
+function readStoredBoolean(key, fallback){
+  try{ const value=localStorage.getItem(key); return value===null?fallback:value==='1'; }catch{ return fallback; }
+}
+function writeStoredValue(key, value){
+  try{ localStorage.setItem(key, value); }catch{}
 }
 
 function renderModal(state, actions){
