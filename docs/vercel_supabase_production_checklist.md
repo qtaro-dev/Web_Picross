@@ -344,6 +344,48 @@ limit 10;
 
 ## ランキング保存確認
 
+## 管理者パズルJSONアップロード確認
+
+手順:
+
+1. Supabase管理者ユーザーでログインする。
+2. 管理者ページを開く。
+3. パズル管理セクションで対象難易度を選択する。
+4. 対象難易度と同じ `data/*.json` 相当のJSONを選択する。
+5. アップロード前チェックを実行する。
+6. 件数と先頭プレビューを確認する。
+7. 反映実行し、確認モーダルで実行する。
+
+OK:
+
+```text
+選択した難易度だけが更新される
+puzzles.id はuuidのまま維持される
+puzzle_key に beginner00001 などの管理用ID、またはJSON側idが入る
+JSONに含まれない同難易度の既存パズルは削除されず is_published=false になる
+対象難易度の問題一覧とゲーム開始が動く
+```
+
+NG:
+
+```text
+他難易度まで変更される
+puzzles.id が文字列IDに置き換わる
+難易度不一致JSONが登録される
+不正JSONでDBが一部更新される
+```
+
+DB確認:
+
+```sql
+select id, difficulty, stage_no, puzzle_key, title, is_published
+from public.puzzles
+order by difficulty, stage_no
+limit 50;
+```
+
+## ランキング保存確認
+
 手順:
 
 1. テスターが一般ユーザーでログインする。
@@ -491,6 +533,7 @@ DB状態だけ更新される
 [ ] 管理者ページ表示
 [ ] 管理者ページ内リンク
 [ ] 管理者メール修復
+[ ] 管理者パズルJSONアップロード
 [ ] ランキング保存
 [ ] public_profiles経由のランキング表示
 [ ] 管理者ユーザーのランキング除外

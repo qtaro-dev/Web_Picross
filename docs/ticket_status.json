@@ -1142,6 +1142,15 @@
       "status": "修正済",
       "note": "管理者ページのユーザー詳細に、通常の本人メール変更とは別の管理者メール修復UIを追加しました。\n/api/admin-update-auth-email を実装し、管理者認証後にSupabase Auth emailとprofiles.emailを同時に即時更新します。\nadmin_email_repair_logs を追加し、修復履歴をDB監査ログとして保存するようにしました。",
       "updatedAt": "2026-05-31T23:58:21.3676572+09:00"
+    },
+    {
+      "number": "108",
+      "title": "チケット108：管理者ページから難易度別パズルJSONをアップロードできる機能",
+      "fileName": "108_admin_puzzle_json_upload_by_difficulty_puzzle_key.md",
+      "path": "docs/108_admin_puzzle_json_upload_by_difficulty_puzzle_key.md",
+      "status": "修正済",
+      "note": "管理者ページにパズル管理セクションを追加し、難易度別JSONのアップロード前チェックとSupabase反映を実装しました。\n/api/admin-upload-puzzles を追加し、管理者認証後にJSON検証、既存uuid維持の更新、追加、未掲載パズルの非公開化を行います。\npuzzles.puzzle_key を追加し、JSON側idはDB主キーではなく管理用IDとして扱うようにしました。",
+      "updatedAt": "2026-06-01T13:34:56.2872172+09:00"
     }
   ]
 }

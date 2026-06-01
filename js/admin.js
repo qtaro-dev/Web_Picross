@@ -125,6 +125,28 @@ export async function repairAdminAuthEmail(userId, newEmail){
   return { available:true, ...body };
 }
 
+export async function uploadAdminPuzzles({ difficulty, puzzles, dryRun = true }){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const { data } = await client.auth.getSession();
+  const token = data?.session?.access_token;
+  if(!token) throw new Error('ログインセッションを確認できません');
+  const response = await fetch('/api/admin-upload-puzzles', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ difficulty, puzzles, dryRun }),
+  });
+  const body = await response.json().catch(()=>({}));
+  if(!response.ok || body.ok === false){
+    const detail = Array.isArray(body.errors) && body.errors.length ? `\n${body.errors.slice(0, 8).join('\n')}` : '';
+    throw new Error((body.message || `HTTP ${response.status}`) + detail);
+  }
+  return { available:true, ...body };
+}
+
 export async function updateAdminProfile(id, patch){
   const client = await adminClient();
   if(!client) return { available:false };

@@ -7,6 +7,7 @@ const { publicConfigJson, renderConfigStatusHtml } = require('./api/_supabaseCon
 const adminAuthCheckHandler = require('./api/admin-auth-check');
 const adminDeleteAuthUserHandler = require('./api/admin-delete-auth-user');
 const adminUpdateAuthEmailHandler = require('./api/admin-update-auth-email');
+const adminUploadPuzzlesHandler = require('./api/admin-upload-puzzles');
 const adminResetAuthUserHandler = require('./api/admin-reset-auth-user');
 const userChangeEmailHandler = require('./api/user-change-email');
 
@@ -287,6 +288,10 @@ async function handleApi(req, res){
   }
   if(req.method === 'POST' && req.url === '/api/admin-update-auth-email'){
     await invokeApiHandler(adminUpdateAuthEmailHandler, req, res);
+    return;
+  }
+  if(req.method === 'POST' && req.url === '/api/admin-upload-puzzles'){
+    await invokeApiHandler(adminUploadPuzzlesHandler, req, res);
     return;
   }
   if(req.method === 'POST' && req.url === '/api/admin-reset-auth-user'){

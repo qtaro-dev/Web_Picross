@@ -37,6 +37,55 @@
 - `docs/ticket_status.json`
 - 必要に応じて `scripts/importPuzzlesToSupabase.js` の共通化または参考利用
 
+## DB変更方針
+
+Supabase `puzzles` テーブルに、人間向けの管理用ID列を追加する。
+
+推奨列：
+
+```sql
+alter table public.puzzles
+add column if not exists puzzle_key text;
+```
+
+既存データに対しては、既存の `difficulty` と `stage_no` から `puzzle_key` を補完する。
+
+例：
+
+```sql
+update public.puzzles
+set puzzle_key = difficulty || lpad(stage_no::text, 5, '0')
+where puzzle_key is null;
+```
+
+補完例：
+
+```text
+beginner + stage_no 1 → beginner00001
+easy + stage_no 1 → easy00001
+normal + stage_no 5 → normal00005
+hard + stage_no 8 → hard00008
+endless + stage_no 1 → endless00001
+```
+
+一意制約または一意indexを追加する場合は、既存データの重複確認後に行うこと。
+
+推奨：
+
+```sql
+create unique index if not exists puzzles_difficulty_puzzle_key_unique
+on public.puzzles (difficulty, puzzle_key)
+where puzzle_key is not null;
+```
+
+注意：
+
+```text
+既存の puzzles.id uuid 主キーは変更しない。
+既存のランキング・進行状況・履歴が参照している可能性があるため、puzzles.id の値を再生成・置換しない。
+JSON側の id は、DB主キーではなく puzzle_key として扱う。
+```
+
 ## 実装内容
 
 ### 1. 管理者ページに「パズル管理」セクションを追加
@@ -107,6 +156,76 @@ beginner.json をアップロード
 
 ただし、実装が大きくなりすぎる場合は、まず既存 `data/*.json` と同じ形式を最優先にする。
 
+
+### 3.1. 管理用パズルID（puzzle_key）を追加する
+
+既存のSupabase `puzzles.id` は `uuid` 主キーとして維持する。
+
+`puzzles.id` を `beginner00001` などの人間向けIDに置き換えないこと。
+
+代わりに、管理者やJSONアップロード時に識別しやすい管理用IDとして、別列を追加する。
+
+推奨列名：
+
+```text
+puzzle_key
+```
+
+例：
+
+```text
+beginner00001
+beginner00002
+easy00001
+normal00005
+hard00008
+endless00001
+```
+
+目的：
+
+```text
+uuid主キーは既存のランキング・進行状況・履歴との関連を壊さないため維持する
+puzzle_key は人間が見て分かりやすい管理用IDとして使う
+JSONアップロード時の照合・更新にも puzzle_key を利用できるようにする
+```
+
+JSON側の `id` は、DB主キーの `puzzles.id` には入れず、原則として `puzzle_key` として扱う。
+
+例：
+
+```json
+{
+  "id": "beginner00001",
+  "stageNo": 1,
+  "title": "クロス",
+  "difficulty": "beginner",
+  "mode": "mono",
+  "colorMode": "mono",
+  "w": 5,
+  "h": 5,
+  "grid_strings": ["00100"]
+}
+```
+
+DB側の扱い：
+
+```text
+puzzles.id → uuid主キー。既存列を維持。
+puzzles.puzzle_key → beginner00001 などの管理用ID。
+```
+
+制約の推奨：
+
+```text
+difficulty + puzzle_key は一意
+difficulty + stage_no も一意、または少なくとも同一難易度内で重複させない
+```
+
+既存データ移行時は、既存の `difficulty` と `stage_no` から `puzzle_key` を補完する。
+
+この補完は既存 `puzzles.id` を変更せずに行うこと。
+
 ### 4. サーバーAPIを追加
 
 管理者専用APIを追加する。
@@ -142,13 +261,13 @@ DB反映前に、サーバー側でJSONを検証する。
 
 - `difficulty` が許可値である
 - アップロード対象難易度と各パズルの難易度が一致する
-- `id` が空ではない
+- `id` または `puzzle_key` が空ではない
 - `stageNo` が数値である
 - `title` が空ではない
 - `width` / `height` または `w` / `h` が数値である
 - 正解盤面が存在する
 - 正解盤面の行数・列数がサイズと一致する
-- 同一JSON内で `id` が重複しない
+- 同一JSON内で `id` / `puzzle_key` が重複しない
 - 同一JSON内で `stageNo` が重複しない
 - 件数が0件の場合は反映しない
 
@@ -161,20 +280,22 @@ DB反映は、削除ではなく安全な更新方式にする。
 推奨方式：
 
 ```text
-同一 difficulty + stage_no または id が存在する場合 → 更新
+同一 difficulty + puzzle_key が存在する場合 → 更新
+puzzle_key が無い既存データは difficulty + stage_no で照合して更新
 存在しない場合 → 追加
 アップロードJSONに含まれない既存パズル → 削除せず is_published=false にする
 ```
 
 目的は、ランキングや進行状況など既存パズルIDに紐づくデータを壊さないこと。
 
-ただし、既存設計上 `id` がDBではuuidになっている場合は、アプリ側パズルIDとの対応を壊さないように慎重に扱うこと。
+既存設計上、DBの `puzzles.id` はuuid主キーであるため、JSON側の `id` をDB主キーへ直接入れないこと。JSON側の `id` は `puzzle_key` として扱い、既存のuuid主キーは維持すること。
 
 必要であれば、既存の `scripts/importPuzzlesToSupabase.js` のマッピング方式を確認し、同じ列変換を使うこと。
 
 DB列への変換目安：
 
 ```text
+JSON id → puzzle_key
 difficulty → difficulty
 stageNo → stage_no
 title → title
@@ -231,7 +352,7 @@ DB反映前に確認モーダルを表示する。
 - 難易度不一致
 - 必須項目不足
 - stageNo重複
-- id重複
+- id / puzzle_key重複
 - gridサイズ不一致
 - Supabase更新エラー
 
@@ -250,6 +371,27 @@ DB反映前に確認モーダルを表示する。
 Build番号も更新すること。
 
 ## 受け入れ条件（目視確認基準）
+
+### puzzle_key確認
+
+1. Supabaseの `puzzles` テーブルを見る
+2. 既存パズルに `puzzle_key` が補完されているか確認する
+
+OK：
+
+```text
+puzzles.id はuuidのまま維持される
+puzzle_key に beginner00001 などの人間向けIDが入っている
+同一 difficulty 内で puzzle_key が重複しない
+```
+
+NG：
+
+```text
+puzzles.id が beginner00001 などの文字列に置き換わる
+既存uuidが再生成される
+ランキング・進行状況との紐づきが壊れる
+```
 
 ### 管理者ページ表示
 

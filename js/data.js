@@ -24,7 +24,7 @@ async function loadSupabasePuzzles(mode){
   try{
     const { data, error } = await client
       .from('puzzles')
-      .select('id, difficulty, stage_no, title, width, height, color_mode, palette, solution, thumbnail_path, is_published')
+      .select('id, difficulty, stage_no, puzzle_key, title, width, height, color_mode, palette, solution, thumbnail_path, is_published')
       .eq('difficulty', difficulty)
       .eq('is_published', true)
       .order('stage_no', { ascending:true });
@@ -40,6 +40,7 @@ function puzzleFromSupabase(row){
   return {
     dbId: row.id,
     id: String(row.stage_no),
+    puzzleKey: row.puzzle_key,
     stageNo: row.stage_no,
     title: row.title,
     difficulty: row.difficulty,

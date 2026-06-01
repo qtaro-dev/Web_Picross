@@ -20,6 +20,7 @@ const ADMIN_SECTIONS = [
   ['admin-section-progress', ADMIN_UI.progress],
   ['admin-section-rankings', ADMIN_UI.ranking],
   ['admin-section-delete-requests', ADMIN_UI.deleteRequests],
+  ['admin-section-puzzles', 'パズル管理'],
   ['admin-section-debug', ADMIN_UI.debug],
   ['admin-section-system', ADMIN_UI.system],
 ];
@@ -385,6 +386,17 @@ function renderAdmin(state, actions){
       <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>申請日時</th><th>ユーザー名</th><th>表示名</th><th>メール</th><th>状態</th><th>管理者メモ</th><th>ユーザーID</th><th>申請ID</th><th></th></tr></thead><tbody>${deleteRequests.map(row=>`<tr class="${selectedDeleteRequest?.id===row.id?'is-current-user':''} ${row.status==='pending'?'is-pending-request':''}"><td>${escapeHtml(formatDateTimeForDisplay(row.requested_at))}</td><td>${escapeHtml(row.username||row.profile?.username||'-')}</td><td>${escapeHtml(row.display_name||row.profile?.display_name||'-')}</td><td>${escapeHtml(row.email||row.profile?.email||'-')}</td><td>${escapeHtml(DELETE_REQUEST_STATUS_LABELS[row.status]||row.status||'-')}</td><td>${escapeHtml(row.admin_note||'-')}</td><td>${escapeHtml(row.user_id)}</td><td>${escapeHtml(row.id)}</td><td><button class="btn btn-debug" data-admin-delete-request="${escapeHtml(row.id)}">詳細</button></td></tr>`).join('')||`<tr><td colspan="9">現在、アカウント削除申請はありません</td></tr>`}</tbody></table></div>
       ${selectedDeleteRequest?adminDeleteRequestDetailHtml(selectedDeleteRequest):''}
     </section>
+    <section class="admin-panel admin-scroll-section" id="admin-section-puzzles">
+      <div class="admin-section-title">パズル管理</div>
+      <div class="admin-note">難易度ごとのJSONだけをSupabaseへ反映します。puzzles.id のuuid主キーは変更せず、JSON側の id は管理用 puzzle_key として扱います。</div>
+      <div class="admin-filters">
+        <select id="adminPuzzleDifficulty" class="text-input admin-input">${['beginner','easy','normal','hard','endless'].map(key=>`<option value="${key}" ${admin.puzzleUpload?.difficulty===key?'selected':''}>${key}</option>`).join('')}</select>
+        <input id="adminPuzzleFile" class="text-input admin-input" type="file" accept=".json,application/json">
+        <button class="btn btn-slim" id="checkAdminPuzzles">アップロード前チェック</button>
+        <button class="btn btn-slim btn-danger" id="uploadAdminPuzzles" ${admin.puzzleUpload?.result?.ok?'':'disabled'}>反映実行</button>
+      </div>
+      ${adminPuzzleUploadHtml(admin.puzzleUpload)}
+    </section>
     <section class="admin-panel admin-danger admin-scroll-section" id="admin-section-debug">
       <div class="admin-section-title">${ADMIN_UI.debug}</div>
       <div class="admin-debug-actions">
@@ -471,6 +483,25 @@ function adminDeleteRequestDetailHtml(row){
   </div>`;
 }
 
+function adminPuzzleUploadHtml(upload){
+  if(!upload) return `<div class="admin-note">JSONを選択してアップロード前チェックを実行してください。</div>`;
+  if(upload.loading) return `<div class="admin-status">パズルJSONを確認しています...</div>`;
+  if(upload.error) return `<div class="admin-status is-error">${escapeHtml(upload.error)}</div>`;
+  const result=upload.result;
+  if(!result) return `<div class="admin-note">対象ファイル: ${escapeHtml(upload.fileName||'-')}</div>`;
+  const preview=(result.preview||[]).map(row=>`<tr><td>${escapeHtml(row.puzzle_key)}</td><td>#${escapeHtml(row.stage_no)}</td><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.size)}</td><td>${escapeHtml(row.color_mode)}</td></tr>`).join('');
+  return `<div class="admin-detail">
+    <div class="admin-detail-grid">
+      <div><span>対象難易度</span><strong>${escapeHtml(result.difficulty||upload.difficulty||'-')}</strong></div>
+      <div><span>読み込んだ件数</span><strong>${escapeHtml(result.count??0)}</strong></div>
+      <div><span>追加</span><strong>${escapeHtml(result.inserted??'-')}</strong></div>
+      <div><span>更新</span><strong>${escapeHtml(result.updated??'-')}</strong></div>
+      <div><span>非公開</span><strong>${escapeHtml(result.unpublished??'-')}</strong></div>
+    </div>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>puzzle_key</th><th>面</th><th>タイトル</th><th>サイズ</th><th>種別</th></tr></thead><tbody>${preview||`<tr><td colspan="5">プレビューがありません</td></tr>`}</tbody></table></div>
+  </div>`;
+}
+
 function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest, selectedUserRankingCount=0){
   root.querySelector('#backAdmin').addEventListener('click',()=>actions.goto('menu'));
   root.querySelector('#reloadAdmin').addEventListener('click',()=>actions.loadAdminData());
@@ -495,6 +526,8 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   root.querySelectorAll('[data-admin-delete-request]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminDeleteRequest(btn.dataset.adminDeleteRequest)));
   root.querySelector('#approveDeleteRequest')?.addEventListener('click',()=>actions.saveAdminDeleteRequestReview(selectedDeleteRequest.id,{status:'approved',user_id:selectedDeleteRequest.user_id,admin_note:root.querySelector('#adminDeleteRequestNote')?.value}));
   root.querySelector('#rejectDeleteRequest')?.addEventListener('click',()=>actions.saveAdminDeleteRequestReview(selectedDeleteRequest.id,{status:'rejected',user_id:selectedDeleteRequest.user_id,admin_note:root.querySelector('#adminDeleteRequestNote')?.value}));
+  root.querySelector('#checkAdminPuzzles')?.addEventListener('click',()=>actions.checkAdminPuzzleUpload(root.querySelector('#adminPuzzleDifficulty')?.value, root.querySelector('#adminPuzzleFile')?.files?.[0]));
+  root.querySelector('#uploadAdminPuzzles')?.addEventListener('click',()=>actions.executeAdminPuzzleUpload());
   root.querySelector('#adminExportAll').addEventListener('click',()=>actions.exportUserDataJson());
   root.querySelector('#adminExportCurrent').addEventListener('click',()=>actions.exportCurrentUserJson());
   root.querySelector('#adminResetClear').addEventListener('click',()=>actions.resetClearFlags());

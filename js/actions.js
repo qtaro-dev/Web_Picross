@@ -4,7 +4,7 @@ import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFF
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
 import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
-import { checkAdminServerApi, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking } from './admin.js';
+import { checkAdminServerApi, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking, uploadAdminPuzzles } from './admin.js';
 import { supabaseNotConfiguredMessage } from './supabaseClient.js';
 const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'解けています', checkMessage:(mistakes,empty)=>`間違い: ${mistakes}個\n未入力: ${empty}個`, pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
 const AUTH_TEXT = { required:'ユーザー名またはメールアドレスとパスワードを入力してください', registerRequired:'ユーザー名、パスワード、メールアドレスを入力してください', emailRequired:'メールアドレスを入力してください', loginFailed:'ユーザー名、メールアドレス、またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。', duplicate:'同じユーザー名は登録できません', passwordMismatch:'新しいパスワードが一致しません', passwordShort:`パスワードは${AUTH_LIMITS.passwordMin}文字以上で入力してください`, passwordChanged:'パスワードを変更しました', supabaseOnly:'この操作はSupabaseログイン時のみ利用できます', deleteTitle:'アカウント削除申請', deleteMessage:'この画面ではアカウントを直接削除しません。\n削除申請として受け付け、管理者確認後に対応します。\n\nアカウント削除はAuthユーザー、プロフィール、進行データ、ランキング記録に影響します。安全のため、この画面では直接削除しません。', deleteRequestConfirm:'削除申請する', deleteRequested:'アカウント削除申請を受け付けました。\n管理者確認後に対応します。', deleteDuplicate:'すでにアカウント削除申請済みです。\n管理者確認後に対応します。', deleteFailed:'アカウント削除申請の保存に失敗しました。\n時間をおいて再度お試しください。' };
@@ -16,6 +16,7 @@ const EMAIL_VERIFICATION_TEXT = { registered:'確認メールを送信しまし�
 const PASSWORD_RESET_TEXT = { title:'パスワード再設定', success:'入力されたメールアドレスに一致するアカウントがある場合、再設定メールを送信します。', failed:'パスワード再設定メールの送信に失敗しました。\n時間をおいて再度お試しください。', unavailable:supabaseNotConfiguredMessage(), invalid:'パスワード再設定リンクが無効、または期限切れです。\n再度メールを送信してください。', updated:'パスワードを更新しました。\n新しいパスワードでログインしてください。' };
 const EMAIL_CHANGE_TEXT = { title:'メールアドレス変更', required:'新しいメールアドレスを入力してください', invalid:'メールアドレスの形式を確認してください', mismatch:'新しいメールアドレスと確認欄が一致しません', same:'現在のメールアドレスと同じです', sending:'メールアドレス変更申請を送信しています...', sent:'メールアドレス変更確認メールを送信しました。\n現在のメールアドレスと新しいメールアドレスに届く確認メールを確認してください。\n確認完了後、新しいメールアドレスでログインできるようになります。', unavailable:supabaseNotConfiguredMessage() };
 const ADMIN_EMAIL_REPAIR_TEXT = { title:'管理者メール修復', denied:'管理者権限がありません。', required:'修復後メールアドレスを入力してください。', invalid:'メールアドレスの形式を確認してください。', same:'現在のメールアドレスと同じです。', completed:'メールアドレスを修復しました。ユーザー情報を再読み込みしてください。', confirm:(user,email)=>`対象ユーザー:\nユーザー名: ${user?.username||'-'}\nユーザーID: ${user?.id||'-'}\n現在のメールアドレス: ${user?.email||'-'}\n修復後メールアドレス: ${email}\n\nこの操作はSupabase Auth email と profiles.email を同時に更新します。\n実行してよろしいですか？` };
+const ADMIN_PUZZLE_UPLOAD_TEXT = { title:'パズルJSONアップロード', noFile:'JSONファイルを選択してください。', checked:'検証OKです。反映実行前に内容を確認してください。', uploaded:'パズルJSONをSupabaseへ反映しました。', confirm:'選択した難易度のパズルデータをSupabaseへ反映します。\nアップロードJSONに含まれない既存パズルは非公開になります。\n実行してよろしいですか？' };
 const ADMIN_PASSWORD_CLEAR_TEXT = { title:'パスワード再設定メール送信', denied:'この操作は管理者専用です。', missingEmail:'このユーザーにはメールアドレスが登録されていないため、パスワード再設定メールを送信できません。先にメールアドレスを登録してください。', confirm:(user,isSelf)=>`${isSelf?'注意: 現在ログイン中の管理者自身が対象です。\n\n':''}対象ユーザーへパスワード再設定メールを送信します。\nユーザーはメール内リンクから新しいパスワードを設定します。\nログイン後の追加パスワード変更画面は表示しません。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nメールアドレス: ${user.email||'-'}\nユーザーID: ${user.id||'-'}\nアカウント状態: ${user.account_status||'active'}\n\n実行しますか？`, completed:'パスワード再設定メールを送信しました。\n対象ユーザーはメール内リンクから新しいパスワードを設定してください。' };
 const ADMIN_RANKING_DELETE_TEXT = { title:'ユーザー別ランキング削除', confirm:(user,count)=>`このユーザーのランキング記録を削除します。\nこの操作は元に戻せません。\n\nユーザー名: ${user.username||'-'}\n表示名: ${user.display_name||'-'}\nユーザーID: ${user.id||'-'}\n削除対象件数: ${count}件\n\n実行しますか？`, completed:'対象ユーザーのランキング記録を削除しました。' };
 const TIMER_LIMITS = { Beginner:600, Easy:600, Normal:1800, Hard:1800, Endless:null, Custom:null };
@@ -27,7 +28,7 @@ const SAVED_PASSWORD_KEY = 'picross_saved_password';
 const OPTIONS_KEY = 'web_picross_options';
 const DEFAULT_OPTIONS = { crosshairColor:'#42a5f5', bgmVolume:50, seVolume:50, displayMode:'window' };
 const LS_KEY='picross_v2_solved'; let stateRef; let actionsAPI;
-export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordClear, requestAdminEmailRepair, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
+export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordClear, requestAdminEmailRepair, checkAdminPuzzleUpload, executeAdminPuzzleUpload, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
 function initializeAuthFlow(){
   const params = new URLSearchParams((globalThis.location?.hash || '').replace(/^#/, ''));
   if(params.get('type')!=='recovery'){
@@ -437,6 +438,51 @@ function requestAdminEmailRepair(user, newEmail){
       render(stateRef, actionsAPI);
     }
   }, '修復する');
+  return true;
+}
+async function checkAdminPuzzleUpload(difficulty, file){
+  if(!isAdminUser(stateRef.currentUser)){
+    notify(ADMIN_PUZZLE_UPLOAD_TEXT.title, ADMIN_EMAIL_REPAIR_TEXT.denied);
+    return false;
+  }
+  if(!file){
+    notify(ADMIN_PUZZLE_UPLOAD_TEXT.title, ADMIN_PUZZLE_UPLOAD_TEXT.noFile);
+    return false;
+  }
+  stateRef.admin={...(stateRef.admin||{}), puzzleUpload:{loading:true, difficulty, fileName:file.name, result:null, payload:null, error:''}};
+  render(stateRef, actionsAPI);
+  try{
+    const payload=JSON.parse(await file.text());
+    const result=await uploadAdminPuzzles({ difficulty, puzzles:payload, dryRun:true });
+    stateRef.admin={...(stateRef.admin||{}), puzzleUpload:{loading:false, difficulty, fileName:file.name, result, payload, error:''}, message:ADMIN_PUZZLE_UPLOAD_TEXT.checked, error:''};
+    render(stateRef, actionsAPI);
+    return true;
+  }catch(err){
+    stateRef.admin={...(stateRef.admin||{}), puzzleUpload:{loading:false, difficulty, fileName:file.name, result:null, payload:null, error:err.message||'JSONの検証に失敗しました。'}, message:'', error:err.message||'JSONの検証に失敗しました。'};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+}
+function executeAdminPuzzleUpload(){
+  const upload=stateRef.admin?.puzzleUpload;
+  if(!upload?.payload || !upload?.difficulty){
+    notify(ADMIN_PUZZLE_UPLOAD_TEXT.title, '先にアップロード前チェックを実行してください。');
+    return false;
+  }
+  confirmModal(ADMIN_PUZZLE_UPLOAD_TEXT.title, ADMIN_PUZZLE_UPLOAD_TEXT.confirm, async()=>{
+    stateRef.admin={...(stateRef.admin||{}), puzzleUpload:{...upload, loading:true}, message:'', error:''};
+    render(stateRef, actionsAPI);
+    try{
+      const result=await uploadAdminPuzzles({ difficulty:upload.difficulty, puzzles:upload.payload, dryRun:false });
+      stateRef.selectLoaded={};
+      stateRef.selectPuzzles={};
+      stateRef.admin={...(stateRef.admin||{}), puzzleUpload:{...upload, loading:false, result, error:''}, message:result.message||ADMIN_PUZZLE_UPLOAD_TEXT.uploaded, error:''};
+      render(stateRef, actionsAPI);
+    }catch(err){
+      stateRef.admin={...(stateRef.admin||{}), puzzleUpload:{...upload, loading:false, error:err.message||'パズルJSONの反映に失敗しました。'}, message:'', error:err.message||'パズルJSONの反映に失敗しました。'};
+      render(stateRef, actionsAPI);
+    }
+  }, '反映する');
   return true;
 }
 function requestDeleteAdminUserRankings(user, count){

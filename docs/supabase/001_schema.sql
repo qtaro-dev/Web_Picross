@@ -122,6 +122,7 @@ create table if not exists public.puzzles (
   id uuid primary key default gen_random_uuid(),
   difficulty text not null check (difficulty in ('beginner', 'easy', 'normal', 'hard', 'endless')),
   stage_no integer not null check (stage_no > 0),
+  puzzle_key text,
   title text not null default '',
   width integer not null check (width > 0),
   height integer not null check (height > 0),
@@ -134,6 +135,13 @@ create table if not exists public.puzzles (
   updated_at timestamptz not null default now(),
   unique (difficulty, stage_no)
 );
+
+alter table public.puzzles
+add column if not exists puzzle_key text;
+
+update public.puzzles
+set puzzle_key = difficulty || lpad(stage_no::text, 5, '0')
+where puzzle_key is null;
 
 create table if not exists public.user_progress (
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -196,6 +204,9 @@ create table if not exists public.account_delete_requests (
 
 create index if not exists idx_puzzles_difficulty_stage_no on public.puzzles (difficulty, stage_no);
 create index if not exists idx_puzzles_published on public.puzzles (is_published);
+create unique index if not exists puzzles_difficulty_puzzle_key_unique
+on public.puzzles (difficulty, puzzle_key)
+where puzzle_key is not null;
 create index if not exists idx_user_progress_user_id on public.user_progress (user_id);
 create index if not exists idx_user_progress_puzzle_id on public.user_progress (puzzle_id);
 create index if not exists idx_play_history_user_created on public.play_history (user_id, created_at desc);
