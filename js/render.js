@@ -11,8 +11,16 @@ const MODE_EN_LABELS = { Beginner:'Beginner', Easy:'Easy', Normal:'Normal', Hard
 const GAME_PANEL_COLLAPSED_KEY = 'web_picross_game_panel_collapsed';
 const GAME_MINIMAP_VISIBLE_KEY = 'web_picross_endless_minimap_visible';
 const GAME_MINIMAP_ZOOM_KEY = 'web_picross_endless_minimap_zoom';
+const GAME_MINIMAP_POSITION_KEY = 'web_picross_endless_minimap_position';
 const GAME_MINIMAP_ZOOMS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
-const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', panelHide:'操作パネルを隠す', panelShow:'操作パネルを表示', minimapTitle:'ミニマップ', minimapHide:'ミニマップを隠す', minimapShow:'ミニマップを表示', minimapZoom:'倍率', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
+const GAME_MINIMAP_POSITIONS = [
+  { key:'top-left', label:'左上' },
+  { key:'left-center', label:'左中央' },
+  { key:'bottom-left', label:'左下' },
+  { key:'top-center', label:'上中央' },
+  { key:'top-right', label:'右上' },
+];
+const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', panelHide:'操作パネルを隠す', panelShow:'操作パネルを表示', minimapTitle:'ミニマップ', minimapHide:'ミニマップを隠す', minimapShow:'ミニマップを表示', minimapZoom:'倍率', minimapPosition:'位置', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
 const MENU_UI = { notice:'お知らせ', noticePending:'お知らせ機能は準備中です。', editor:'エディタ' };
 const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConfirmation:'確認メールを再送する', loginHelp:'ログインはユーザー名とパスワードのみで行えます。', registerEmail:'ユーザー登録用メールアドレス', registerEmailHelp:'登録・確認メール用 / ログイン時は不要です', remember:'ユーザー名とパスワードを記録する', resetEmail:'パスワード再設定メールアドレス', resetSend:'再設定メールを送信', resendEmail:'確認メール再送先メールアドレス', resendSend:'確認メールを再送', closeSupport:'閉じる' };
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
@@ -752,23 +760,25 @@ function renderGame(state, actions){
   const showMinimap=String(G.mode||'').toLowerCase()==='endless'||String(G.difficulty||'').toLowerCase()==='endless';
   if(typeof state.minimapVisible !== 'boolean') state.minimapVisible=readStoredBoolean(GAME_MINIMAP_VISIBLE_KEY, true);
   state.minimapZoom=normalizeMinimapZoom(state.minimapZoom ?? readStoredNumber(GAME_MINIMAP_ZOOM_KEY, 1.5));
+  state.minimapPosition=normalizeMinimapPosition(state.minimapPosition ?? readStoredText(GAME_MINIMAP_POSITION_KEY, 'top-right'));
   const panelCollapsed=state.gamePanelCollapsed;
   const largeBoard=boardSize>=20;
   const minimapSize=Math.round(96*state.minimapZoom);
   const minimapZoomOptions=GAME_MINIMAP_ZOOMS.map(value=>`<option value="${value}" ${value===state.minimapZoom?'selected':''}>${value}倍</option>`).join('');
-  const minimapHtml=showMinimap ? `<div class="game-minimap-panel ${state.minimapVisible?'':'is-hidden'}">
+  const minimapPositionOptions=GAME_MINIMAP_POSITIONS.map(pos=>`<option value="${pos.key}" ${pos.key===state.minimapPosition?'selected':''}>${pos.label}</option>`).join('');
+  const minimapHtml=showMinimap ? `<div class="game-minimap-panel is-fixed pos-${state.minimapPosition} ${state.minimapVisible?'':'is-hidden'}">
           <div class="game-minimap-head">
             <div class="palette-title">${GAME_UI.minimapTitle}</div>
             <button class="btn btn-slim game-minimap-toggle" id="toggleMinimap">${state.minimapVisible?GAME_UI.minimapHide:GAME_UI.minimapShow}</button>
           </div>
-          ${state.minimapVisible?`<div class="game-minimap-controls"><label>${GAME_UI.minimapZoom}<select id="minimapZoom" class="minimap-zoom-select">${minimapZoomOptions}</select></label></div><canvas id="gameMinimap" class="game-minimap-canvas" width="${minimapSize}" height="${minimapSize}" aria-label="${GAME_UI.minimapTitle}"></canvas>`:''}
+          ${state.minimapVisible?`<div class="game-minimap-controls"><label>${GAME_UI.minimapZoom}<select id="minimapZoom" class="minimap-select">${minimapZoomOptions}</select></label><label>${GAME_UI.minimapPosition}<select id="minimapPosition" class="minimap-select">${minimapPositionOptions}</select></label></div><canvas id="gameMinimap" class="game-minimap-canvas" width="${minimapSize}" height="${minimapSize}" aria-label="${GAME_UI.minimapTitle}"></canvas>`:''}
         </div>` : '';
   const paletteHtml=showPalette ? `<div class="game-palette-panel">
           <div class="palette-title">パレット</div>
           <div class="game-palette">${gameColors.map(c=>`<button class="palette-btn ${state.selectedColor===c.id?'is-active':''}" data-color="${c.id}" title="${c.id} ${escapeHtml(c.label)}" aria-label="${c.id} ${escapeHtml(c.label)}" style="background:${c.hex}; color:${textColorFor(c.id)}"></button>`).join('')}</div>
         </div>` : '';
   root.innerHTML = `<div class="screen game-screen has-bg" style="--crosshair-color:${escapeHtml(state.options?.crosshairColor||'#42a5f5')}">${renderBackgroundLayer('game')}
-    <div class="game-layout ${panelCollapsed?'is-panel-collapsed':''} ${largeBoard?'is-large-board':''}">
+    <div class="game-layout ${panelCollapsed?'is-panel-collapsed':''} ${largeBoard?'is-large-board':''} ${showMinimap?'is-endless-board':''}">
       <aside class="game-panel">
         <button class="btn btn-slim game-panel-toggle" id="toggleGamePanel" aria-expanded="${!panelCollapsed}">${panelCollapsed?GAME_UI.panelShow:GAME_UI.panelHide}</button>
         <div class="game-panel-content">
@@ -812,6 +822,7 @@ function renderGame(state, actions){
   for(let y=0;y<maxColLen;y++) for(let x=0;x<maxRowLen;x++){
     const corner=document.createElement('div'); corner.className='clue-cell clue-corner';
     corner.style.gridColumn=`${x + 1}`; corner.style.gridRow=`${y + 1}`;
+    corner.style.left=`${x*clueSize}px`; corner.style.top=`${y*clueSize}px`;
     wrap.appendChild(corner);
   }
   for(let x=0;x<w;x++){
@@ -820,6 +831,7 @@ function renderGame(state, actions){
       const d=document.createElement('div'); d.className='clue-cell clue-cell-col';
       const num=seq[seq.length-maxColLen+i]; applyClue(d,num,G.colorMode);
       d.style.gridColumn=`${maxRowLen + x + 1}`; d.style.gridRow=`${i + 1}`;
+      d.style.top=`${i*clueSize}px`;
       wrap.appendChild(d);
     }
   }
@@ -827,6 +839,7 @@ function renderGame(state, actions){
     for(let i=0;i<maxRowLen;i++){ const d=document.createElement('div'); d.className='clue-cell clue-cell-row';
       const seq=rows[y]; const num=seq[seq.length-maxRowLen+i]; applyClue(d,num,G.colorMode);
       d.style.gridColumn=`${i + 1}`; d.style.gridRow=`${maxColLen + y + 1}`;
+      d.style.left=`${i*clueSize}px`;
       wrap.appendChild(d); }
     for(let x=0;x<w;x++){ const k=`${x},${y}`; const isHover=state.hoverCell?.row===y&&state.hoverCell?.col===x; const isHoverRow=state.hoverCell?.row===y; const isHoverCol=state.hoverCell?.col===x; const b=document.createElement('button'); b.dataset.k=k; b.dataset.row=String(y); b.dataset.col=String(x); b.className='cell'+(state.filled.has(k)?' filled':'')+(state.crossed.has(k)?' cross':'')+(isHover?' is-hover':'')+(!isHover&&(isHoverRow||isHoverCol)?' is-crosshair':'');
       b.style.gridColumn=`${maxRowLen + x + 1}`; b.style.gridRow=`${maxColLen + y + 1}`;
@@ -860,6 +873,7 @@ function renderGame(state, actions){
   root.querySelector('#toggleGamePanel').onclick=()=>{ state.gamePanelCollapsed=!state.gamePanelCollapsed; writeStoredValue(GAME_PANEL_COLLAPSED_KEY, state.gamePanelCollapsed?'1':'0'); render(state, actions); };
   root.querySelector('#toggleMinimap')?.addEventListener('click',()=>{ state.minimapVisible=!state.minimapVisible; writeStoredValue(GAME_MINIMAP_VISIBLE_KEY, state.minimapVisible?'1':'0'); render(state, actions); });
   root.querySelector('#minimapZoom')?.addEventListener('change',e=>{ state.minimapZoom=normalizeMinimapZoom(e.target.value); writeStoredValue(GAME_MINIMAP_ZOOM_KEY, String(state.minimapZoom)); render(state, actions); });
+  root.querySelector('#minimapPosition')?.addEventListener('change',e=>{ state.minimapPosition=normalizeMinimapPosition(e.target.value); writeStoredValue(GAME_MINIMAP_POSITION_KEY, state.minimapPosition); render(state, actions); });
   root.querySelector('#gameMinimap')?.addEventListener('click',e=>moveBoardByMinimapClick(e, state));
   root.querySelector('#back').onclick=()=>actions.requestGameExit(backTarget);
   root.querySelector('#menu').onclick=()=>actions.requestGameExit('menu');
@@ -974,9 +988,16 @@ function writeStoredValue(key, value){
 function readStoredNumber(key, fallback){
   try{ const value=Number(localStorage.getItem(key)); return Number.isFinite(value)&&value>0?value:fallback; }catch{ return fallback; }
 }
+function readStoredText(key, fallback){
+  try{ const value=localStorage.getItem(key); return value===null?fallback:value; }catch{ return fallback; }
+}
 function normalizeMinimapZoom(value){
   const numeric=Number(value)||1.5;
   return GAME_MINIMAP_ZOOMS.reduce((best,level)=>Math.abs(level-numeric)<Math.abs(best-numeric)?level:best, 1.5);
+}
+function normalizeMinimapPosition(value){
+  const key=String(value||'top-right').trim();
+  return GAME_MINIMAP_POSITIONS.some(pos=>pos.key===key) ? key : 'top-right';
 }
 function captureBoardScroll(root, fallback={left:0, top:0}){
   const wrap=root?.querySelector?.('#gamewrap');

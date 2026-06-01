@@ -22,6 +22,7 @@ export const state = {
   gamePanelCollapsed: null,
   minimapVisible: null,
   minimapZoom: null,
+  minimapPosition: null,
   modal: null,
   currentUser: null,
   userDataStatus: { storage:'localStorage', fileSave:false, filePath:null, lastLoad:null, lastSave:null, lastResult:'' },

@@ -1261,6 +1261,15 @@
       "updatedAt": "2026-06-01T17:29:35.232+09:00"
     },
     {
+      "number": "119fix1",
+      "title": "チケット119fix1：Endlessミニマップ配置変更とヒント固定表示改善",
+      "fileName": "119fix1_endless_minimap_position_and_sticky_hints.md",
+      "path": "docs/119fix1_endless_minimap_position_and_sticky_hints.md",
+      "status": "修正済",
+      "note": "Endless実プレイ画面だけ、上ヒント・左ヒント・左上交差部分を盤面コンテナ内でsticky表示するようにしました。\nミニマップを固定レイヤー化し、モーダルより下のz-indexで盤面スクロール中も見えるようにしました。\nミニマップ位置を左上・左中央・左下・上中央・右上から選択できるようにし、倍率や表示状態とは別にlocalStorageへ保存します。",
+      "updatedAt": "2026-06-01T18:45:33.854+09:00"
+    },
+    {
       "number": "120",
       "title": "チケット120：ログイン時のメールアドレス入力不要化",
       "fileName": "120_login_without_email_input.md",
