@@ -1331,6 +1331,15 @@
       "status": "修正済",
       "note": "Supabase用 news_posts テーブルとRLSのSQLを追加し、公開済み記事を一般向けお知らせ画面で優先表示するようにしました。\n管理者ページにお知らせ管理セクションを追加し、記事一覧、新規作成、編集、削除、公開/非公開、画像URL指定を扱えるようにしました。\nSupabase未設定または取得失敗時は data/news.json をフォールバックとして使い、画像アップロードは後続チケット扱いのままです。",
       "updatedAt": "2026-06-01T20:59:38.193+09:00"
+    },
+    {
+      "number": "127",
+      "title": "チケット127：お知らせ画像アップロード機能",
+      "fileName": "127_news_image_upload_storage.md",
+      "path": "docs/127_news_image_upload_storage.md",
+      "status": "修正済",
+      "note": "Supabase Storageのnews-imagesバケット用SQLを追加し、管理者だけがアップロード・更新・削除できるRLSを用意しました。\nお知らせ管理フォームに画像選択、保存前プレビュー、アップロード、画像URL解除、Storage削除の操作を追加しました。\nアップロード画像はPNG/JPG/WebP・2MBまでに制限し、成功後は記事のimage_urlへ反映できるようにしました。",
+      "updatedAt": "2026-06-01T12:24:20.906Z"
     }
   ]
 }

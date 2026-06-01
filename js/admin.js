@@ -1,3 +1,4 @@
+import { NEWS_IMAGE_STORAGE } from './config.js';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient.js';
 
 const ADMIN_LIMIT = 100;
@@ -111,6 +112,40 @@ export async function deleteAdminNewsPost(id){
   const { error } = await client.from('news_posts').delete().eq('id', id);
   if(error) throw error;
   return { available:true };
+}
+
+export async function uploadAdminNewsImage(file, newsId=''){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const validation = validateNewsImageFile(file);
+  if(!validation.ok) throw new Error(validation.message);
+  const path = newsImageStoragePath(file, newsId, validation.extension);
+  const { error } = await client.storage
+    .from(NEWS_IMAGE_STORAGE.bucket)
+    .upload(path, file, { cacheControl:'3600', upsert:false, contentType:file.type });
+  if(error) throw error;
+  const { data } = client.storage.from(NEWS_IMAGE_STORAGE.bucket).getPublicUrl(path);
+  return { available:true, path, publicUrl:data?.publicUrl || '' };
+}
+
+export async function deleteAdminNewsImageByPath(path){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const cleanPath = String(path || '').trim();
+  if(!cleanPath) throw new Error('Storage画像パスを取得できません');
+  const { error } = await client.storage.from(NEWS_IMAGE_STORAGE.bucket).remove([cleanPath]);
+  if(error) throw error;
+  return { available:true };
+}
+
+export function newsImagePathFromUrl(value){
+  const url = String(value || '').trim();
+  if(!url) return '';
+  if(url.startsWith('news/')) return url.split('?')[0];
+  const marker = `/storage/v1/object/public/${NEWS_IMAGE_STORAGE.bucket}/`;
+  const index = url.indexOf(marker);
+  if(index < 0) return '';
+  return decodeURIComponent(url.slice(index + marker.length).split('?')[0]);
 }
 
 export async function checkAdminServerApi(){
@@ -379,4 +414,39 @@ function newsPayload(patch){
     image_caption: String(patch.image_caption || '').trim() || null,
     display_order: Number.isFinite(order) ? Math.floor(order) : 0,
   };
+}
+
+function validateNewsImageFile(file){
+  if(!file) return { ok:false, message:'画像ファイルを選択してください' };
+  const type = String(file.type || '').toLowerCase();
+  const extension = fileExtension(file.name);
+  if(!NEWS_IMAGE_STORAGE.allowedTypes.includes(type) || !NEWS_IMAGE_STORAGE.allowedExtensions.includes(extension)){
+    return { ok:false, message:'PNG / JPG / WebP 画像を選択してください。SVGはアップロードできません。' };
+  }
+  if(Number(file.size || 0) > NEWS_IMAGE_STORAGE.maxBytes){
+    const mb = Math.floor(NEWS_IMAGE_STORAGE.maxBytes / 1024 / 1024);
+    return { ok:false, message:`画像サイズは${mb}MB以内にしてください` };
+  }
+  return { ok:true, extension };
+}
+
+function newsImageStoragePath(file, newsId, extension){
+  const idPart = safePathPart(newsId) || 'tmp';
+  const base = safePathPart(String(file?.name || '').replace(/\.[^.]+$/, '')) || 'news-image';
+  const random = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+  return `news/${idPart}/${Date.now()}_${random}_${base}.${extension}`;
+}
+
+function safePathPart(value){
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64);
+}
+
+function fileExtension(name){
+  const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+  return match ? match[1] : '';
 }

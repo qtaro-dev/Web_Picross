@@ -1,13 +1,13 @@
 import { render, updateGameMinimap } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
-import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
+import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, NEWS_IMAGE_STORAGE, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
 import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, resolveSupabaseLoginEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
-import { checkAdminServerApi, deleteAdminNewsPost, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, loadPublishedNewsPosts, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, saveAdminNewsPost, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking, uploadAdminPuzzles } from './admin.js';
+import { checkAdminServerApi, deleteAdminNewsImageByPath, deleteAdminNewsPost, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, loadPublishedNewsPosts, newsImagePathFromUrl, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, saveAdminNewsPost, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking, uploadAdminNewsImage, uploadAdminPuzzles } from './admin.js';
 import { supabaseNotConfiguredMessage } from './supabaseClient.js';
 const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'正解です！\nパズルを完成しました。', solvedTitle:'判定', solvedMessage:'正解です！', checkIncompleteMessage:'まだ完成していません', checkProgressLowMessage:'もう少し塗ってみましょう', checkProgressMiddleMessage:'まだ見直しが必要です', checkProgressGoodMessage:'いい感じに進んでいます', checkProgressAlmostMessage:'あと少しです', checkMistakeMessage:'塗ったマスを少し見直してみましょう', pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
-const NEWS_TEXT = { loadFailed:'お知らせを読み込めませんでした', saved:'お知らせ記事を保存しました', deleted:'お知らせ記事を削除しました', deleteTitle:'お知らせ記事を削除', deleteConfirm:'この記事を削除します。よろしいですか？' };
+const NEWS_TEXT = { loadFailed:'お知らせを読み込めませんでした', saved:'お知らせ記事を保存しました', deleted:'お知らせ記事を削除しました', deleteTitle:'お知らせ記事を削除', deleteConfirm:'この記事を削除します。よろしいですか？', noImageFile:'画像ファイルを選択してください', imageUploaded:'画像をアップロードしました。記事保存で反映されます。', imageUploadFailed:'画像アップロードに失敗しました', imageCleared:'画像URLを解除しました。記事保存で反映されます。', imageDeleteTitle:'Storage画像を削除', imageDeleteConfirm:'Storage上の画像ファイルを削除します。他の記事で同じ画像を使っている場合も表示できなくなります。よろしいですか？', imageDeleted:'Storage画像を削除しました。記事保存で画像なしにできます。', imagePathMissing:'Storage画像パスを取得できません', imageTypeError:'PNG / JPG / WebP 画像を選択してください。SVGはアップロードできません。', imageSizeError:`画像サイズは${Math.floor(NEWS_IMAGE_STORAGE.maxBytes/1024/1024)}MB以内にしてください` };
 const AUTH_TEXT = { required:'ユーザー名またはメールアドレスとパスワードを入力してください', registerRequired:'ユーザー名、パスワード、メールアドレスを入力してください', emailRequired:'メールアドレスを入力してください', loginFailed:'ユーザー名、メールアドレス、またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。', duplicate:'同じユーザー名は登録できません', passwordMismatch:'新しいパスワードが一致しません', passwordShort:`パスワードは${AUTH_LIMITS.passwordMin}文字以上で入力してください`, passwordChanged:'パスワードを変更しました', supabaseOnly:'この操作はSupabaseログイン時のみ利用できます', deleteTitle:'アカウント削除申請', deleteMessage:'この画面ではアカウントを直接削除しません。\n削除申請として受け付け、管理者確認後に対応します。\n\nアカウント削除はAuthユーザー、プロフィール、進行データ、ランキング記録に影響します。安全のため、この画面では直接削除しません。', deleteRequestConfirm:'削除申請する', deleteRequested:'アカウント削除申請を受け付けました。\n管理者確認後に対応します。', deleteDuplicate:'すでにアカウント削除申請済みです。\n管理者確認後に対応します。', deleteFailed:'アカウント削除申請の保存に失敗しました。\n時間をおいて再度お試しください。' };
 const REGISTER_TEXT = { title:'ユーザー登録', message:'登録しました。\n登録したユーザでログインしますか？', yes:'はい', no:'いいえ' };
 const DEV_USER = { username:'admin', password:'admin' };
@@ -29,7 +29,7 @@ const SAVED_PASSWORD_KEY = 'picross_saved_password';
 const OPTIONS_KEY = 'web_picross_options';
 const DEFAULT_OPTIONS = { crosshairColor:'#42a5f5', bgmVolume:50, seVolume:50, displayMode:'window' };
 const LS_KEY='picross_v2_solved'; let stateRef; let actionsAPI;
-export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordClear, requestAdminEmailRepair, checkAdminPuzzleUpload, executeAdminPuzzleUpload, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, selectAdminNews, saveAdminNews, deleteAdminNews, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, selectNews, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
+export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordClear, requestAdminEmailRepair, checkAdminPuzzleUpload, executeAdminPuzzleUpload, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, selectAdminNews, previewAdminNewsImage, uploadSelectedAdminNewsImage, clearAdminNewsImage, deleteAdminNewsImage, saveAdminNews, deleteAdminNews, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, selectNews, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
 function initializeAuthFlow(){
   const params = new URLSearchParams((globalThis.location?.hash || '').replace(/^#/, ''));
   if(params.get('type')!=='recovery'){
@@ -395,13 +395,78 @@ function setAdminFilter(key,value){ stateRef.admin={...(stateRef.admin||{}), [ke
 function selectAdminUser(id){ stateRef.admin={...(stateRef.admin||{}), selectedUserId:id}; render(stateRef, actionsAPI); }
 function selectAdminRanking(id){ stateRef.admin={...(stateRef.admin||{}), selectedRankingId:id}; render(stateRef, actionsAPI); }
 function selectAdminDeleteRequest(id){ stateRef.admin={...(stateRef.admin||{}), selectedDeleteRequestId:id}; render(stateRef, actionsAPI); }
-function selectAdminNews(id){ stateRef.admin={...(stateRef.admin||{}), selectedNewsId:id}; render(stateRef, actionsAPI); }
+function selectAdminNews(id){ stateRef.admin={...(stateRef.admin||{}), selectedNewsId:id, newsImageUpload:null, newsDraft:null}; render(stateRef, actionsAPI); }
 function saveAdminProfile(id,patch){ confirmModal('ユーザー情報を保存', '表示名と権限を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminProfile(id, patch), 'ユーザー情報を保存しました'); }); }
 function saveAdminProgress(id,patch){ confirmModal('進行状況を保存', 'このユーザーの進行状況を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminProgress(id, patch), '進行状況を保存しました'); }); }
 function saveAdminRanking(id,patch){ confirmModal('ランキングを保存', 'ランキング記録を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminRanking(id, patch), 'ランキング記録を保存しました'); }); }
 function deleteAdminRankingRecord(id){ confirmModal('ランキング記録を削除', 'このランキング記録を削除します。よろしいですか？', async()=>{ await runAdminMutation(()=>deleteAdminRanking(id), 'ランキング記録を削除しました'); }, ACTION_TEXT.delete); }
-function saveAdminNews(id, patch){ confirmModal('お知らせ記事を保存', 'お知らせ記事を保存します。よろしいですか？', async()=>{ await runAdminMutation(()=>saveAdminNewsPost(id, patch), NEWS_TEXT.saved); }); }
+function saveAdminNews(id, patch){ confirmModal('お知らせ記事を保存', 'お知らせ記事を保存します。よろしいですか？', async()=>{ await runAdminMutation(()=>saveAdminNewsPost(id, patch), NEWS_TEXT.saved); stateRef.admin={...(stateRef.admin||{}), newsDraft:null, newsImageUpload:null}; render(stateRef, actionsAPI); }); }
 function deleteAdminNews(id){ if(!id) return false; confirmModal(NEWS_TEXT.deleteTitle, NEWS_TEXT.deleteConfirm, async()=>{ await runAdminMutation(()=>deleteAdminNewsPost(id), NEWS_TEXT.deleted); stateRef.admin={...(stateRef.admin||{}), selectedNewsId:''}; }, ACTION_TEXT.delete); }
+function previewAdminNewsImage(file, draft=null){
+  if(!file){
+    stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{...(stateRef.admin?.newsImageUpload||{}), file:null, fileName:'', previewUrl:'', error:NEWS_TEXT.noImageFile}};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  const validation=validateAdminNewsImage(file);
+  if(!validation.ok){
+    stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{file:null, fileName:file.name||'', previewUrl:'', error:validation.message}};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  const current=stateRef.admin?.newsImageUpload||{};
+  if(current.previewUrl?.startsWith?.('blob:')){
+    try{ URL.revokeObjectURL(current.previewUrl); }catch{}
+  }
+  stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{file, fileName:file.name||'', previewUrl:URL.createObjectURL(file), publicUrl:'', path:'', error:''}};
+  render(stateRef, actionsAPI);
+  return true;
+}
+async function uploadSelectedAdminNewsImage(newsId, draft=null){
+  const upload=stateRef.admin?.newsImageUpload||{};
+  if(!upload.file){
+    stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{...upload, error:NEWS_TEXT.noImageFile}};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{...upload, loading:true, error:''}};
+  render(stateRef, actionsAPI);
+  try{
+    const result=await uploadAdminNewsImage(upload.file, newsId);
+    const publicUrl=result.publicUrl||'';
+    stateRef.admin={...(stateRef.admin||{}), newsDraft:{...(draft||{}), image_url:publicUrl}, newsImageUpload:{...upload, loading:false, file:null, publicUrl, path:result.path||'', previewUrl:publicUrl||upload.previewUrl, error:''}, message:result?.available===false?supabaseNotConfiguredMessage():NEWS_TEXT.imageUploaded, error:''};
+    render(stateRef, actionsAPI);
+    return true;
+  }catch(err){
+    stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{...upload, loading:false, error:err.message||NEWS_TEXT.imageUploadFailed}, message:'', error:err.message||NEWS_TEXT.imageUploadFailed};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+}
+function clearAdminNewsImage(draft=null){
+  const upload=stateRef.admin?.newsImageUpload||{};
+  if(upload.previewUrl?.startsWith?.('blob:')){
+    try{ URL.revokeObjectURL(upload.previewUrl); }catch{}
+  }
+  stateRef.admin={...(stateRef.admin||{}), newsDraft:{...(draft||{}), image_url:''}, newsImageUpload:{file:null, fileName:'', previewUrl:'', publicUrl:'', path:'', cleared:true, error:''}, message:NEWS_TEXT.imageCleared, error:''};
+  render(stateRef, actionsAPI);
+  return true;
+}
+function deleteAdminNewsImage(imageUrl, draft=null){
+  const upload=stateRef.admin?.newsImageUpload||{};
+  const path=upload.path || newsImagePathFromUrl(imageUrl);
+  if(!path){
+    stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{...upload, error:NEWS_TEXT.imagePathMissing}, message:'', error:NEWS_TEXT.imagePathMissing};
+    render(stateRef, actionsAPI);
+    return false;
+  }
+  confirmModal(NEWS_TEXT.imageDeleteTitle, NEWS_TEXT.imageDeleteConfirm, async()=>{
+    await runAdminMutation(()=>deleteAdminNewsImageByPath(path), NEWS_TEXT.imageDeleted);
+    stateRef.admin={...(stateRef.admin||{}), newsDraft:{...(draft||{}), image_url:''}, newsImageUpload:{file:null, fileName:'', previewUrl:'', publicUrl:'', path:'', cleared:true, error:''}};
+    render(stateRef, actionsAPI);
+  }, ACTION_TEXT.delete);
+  return true;
+}
 function requestAdminEmailRepair(user, newEmail){
   if(!isAdminUser(stateRef.currentUser)){
     notify(ADMIN_EMAIL_REPAIR_TEXT.title, ADMIN_EMAIL_REPAIR_TEXT.denied);
@@ -673,6 +738,13 @@ async function loadNews(){
 function newsPostToItem(post){
   const images = post?.image_url ? [{ src:post.image_url, alt:post.image_alt||'', caption:post.image_caption||'' }] : [];
   return { id:post?.id, date:String(post?.published_at||post?.created_at||'').slice(0,10), title:post?.title, body:post?.body, order:post?.display_order, images };
+}
+function validateAdminNewsImage(file){
+  const type=String(file?.type||'').toLowerCase();
+  const extension=String(file?.name||'').toLowerCase().split('.').pop();
+  if(!NEWS_IMAGE_STORAGE.allowedTypes.includes(type) || !NEWS_IMAGE_STORAGE.allowedExtensions.includes(extension)) return { ok:false, message:NEWS_TEXT.imageTypeError };
+  if(Number(file?.size||0)>NEWS_IMAGE_STORAGE.maxBytes) return { ok:false, message:NEWS_TEXT.imageSizeError };
+  return { ok:true };
 }
 function normalizeNewsItems(body){
   const list=Array.isArray(body) ? body : [];

@@ -3,9 +3,9 @@ import { loadPuzzles } from './data.js';
 import { PLACEHOLDERS, createPuzzleThumb } from './thumbs.js';
 import { makeClues, isSolved } from './engine.js';
 import { renderEditor } from './editor.js';
-import { AUTH_LIMITS, BACKGROUNDS, BUILD_INFO, MC_COLORS, MC_COLOR_MAP, evaluatePasswordStrength, isFilledValue, normalizeColorId } from './config.js';
+import { AUTH_LIMITS, BACKGROUNDS, BUILD_INFO, MC_COLORS, MC_COLOR_MAP, NEWS_IMAGE_STORAGE, evaluatePasswordStrength, isFilledValue, normalizeColorId } from './config.js';
 import { exportCurrentUserPayload, formatDateTimeForDisplay } from './userData.js';
-import { isAdminUser } from './admin.js';
+import { isAdminUser, newsImagePathFromUrl } from './admin.js';
 const MODE_LABELS = { Beginner:'ビギナー', Easy:'イージー', Normal:'ノーマル', Hard:'ハード', Endless:'エンドレス' };
 const MODE_EN_LABELS = { Beginner:'Beginner', Easy:'Easy', Normal:'Normal', Hard:'Hard', Endless:'Endless', Custom:'Custom', EditPlay:'EditPlay' };
 const GAME_PANEL_COLLAPSED_KEY = 'web_picross_game_panel_collapsed';
@@ -479,11 +479,11 @@ function renderAdmin(state, actions){
     </section>
     <section class="admin-panel admin-scroll-section" id="admin-section-news">
       <div class="admin-section-title">${ADMIN_UI.news}</div>
-      <div class="admin-note">画像はURL指定のみ対応します。画像アップロードは後続チケットで扱います。</div>
+      <div class="admin-note">画像URL手入力に加えて、Supabase Storageの ${escapeHtml(NEWS_IMAGE_STORAGE.bucket)} バケットへ画像をアップロードできます。</div>
       ${data.newsPostsError?`<div class="admin-status is-error">${escapeHtml(data.newsPostsError)}</div>`:''}
       <div class="admin-edit-grid"><button class="btn btn-slim" id="newAdminNews">新規作成</button></div>
       <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>公開日時</th><th>タイトル</th><th>状態</th><th>表示順</th><th>更新日時</th><th></th></tr></thead><tbody>${newsPosts.map(row=>`<tr class="${selectedNews?.id===row.id?'is-current-user':''}"><td>${escapeHtml(formatDateTimeForDisplay(row.published_at)||'-')}</td><td>${escapeHtml(row.title||'-')}</td><td>${row.is_published?'公開':'非公開'}</td><td>${escapeHtml(row.display_order??0)}</td><td>${escapeHtml(formatDateTimeForDisplay(row.updated_at))}</td><td><button class="btn btn-debug" data-admin-news="${escapeHtml(row.id)}">編集</button></td></tr>`).join('')||`<tr><td colspan="6">お知らせ記事がありません</td></tr>`}</tbody></table></div>
-      ${adminNewsDetailHtml(selectedNews)}
+      ${adminNewsDetailHtml(selectedNews, admin.newsImageUpload, admin.newsDraft)}
     </section>
     <section class="admin-panel admin-danger admin-scroll-section" id="admin-section-debug">
       <div class="admin-section-title">${ADMIN_UI.debug}</div>
@@ -592,20 +592,41 @@ function adminPuzzleUploadHtml(upload){
   </div>`;
 }
 
-function adminNewsDetailHtml(row){
+function adminNewsDetailHtml(row, upload=null, draft=null){
   const isNew=!row;
+  const uploadState=upload||{};
+  const values={...(row||{}), ...(draft||{})};
+  const imageUrl=uploadState.cleared ? '' : (uploadState.publicUrl || values.image_url || '');
+  const previewUrl=uploadState.previewUrl || imageUrl;
+  const canDeleteStorage=Boolean(newsImagePathFromUrl(imageUrl) || uploadState.path);
+  const uploadLimitMb=Math.floor(NEWS_IMAGE_STORAGE.maxBytes / 1024 / 1024);
   return `<div class="admin-detail"><div class="admin-section-title">${isNew?'お知らせ新規作成':'お知らせ編集'}</div>
     <div class="admin-edit-grid">
-      <label>タイトル<input id="adminNewsTitle" class="text-input admin-input" value="${escapeHtml(row?.title||'')}"></label>
-      <label>公開日時<input id="adminNewsPublishedAt" class="text-input admin-input" type="datetime-local" value="${escapeHtml(datetimeLocalValue(row?.published_at))}"></label>
-      <label>表示順<input id="adminNewsOrder" class="text-input admin-input" type="number" value="${escapeHtml(row?.display_order??0)}"></label>
-      <label class="admin-checkbox-label"><input id="adminNewsPublished" type="checkbox" ${row?.is_published?'checked':''}>公開する</label>
+      <label>タイトル<input id="adminNewsTitle" class="text-input admin-input" value="${escapeHtml(values.title||'')}"></label>
+      <label>公開日時<input id="adminNewsPublishedAt" class="text-input admin-input" type="datetime-local" value="${escapeHtml(datetimeLocalValue(values.published_at))}"></label>
+      <label>表示順<input id="adminNewsOrder" class="text-input admin-input" type="number" value="${escapeHtml(values.display_order??0)}"></label>
+      <label class="admin-checkbox-label"><input id="adminNewsPublished" type="checkbox" ${values.is_published?'checked':''}>公開する</label>
     </div>
-    <label class="admin-subtitle">本文<textarea id="adminNewsBody" class="text-input admin-textarea admin-news-body">${escapeHtml(row?.body||'')}</textarea></label>
+    <label class="admin-subtitle">本文<textarea id="adminNewsBody" class="text-input admin-textarea admin-news-body">${escapeHtml(values.body||'')}</textarea></label>
     <div class="admin-edit-grid">
-      <label>画像URL<input id="adminNewsImageUrl" class="text-input admin-input" value="${escapeHtml(row?.image_url||'')}" placeholder="assets/news/example.png"></label>
-      <label>画像alt<input id="adminNewsImageAlt" class="text-input admin-input" value="${escapeHtml(row?.image_alt||'')}"></label>
-      <label>画像キャプション<input id="adminNewsImageCaption" class="text-input admin-input" value="${escapeHtml(row?.image_caption||'')}"></label>
+      <label>画像URL<input id="adminNewsImageUrl" class="text-input admin-input" value="${escapeHtml(imageUrl)}" placeholder="assets/news/example.png"></label>
+      <label>画像alt<input id="adminNewsImageAlt" class="text-input admin-input" value="${escapeHtml(values.image_alt||'')}"></label>
+      <label>画像キャプション<input id="adminNewsImageCaption" class="text-input admin-input" value="${escapeHtml(values.image_caption||'')}"></label>
+    </div>
+    <div class="admin-news-upload">
+      <div class="admin-note">対応形式はPNG / JPG / WebP、上限は${escapeHtml(uploadLimitMb)}MBです。SVGはアップロードできません。画像URL手入力も引き続き利用できます。</div>
+      <div class="admin-puzzle-file-control">
+        <label class="btn btn-slim admin-puzzle-file-button" for="adminNewsImageFile">画像を選択</label>
+        <span class="admin-puzzle-file-name" id="adminNewsImageFileName">${escapeHtml(uploadState.fileName||'画像ファイルを選択してください')}</span>
+        <input id="adminNewsImageFile" class="admin-puzzle-file-input" type="file" accept="image/png,image/jpeg,image/webp">
+      </div>
+      <div class="admin-puzzle-upload-actions admin-news-upload-actions">
+        <button class="btn btn-slim" id="uploadAdminNewsImage" ${uploadState.file&&!uploadState.loading?'':'disabled'}>${uploadState.loading?'アップロード中':'画像アップロード'}</button>
+        <button class="btn btn-slim" id="clearAdminNewsImage" ${imageUrl||previewUrl?'':'disabled'}>画像URLを解除</button>
+        <button class="btn btn-slim btn-danger" id="deleteAdminNewsImage" ${canDeleteStorage?'':'disabled'}>Storageから削除</button>
+      </div>
+      ${uploadState.error?`<div class="admin-status is-error">${escapeHtml(uploadState.error)}</div>`:''}
+      ${previewUrl?`<figure class="admin-news-preview"><img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(values.image_alt||'')}"><figcaption>${escapeHtml(uploadState.publicUrl?'アップロード済み画像':uploadState.fileName?'保存前プレビュー':'現在の画像')}</figcaption></figure>`:`<div class="admin-news-preview-empty">画像プレビューはありません</div>`}
     </div>
     <div class="admin-edit-grid">
       <button class="btn btn-slim" id="saveAdminNews">${isNew?'作成':'保存'}</button>
@@ -647,6 +668,10 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   root.querySelector('#uploadAdminPuzzles')?.addEventListener('click',()=>actions.executeAdminPuzzleUpload());
   root.querySelector('#newAdminNews')?.addEventListener('click',()=>actions.selectAdminNews(''));
   root.querySelectorAll('[data-admin-news]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminNews(btn.dataset.adminNews)));
+  root.querySelector('#adminNewsImageFile')?.addEventListener('change',e=>actions.previewAdminNewsImage(e.target.files?.[0], collectAdminNewsPatch(root)));
+  root.querySelector('#uploadAdminNewsImage')?.addEventListener('click',()=>actions.uploadSelectedAdminNewsImage(selectedNews?.id||'', collectAdminNewsPatch(root)));
+  root.querySelector('#clearAdminNewsImage')?.addEventListener('click',()=>actions.clearAdminNewsImage(collectAdminNewsPatch(root)));
+  root.querySelector('#deleteAdminNewsImage')?.addEventListener('click',()=>actions.deleteAdminNewsImage(root.querySelector('#adminNewsImageUrl')?.value, collectAdminNewsPatch(root)));
   root.querySelector('#saveAdminNews')?.addEventListener('click',()=>actions.saveAdminNews(selectedNews?.id||'', collectAdminNewsPatch(root)));
   root.querySelector('#deleteAdminNews')?.addEventListener('click',()=>actions.deleteAdminNews(selectedNews?.id));
   root.querySelector('#adminExportAll').addEventListener('click',()=>actions.exportUserDataJson());
