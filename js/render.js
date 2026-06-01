@@ -21,7 +21,8 @@ const GAME_MINIMAP_POSITIONS = [
   { key:'top-right', label:'右上' },
 ];
 const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', panelHide:'操作パネルを隠す', panelShow:'操作パネルを表示', minimapTitle:'ミニマップ', minimapHide:'ミニマップを隠す', minimapShow:'ミニマップを表示', minimapZoom:'倍率', minimapPosition:'位置', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
-const MENU_UI = { notice:'お知らせ', noticePending:'お知らせ機能は準備中です。', editor:'エディタ' };
+const MENU_UI = { notice:'お知らせ', editor:'エディタ' };
+const NEWS_UI = { title:'お知らせ', back:'← メニューへ戻る', loading:'お知らせを読み込んでいます', empty:'現在お知らせはありません', loadFailed:'お知らせを読み込めませんでした', imageFailed:'画像を読み込めませんでした' };
 const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConfirmation:'確認メールを再送する', loginHelp:'ログインはユーザー名とパスワードのみで行えます。', registerEmail:'ユーザー登録用メールアドレス', registerEmailHelp:'登録・確認メール用 / ログイン時は不要です', remember:'ユーザー名とパスワードを記録する', resetEmail:'パスワード再設定メールアドレス', resetSend:'再設定メールを送信', resendEmail:'確認メール再送先メールアドレス', resendSend:'確認メールを再送', closeSupport:'閉じる' };
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
 const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', currentEmail:'現在のメールアドレス', newEmail:'新しいメールアドレス', confirmEmail:'新しいメールアドレス確認', requestEmailChange:'メールアドレス変更申請', emailChangeHelp:'確認メールの完了後に新しいメールアドレスへ反映されます。', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
@@ -96,6 +97,7 @@ export function render(state, actions){
   else if(state.screen==='menu') renderMenu(state, actions);
   else if(state.screen==='userData') renderUserData(state, actions);
   else if(state.screen==='ranking') renderRanking(state, actions);
+  else if(state.screen==='news') renderNews(state, actions);
   else if(state.screen==='admin') renderAdmin(state, actions);
   else if(state.screen==='options') renderOptions(state, actions);
   else if(state.screen==='help') renderHelp(state, actions);
@@ -231,10 +233,52 @@ function renderMenu(state, actions){
   root.querySelector('[data-act="option"]').addEventListener('click', ()=>actions.goto('options'));
   root.querySelector('[data-act="help"]').addEventListener('click', ()=>actions.goto('help'));
   root.querySelector('[data-act="credit"]').addEventListener('click', ()=>actions.goto('credits'));
-  root.querySelector('[data-act="notice"]').addEventListener('click', ()=>actions.notify(MENU_UI.notice, MENU_UI.noticePending));
+  root.querySelector('[data-act="notice"]').addEventListener('click', ()=>actions.goto('news'));
   root.querySelector('[data-act="editor"]')?.addEventListener('click', ()=>actions.goto('editor'));
   root.querySelector('[data-act="admin"]')?.addEventListener('click', ()=>actions.goto('admin'));
   root.querySelector('[data-act="logout"]').addEventListener('click', ()=>actions.logout());
+}
+
+function renderNews(state, actions){
+  const root=state.root; setAlignTop(root,true);
+  const news=state.news||{};
+  const items=Array.isArray(news.items)?news.items:[];
+  const selected=items.find(item=>item.id===news.selectedId)||items[0]||null;
+  const listHtml=items.map(item=>`<button class="news-list-item ${selected?.id===item.id?'is-active':''}" data-news-id="${escapeHtml(item.id)}">
+      <span class="news-list-date">${escapeHtml(item.date)}</span>
+      <strong>${escapeHtml(item.title||NEWS_UI.title)}</strong>
+    </button>`).join('');
+  const imagesHtml=selected?.images?.length ? `<div class="news-images">${selected.images.map(image=>`<figure class="news-image-figure">
+      <img class="news-image" src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt||selected.title||NEWS_UI.title)}">
+      ${image.caption?`<figcaption>${escapeHtml(image.caption)}</figcaption>`:''}
+    </figure>`).join('')}</div>` : '';
+  const detailHtml=news.loading ? `<div class="news-empty">${NEWS_UI.loading}</div>` :
+    news.error ? `<div class="news-empty is-error">${escapeHtml(news.error||NEWS_UI.loadFailed)}</div>` :
+    selected ? `<article class="news-detail">
+      <div class="news-detail-date">${escapeHtml(selected.date)}</div>
+      <h2>${escapeHtml(selected.title||NEWS_UI.title)}</h2>
+      <div class="news-body">${escapeHtml(selected.body)}</div>
+      ${imagesHtml}
+    </article>` : `<div class="news-empty">${NEWS_UI.empty}</div>`;
+  root.innerHTML = `<div class="screen news-screen has-bg">${renderBackgroundLayer('news')}
+    <div class="news-topbar">
+      <button class="btn btn-slim" id="backNews">${NEWS_UI.back}</button>
+      <div class="news-title">${NEWS_UI.title}</div>
+      <div></div>
+    </div>
+    <div class="news-layout">
+      <aside class="news-list">${listHtml || `<div class="news-empty">${news.loading?NEWS_UI.loading:(news.error?escapeHtml(news.error):NEWS_UI.empty)}</div>`}</aside>
+      <section class="news-panel">${detailHtml}</section>
+    </div>
+  </div>`;
+  root.querySelector('#backNews').addEventListener('click',()=>actions.goto('menu'));
+  root.querySelectorAll('[data-news-id]').forEach(btn=>btn.addEventListener('click',()=>actions.selectNews(btn.dataset.newsId)));
+  root.querySelectorAll('.news-image').forEach(img=>img.addEventListener('error',()=>{
+    const fallback=document.createElement('div');
+    fallback.className='news-image-fallback';
+    fallback.textContent=img.alt||NEWS_UI.imageFailed;
+    img.replaceWith(fallback);
+  }));
 }
 
 function renderUserData(state, actions){

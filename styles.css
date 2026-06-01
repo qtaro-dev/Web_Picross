@@ -43,6 +43,26 @@ a { color: #42a5f5; }
 .admin-menu-shortcuts .btn { width:100%; padding:12px 14px; font-size:17px; border-radius:10px; background:rgba(11,11,11,.94); }
 .admin-badge { position:fixed; top:12px; left:12px; z-index:50; pointer-events:none; padding:5px 9px; border:1px solid #ffb4ae; border-radius:6px; background:#9f1d1d; color:#fff; font-size:12px; font-weight:800; letter-spacing:0; box-shadow:0 2px 8px rgba(0,0,0,.45); }
 
+/* News */
+.news-screen { align-items:stretch; padding:24px 0 40px; }
+.news-topbar { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:14px; align-items:center; }
+.news-title { text-align:center; font-size:30px; font-weight:700; }
+.news-layout { display:grid; grid-template-columns:minmax(240px, 320px) minmax(0, 1fr); gap:16px; align-items:start; }
+.news-list, .news-panel { border:1px solid #444; border-radius:10px; background:rgba(10,10,10,.94); padding:14px; }
+.news-list { display:flex; flex-direction:column; gap:10px; max-height:calc(100vh - 138px); overflow:auto; }
+.news-list-item { width:100%; padding:10px 12px; border:1px solid #333; border-radius:8px; background:#111; color:#fff; text-align:left; font:inherit; cursor:pointer; }
+.news-list-item:hover, .news-list-item:focus { border-color:#42a5f5; outline:none; }
+.news-list-item.is-active { border-color:#42a5f5; background:#132235; box-shadow:0 0 0 2px rgba(66,165,245,.35) inset; }
+.news-list-date, .news-detail-date { display:block; color:#aaa; font-size:13px; margin-bottom:4px; }
+.news-detail h2 { margin:0 0 10px; color:#fff; font-size:26px; line-height:1.25; }
+.news-body { color:#ddd; white-space:pre-line; overflow-wrap:anywhere; }
+.news-images { display:flex; flex-direction:column; gap:14px; margin-top:18px; }
+.news-image-figure { margin:0; border:1px solid #333; border-radius:10px; background:#111; padding:10px; }
+.news-image { display:block; width:100%; max-height:520px; object-fit:contain; border-radius:8px; background:#050505; }
+.news-image-figure figcaption { margin-top:8px; color:#bbb; font-size:14px; text-align:center; }
+.news-image-fallback, .news-empty { border:1px dashed #444; border-radius:8px; color:#ddd; padding:18px; text-align:center; background:rgba(11,11,11,.72); }
+.news-empty.is-error { border-color:#7d2b2b; color:#ffb4ae; }
+
 /* User data */
 .user-data-screen { align-items:stretch; padding:24px 0 40px; }
 .user-data-topbar { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:14px; align-items:center; }
@@ -359,6 +379,8 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
   .admin-account-status-grid { grid-template-columns:1fr; }
   .admin-account-counter-grid { grid-template-columns:1fr; }
   .admin-card-grid { grid-template-columns:1fr; }
+  .news-layout { grid-template-columns:1fr; }
+  .news-list { max-height:260px; }
   .admin-puzzle-upload-fields, .admin-puzzle-upload-actions { flex-direction:column; align-items:stretch; }
   .admin-puzzle-difficulty, .admin-puzzle-file-control { flex-basis:auto; width:100%; min-width:0; }
   .admin-puzzle-file-control { align-items:flex-start; flex-direction:column; }

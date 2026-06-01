@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Web Picross News</title>
+  <desc id="desc">お知らせ画面の2カラム表示イメージ</desc>
+  <rect width="960" height="540" fill="#05070b"/>
+  <rect x="44" y="48" width="872" height="444" rx="18" fill="#0b0f16" stroke="#3f5368" stroke-width="3"/>
+  <rect x="80" y="96" width="250" height="352" rx="12" fill="#101820" stroke="#41566e" stroke-width="2"/>
+  <rect x="365" y="96" width="515" height="352" rx="12" fill="#101820" stroke="#41566e" stroke-width="2"/>
+  <rect x="108" y="130" width="194" height="58" rx="9" fill="#132235" stroke="#42a5f5" stroke-width="3"/>
+  <rect x="108" y="212" width="194" height="58" rx="9" fill="#111" stroke="#333" stroke-width="2"/>
+  <rect x="108" y="294" width="194" height="58" rx="9" fill="#111" stroke="#333" stroke-width="2"/>
+  <rect x="408" y="136" width="275" height="22" rx="6" fill="#ffffff"/>
+  <rect x="408" y="182" width="414" height="14" rx="4" fill="#8eb9e8"/>
+  <rect x="408" y="212" width="372" height="14" rx="4" fill="#8eb9e8"/>
+  <rect x="408" y="242" width="314" height="14" rx="4" fill="#8eb9e8"/>
+  <rect x="408" y="302" width="238" height="108" rx="10" fill="#0a0a0a" stroke="#42a5f5" stroke-width="3"/>
+  <path d="M438 378l42-44 34 34 54-58 48 68z" fill="#42a5f5" opacity=".88"/>
+  <circle cx="475" cy="330" r="16" fill="#f0c24b"/>
+  <text x="480" y="72" fill="#fff" font-family="Segoe UI, sans-serif" font-size="30" font-weight="700" text-anchor="middle">Web Picross News</text>
+</svg>
