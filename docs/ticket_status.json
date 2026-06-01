@@ -1151,6 +1151,15 @@
       "status": "修正済",
       "note": "管理者ページにパズル管理セクションを追加し、難易度別JSONのアップロード前チェックとSupabase反映を実装しました。\n/api/admin-upload-puzzles を追加し、管理者認証後にJSON検証、既存uuid維持の更新、追加、未掲載パズルの非公開化を行います。\npuzzles.puzzle_key を追加し、JSON側idはDB主キーではなく管理用IDとして扱うようにしました。",
       "updatedAt": "2026-06-01T13:34:56.2872172+09:00"
+    },
+    {
+      "number": "109",
+      "title": "チケット109：管理者ページのパズル管理UI調整",
+      "fileName": "109_admin_puzzle_management_ui_adjustment.md",
+      "path": "docs/109_admin_puzzle_management_ui_adjustment.md",
+      "status": "修正済",
+      "note": "パズル管理の難易度・ファイル選択欄と操作ボタンを上下段に分け、ファイル選択欄の表示幅を広げました。\nアップロード前チェック結果のプレビュー制限を解除し、全件をスクロール表示できるテーブルに変更しました。\n狭い画面では入力欄とボタンが縦並びになるようレスポンシブ調整しました。",
+      "updatedAt": "2026-06-01T14:14:48.2150843+09:00"
     }
   ]
 }

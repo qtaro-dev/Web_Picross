@@ -389,9 +389,11 @@ function renderAdmin(state, actions){
     <section class="admin-panel admin-scroll-section" id="admin-section-puzzles">
       <div class="admin-section-title">パズル管理</div>
       <div class="admin-note">難易度ごとのJSONだけをSupabaseへ反映します。puzzles.id のuuid主キーは変更せず、JSON側の id は管理用 puzzle_key として扱います。</div>
-      <div class="admin-filters">
-        <select id="adminPuzzleDifficulty" class="text-input admin-input">${['beginner','easy','normal','hard','endless'].map(key=>`<option value="${key}" ${admin.puzzleUpload?.difficulty===key?'selected':''}>${key}</option>`).join('')}</select>
-        <input id="adminPuzzleFile" class="text-input admin-input" type="file" accept=".json,application/json">
+      <div class="admin-puzzle-upload-fields">
+        <select id="adminPuzzleDifficulty" class="text-input admin-input admin-puzzle-difficulty">${['beginner','easy','normal','hard','endless'].map(key=>`<option value="${key}" ${admin.puzzleUpload?.difficulty===key?'selected':''}>${key}</option>`).join('')}</select>
+        <input id="adminPuzzleFile" class="text-input admin-input admin-puzzle-file" type="file" accept=".json,application/json">
+      </div>
+      <div class="admin-puzzle-upload-actions">
         <button class="btn btn-slim" id="checkAdminPuzzles">アップロード前チェック</button>
         <button class="btn btn-slim btn-danger" id="uploadAdminPuzzles" ${admin.puzzleUpload?.result?.ok?'':'disabled'}>反映実行</button>
       </div>
@@ -489,7 +491,8 @@ function adminPuzzleUploadHtml(upload){
   if(upload.error) return `<div class="admin-status is-error">${escapeHtml(upload.error)}</div>`;
   const result=upload.result;
   if(!result) return `<div class="admin-note">対象ファイル: ${escapeHtml(upload.fileName||'-')}</div>`;
-  const preview=(result.preview||[]).map(row=>`<tr><td>${escapeHtml(row.puzzle_key)}</td><td>#${escapeHtml(row.stage_no)}</td><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.size)}</td><td>${escapeHtml(row.color_mode)}</td></tr>`).join('');
+  const previewRows=result.preview||[];
+  const preview=previewRows.map(row=>`<tr><td>${escapeHtml(row.puzzle_key)}</td><td>#${escapeHtml(row.stage_no)}</td><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.size)}</td><td>${escapeHtml(row.color_mode)}</td></tr>`).join('');
   return `<div class="admin-detail">
     <div class="admin-detail-grid">
       <div><span>対象難易度</span><strong>${escapeHtml(result.difficulty||upload.difficulty||'-')}</strong></div>
@@ -498,7 +501,8 @@ function adminPuzzleUploadHtml(upload){
       <div><span>更新</span><strong>${escapeHtml(result.updated??'-')}</strong></div>
       <div><span>非公開</span><strong>${escapeHtml(result.unpublished??'-')}</strong></div>
     </div>
-    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>puzzle_key</th><th>面</th><th>タイトル</th><th>サイズ</th><th>種別</th></tr></thead><tbody>${preview||`<tr><td colspan="5">プレビューがありません</td></tr>`}</tbody></table></div>
+    <div class="admin-note">検証結果一覧: ${escapeHtml(previewRows.length)} 件</div>
+    <div class="admin-table-wrap admin-puzzle-preview-wrap"><table class="admin-table admin-puzzle-preview-table"><thead><tr><th>puzzle_key</th><th>面</th><th>タイトル</th><th>サイズ</th><th>種別</th></tr></thead><tbody>${preview||`<tr><td colspan="5">プレビューがありません</td></tr>`}</tbody></table></div>
   </div>`;
 }
 

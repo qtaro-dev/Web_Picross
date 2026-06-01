@@ -121,7 +121,7 @@ function normalizeUpload(input, targetDifficulty){
     ok:true,
     difficulty:targetDifficulty,
     count:normalized.length,
-    preview:normalized.slice(0, 5).map(p=>({ puzzle_key:p.puzzle_key, stage_no:p.stage_no, title:p.title, size:`${p.width}x${p.height}`, color_mode:p.color_mode })),
+    preview:normalized.map(p=>({ puzzle_key:p.puzzle_key, stage_no:p.stage_no, title:p.title, size:`${p.width}x${p.height}`, color_mode:p.color_mode })),
     puzzles:normalized,
   };
 }

@@ -41,7 +41,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000124` です。
+- 現在のビルドは `Build #0000125` です。
 
 ## 公開構成方針
 
@@ -163,6 +163,8 @@ Supabaseログイン中は、クリア、時間切れ、ギブアップ時に `u
 パズルデータは `npm run import:puzzles` で `data/*.json` からSupabase Databaseの `puzzles` へインポートできます。インポートにはローカル `.env` の `SUPABASE_SECRET_KEY` を使いますが、このキーはGitHub/Vercel/フロントエンドへ置きません。アプリ側はSupabase設定済みなら `puzzles.is_published = true` の問題だけを取得し、未設定時は従来どおり `data/*.json` を読み込みます。
 
 Supabase管理者ユーザーは、管理者ページの「パズル管理」から難易度別に `data/*.json` 相当のJSONをアップロードできます。アップロード前チェックで難易度、stageNo、puzzle_key、盤面サイズ、重複を検証し、反映時は同一難易度だけを更新します。`puzzles.id` のuuid主キーは維持し、JSON側の `id` は管理用 `puzzle_key` として扱います。JSONに含まれない同難易度の既存パズルは削除せず `is_published=false` にします。
+
+パズル管理のアップロード欄は、難易度・ファイル選択と操作ボタンを段分けして表示します。アップロード前チェック後の一覧は全件をスクロールして確認できます。
 
 ## 起動方法
 
