@@ -6,7 +6,7 @@ export const DIFFICULTY_RULES = {
   endless: { key:'endless', modeKey:'Endless', label:'エンドレス', sizes:[[20,20],[25,25],[30,30],[40,40],[50,50]], color:true, min:20, max:50 },
 };
 
-export const BUILD_INFO = { number: 141, label: 'Build #0000141' };
+export const BUILD_INFO = { number: 143, label: 'Build #0000143' };
 export const SUPABASE_PUBLIC_CONFIG = {
   url: '',
   publishableKey: '',
@@ -45,6 +45,7 @@ export const DIFFICULTY_TO_MODE = Object.fromEntries(Object.values(DIFFICULTY_RU
 export const COLOR_MODES = { mono:'モノクロ', color:'カラー' };
 export const BACKGROUNDS = {
   menu: './image/back001.jpg',
+  news: './image/back001.jpg',
   game: './image/back002.jpg',
   ranking: './image/back003.jpg',
   login: './image/back004.jpg',

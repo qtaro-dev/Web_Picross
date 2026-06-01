@@ -4,6 +4,7 @@ export const state = {
   mode: 'Beginner',
   page: 1,
   ranking: { mode:'Beginner', loading:false, error:'', data:null },
+  news: { loading:false, loaded:false, error:'', items:[], selectedId:'' },
   admin: { loading:false, error:'', message:'', data:null, userQuery:'', roleFilter:'all', selectedUserId:'', rankingDifficulty:'all', rankingStage:'', rankingQuery:'', rankingSort:'time', selectedRankingId:'', deleteRequestStatus:'all', deleteRequestQuery:'', selectedDeleteRequestId:'' },
   selectPuzzles: {},
   selectLoaded: {},

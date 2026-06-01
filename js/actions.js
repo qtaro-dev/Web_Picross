@@ -6,7 +6,8 @@ import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDele
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
 import { checkAdminServerApi, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking, uploadAdminPuzzles } from './admin.js';
 import { supabaseNotConfiguredMessage } from './supabaseClient.js';
-const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'正解です', checkIncompleteMessage:'まだ完成していません', checkMistakeMessage:'まだ違うところがあります', pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
+const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'正解です！\nパズルを完成しました。', solvedTitle:'判定', solvedMessage:'正解です！', checkIncompleteMessage:'まだ完成していません', checkProgressLowMessage:'もう少し塗ってみましょう', checkProgressMiddleMessage:'まだ見直しが必要です', checkProgressGoodMessage:'いい感じに進んでいます', checkProgressAlmostMessage:'あと少しです', checkMistakeMessage:'塗ったマスを少し見直してみましょう', pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
+const NEWS_TEXT = { loadFailed:'お知らせを読み込めませんでした' };
 const AUTH_TEXT = { required:'ユーザー名またはメールアドレスとパスワードを入力してください', registerRequired:'ユーザー名、パスワード、メールアドレスを入力してください', emailRequired:'メールアドレスを入力してください', loginFailed:'ユーザー名、メールアドレス、またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。', duplicate:'同じユーザー名は登録できません', passwordMismatch:'新しいパスワードが一致しません', passwordShort:`パスワードは${AUTH_LIMITS.passwordMin}文字以上で入力してください`, passwordChanged:'パスワードを変更しました', supabaseOnly:'この操作はSupabaseログイン時のみ利用できます', deleteTitle:'アカウント削除申請', deleteMessage:'この画面ではアカウントを直接削除しません。\n削除申請として受け付け、管理者確認後に対応します。\n\nアカウント削除はAuthユーザー、プロフィール、進行データ、ランキング記録に影響します。安全のため、この画面では直接削除しません。', deleteRequestConfirm:'削除申請する', deleteRequested:'アカウント削除申請を受け付けました。\n管理者確認後に対応します。', deleteDuplicate:'すでにアカウント削除申請済みです。\n管理者確認後に対応します。', deleteFailed:'アカウント削除申請の保存に失敗しました。\n時間をおいて再度お試しください。' };
 const REGISTER_TEXT = { title:'ユーザー登録', message:'登録しました。\n登録したユーザでログインしますか？', yes:'はい', no:'いいえ' };
 const DEV_USER = { username:'admin', password:'admin' };
@@ -28,7 +29,7 @@ const SAVED_PASSWORD_KEY = 'picross_saved_password';
 const OPTIONS_KEY = 'web_picross_options';
 const DEFAULT_OPTIONS = { crosshairColor:'#42a5f5', bgmVolume:50, seVolume:50, displayMode:'window' };
 const LS_KEY='picross_v2_solved'; let stateRef; let actionsAPI;
-export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordClear, requestAdminEmailRepair, checkAdminPuzzleUpload, executeAdminPuzzleUpload, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
+export function initActions(state){ stateRef=state; loadRememberedLogin(); loadOptions(); loadSolved(); actionsAPI={ initializeAuthFlow, goto, login, registerUser, requestPasswordReset, resendConfirmationEmail, completePasswordRecovery, cancelPasswordRecovery, requestAdminPasswordClear, requestAdminEmailRepair, checkAdminPuzzleUpload, executeAdminPuzzleUpload, requestDeleteAdminUserRankings, updateLoginForm, logout, exportUserDataJson, exportCurrentUserJson, reloadUserData, changePassword, requestEmailChange, requestAccountDeletion, loadAccountDeleteRequestStatus, loadAdminData, setAdminFilter, selectAdminUser, selectAdminRanking, selectAdminDeleteRequest, saveAdminDeleteRequestReview, reactivateAdminAccount, saveAdminProfile, saveAdminProgress, saveAdminRanking, deleteAdminRankingRecord, setMode, setPage, setRankingMode, loadRanking, selectNews, setOption, resetOptions, setSelectedColor, setHoverCell, clearHoverCell, toggleCell, toggleCross, beginDrag, applyDrag, endDrag, cancelDrag, clear, hint, giveUp, requestGameExit, zoomBoard, debugInstantClear, stopTimer, finishClear, showCheckResult, toggleSolved, resetClearFlags, resetUserData, play, playCustom, openModal, closeModal, notify, confirmModal, handleModalButton }; return actionsAPI; }
 function initializeAuthFlow(){
   const params = new URLSearchParams((globalThis.location?.hash || '').replace(/^#/, ''));
   if(params.get('type')!=='recovery'){
@@ -61,7 +62,7 @@ function showRecoveryLoginMessage(message){
   stateRef.authMessage=message;
   render(stateRef, actionsAPI);
 }
-function goto(screen){ if(screen!=='game') stopTimer(); stateRef.modal=null; stateRef.hoverCell=null; if(accountDisabled()&&!['title','login'].includes(screen)){ endDisabledSession(); return; } stateRef.authMessage=''; if(screen==='admin'&&!isAdminUser(stateRef.currentUser)){ stateRef.screen=stateRef.currentUser?'menu':'title'; render(stateRef, actionsAPI); notify('管理者ページ', '管理者権限がありません'); return; } if(screen==='editor'&&!isAdminUser(stateRef.currentUser)){ stateRef.screen=stateRef.currentUser?'menu':'title'; render(stateRef, actionsAPI); notify(ADMIN_ACCESS_TEXT.editorTitle, ADMIN_ACCESS_TEXT.editorDenied); return; } stateRef.screen=screen; render(stateRef, actionsAPI); if(screen==='ranking') loadRanking(); if(screen==='admin') loadAdminData(); if(screen==='userData') loadAccountDeleteRequestStatus(); }
+function goto(screen){ if(screen!=='game') stopTimer(); stateRef.modal=null; stateRef.hoverCell=null; if(accountDisabled()&&!['title','login'].includes(screen)){ endDisabledSession(); return; } stateRef.authMessage=''; if(screen==='admin'&&!isAdminUser(stateRef.currentUser)){ stateRef.screen=stateRef.currentUser?'menu':'title'; render(stateRef, actionsAPI); notify('管理者ページ', '管理者権限がありません'); return; } if(screen==='editor'&&!isAdminUser(stateRef.currentUser)){ stateRef.screen=stateRef.currentUser?'menu':'title'; render(stateRef, actionsAPI); notify(ADMIN_ACCESS_TEXT.editorTitle, ADMIN_ACCESS_TEXT.editorDenied); return; } stateRef.screen=screen; render(stateRef, actionsAPI); if(screen==='ranking') loadRanking(); if(screen==='admin') loadAdminData(); if(screen==='userData') loadAccountDeleteRequestStatus(); if(screen==='news') loadNews(); }
 async function apiPost(path,payload){
   const res=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   let body={}; try{ body=await res.json(); }catch{}
@@ -642,6 +643,41 @@ function prepareUserData(storage, fileSave, result='読込しました'){
 function setMode(mode){ stateRef.mode=mode; stateRef.page=1; render(stateRef, actionsAPI); }
 function setPage(p){ stateRef.page=p; render(stateRef, actionsAPI); }
 function setRankingMode(mode){ stateRef.ranking={...(stateRef.ranking||{}), mode, data:null, error:''}; render(stateRef, actionsAPI); loadRanking(); }
+function selectNews(id){ stateRef.news={...(stateRef.news||{}), selectedId:String(id||'')}; render(stateRef, actionsAPI); }
+async function loadNews(){
+  stateRef.news={...(stateRef.news||{}), loading:true, loaded:false, error:''};
+  render(stateRef, actionsAPI);
+  try{
+    const res=await fetch('./data/news.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('news unavailable');
+    const body=await res.json();
+    const items=normalizeNewsItems(body);
+    const selectedId=items.some(item=>item.id===stateRef.news?.selectedId) ? stateRef.news.selectedId : (items[0]?.id||'');
+    stateRef.news={loading:false, loaded:true, error:'', items, selectedId};
+  }catch{
+    stateRef.news={loading:false, loaded:true, error:NEWS_TEXT.loadFailed, items:[], selectedId:''};
+  }
+  render(stateRef, actionsAPI);
+}
+function normalizeNewsItems(body){
+  const list=Array.isArray(body) ? body : [];
+  return list.map((item,index)=>({
+    id:String(item?.id||`news-${index + 1}`),
+    date:String(item?.date||''),
+    title:String(item?.title||''),
+    body:String(item?.body||''),
+    order:Number.isFinite(Number(item?.order)) ? Number(item.order) : index,
+    images:Array.isArray(item?.images) ? item.images.map(image=>({
+      src:String(image?.src||''),
+      alt:String(image?.alt||''),
+      caption:String(image?.caption||'')
+    })).filter(image=>image.src) : []
+  })).sort((a,b)=>{
+    const dateDiff=Date.parse(b.date||'')-Date.parse(a.date||'');
+    if(Number.isFinite(dateDiff)&&dateDiff!==0) return dateDiff;
+    return a.order-b.order;
+  });
+}
 async function loadRanking(){
   const mode=stateRef.ranking?.mode||'Beginner';
   stateRef.ranking={...(stateRef.ranking||{}), mode, loading:true, error:''};
@@ -829,19 +865,30 @@ function pauseTimer(reason='modal'){ if(stateRef.screen!=='game'||stateRef.gameS
 function resumeTimer(){ if(stateRef.screen!=='game'||stateRef.gameStatus!=='playing'||!stateRef.timer.paused||stateRef.modal) return; stateRef.timer.running=stateRef.timer.limit!=null; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
 function stopTimer(){ if(stateRef.timer.intervalId) clearInterval(stateRef.timer.intervalId); stateRef.timer.intervalId=null; stateRef.timer.running=false; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
 function finishClear(){ if(stateRef.gameStatus==='cleared') return false; if(accountDisabled()){ notify(DISABLED_ACCOUNT_TEXT.title, DISABLED_ACCOUNT_TEXT.message); return false; } stateRef.gameStatus='cleared'; markCurrentPuzzleSolved(); const entry=recordResult('clear'); saveServerProgress(entry,'clear'); stopTimer(); cancelDrag(); notify(ACTION_TEXT.clearTitle, ACTION_TEXT.clearMessage, [{label:ACTION_TEXT.ok, action:'close'}, {label:ACTION_TEXT.select, action:'backToSelect'}]); return true; }
-function showCheckResult(solved){ if(stateRef.gameStatus==='cleared') return false; if(solved) return finishClear(); const result=checkBoardState(); notify(ACTION_TEXT.solvedTitle, result.mistakes>0?ACTION_TEXT.checkMistakeMessage:ACTION_TEXT.checkIncompleteMessage); return false; }
+function showCheckResult(solved){ if(stateRef.gameStatus==='cleared') return false; if(solved) return finishClear(); notify(ACTION_TEXT.solvedTitle, checkResultMessage(checkBoardState())); return false; }
 function checkBoardState(){
-  const G=stateRef.game; const result={mistakes:0, incomplete:0}; if(!G) return result;
+  const G=stateRef.game; const result={mistakes:0, incomplete:0, correctFilled:0, totalFilled:0}; if(!G) return result;
   for(let y=0;y<G.h;y++) for(let x=0;x<G.w;x++){
     const k=`${x},${y}`; const value=G.solution[y]?.[x]; const shouldFill=isFilledValue(value); const filled=stateRef.filled.has(k);
     if(shouldFill){
+      result.totalFilled++;
       if(!filled) result.incomplete++;
       else if(G.colorMode==='color'&&normalizeColorId(stateRef.cellColors.get(k))!==normalizeColorId(value)) result.mistakes++;
+      else result.correctFilled++;
     }else{
       if(filled) result.mistakes++;
     }
   }
   return result;
+}
+function checkResultMessage(result){
+  if(result.mistakes>0) return ACTION_TEXT.checkMistakeMessage;
+  const ratio=result.totalFilled>0 ? result.correctFilled/result.totalFilled : 0;
+  if(ratio>=0.9) return ACTION_TEXT.checkProgressAlmostMessage;
+  if(ratio>=0.7) return ACTION_TEXT.checkProgressGoodMessage;
+  if(ratio>=0.4) return ACTION_TEXT.checkProgressMiddleMessage;
+  if(ratio>0) return ACTION_TEXT.checkProgressLowMessage;
+  return ACTION_TEXT.checkIncompleteMessage;
 }
 function startTimer(mode){ stopTimer(); const limit=TIMER_LIMITS[mode]??null; stateRef.timer={limit, remaining:limit, running:limit!=null, intervalId:null, expired:false, paused:false, pauseReason:null}; if(limit==null) return; stateRef.timer.intervalId=setInterval(()=>{ if(!stateRef.timer.running) return; stateRef.timer.remaining=Math.max(0, stateRef.timer.remaining-1); updateTimerNode(); if(stateRef.timer.remaining<=0){ stopTimer(); stateRef.timer.expired=true; stateRef.gameStatus='timeout'; const entry=recordResult('fail'); saveServerProgress(entry,'fail'); cancelDrag(); notify(TIMER_TEXT.timeoutTitle, TIMER_TEXT.timeoutMessage, [{label:ACTION_TEXT.select, action:'backToSelect'}, {label:ACTION_TEXT.retry, action:'retry'}]); } },1000); }
 function initHintCount(game){ const key=String(game?.difficulty||MODE_TO_DIFFICULTY[game?.mode]||'beginner').toLowerCase(); const limit=HINT_LIMITS_BY_DIFFICULTY[key]??0; stateRef.hints={limit, remaining:limit}; }
