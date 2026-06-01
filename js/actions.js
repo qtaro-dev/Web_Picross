@@ -1,6 +1,6 @@
 import { render } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
-import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
+import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
 import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
@@ -725,15 +725,50 @@ function applyDisplayMode(mode){
   }catch{}
 }
 function currentColor(){ return stateRef.game?.colorMode==='color' ? normalizeColorId(stateRef.selectedColor||'1') : '1'; }
+function cellSelector(k){ return `.cell[data-k="${String(k).replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"]`; }
+function updateGameCellDom(k){
+  const cell=stateRef.root?.querySelector?.(cellSelector(k));
+  if(!cell) return false;
+  const filled=stateRef.filled.has(k);
+  const crossed=stateRef.crossed.has(k);
+  cell.classList.toggle('filled', filled);
+  cell.classList.toggle('cross', crossed);
+  if(stateRef.game?.colorMode==='color' && filled){
+    cell.style.background=MC_COLOR_MAP[normalizeColorId(stateRef.cellColors.get(k))]?.hex||'#e0e0e0';
+  }else{
+    cell.style.background='';
+  }
+  return true;
+}
+function updateHoverDom(previous, next){
+  const root=stateRef.root;
+  if(!root?.querySelectorAll) return false;
+  const touched=new Set();
+  const collect=hover=>{
+    if(!hover) return;
+    root.querySelectorAll(`.cell[data-row="${hover.row}"], .cell[data-col="${hover.col}"]`).forEach(cell=>touched.add(cell));
+  };
+  collect(previous);
+  collect(next);
+  touched.forEach(cell=>{
+    const row=Number(cell.dataset.row);
+    const col=Number(cell.dataset.col);
+    const isHover=!!next && row===next.row && col===next.col;
+    const isLine=!!next && !isHover && (row===next.row || col===next.col);
+    cell.classList.toggle('is-hover', isHover);
+    cell.classList.toggle('is-crosshair', isLine);
+  });
+  return true;
+}
 function setSelectedColor(id){ stateRef.selectedColor=normalizeColorId(id); render(stateRef, actionsAPI); }
-function setHoverCell(row,col){ if(stateRef.modal) return; if(stateRef.hoverCell?.row===row&&stateRef.hoverCell?.col===col) return; stateRef.hoverCell={row, col}; render(stateRef, actionsAPI); }
-function clearHoverCell(){ if(!stateRef.hoverCell) return; stateRef.hoverCell=null; render(stateRef, actionsAPI); }
+function setHoverCell(row,col){ if(stateRef.modal) return; if(stateRef.hoverCell?.row===row&&stateRef.hoverCell?.col===col) return; const previous=stateRef.hoverCell; stateRef.hoverCell={row, col}; updateHoverDom(previous, stateRef.hoverCell); }
+function clearHoverCell(){ if(!stateRef.hoverCell) return; const previous=stateRef.hoverCell; stateRef.hoverCell=null; updateHoverDom(previous, null); }
 function gameLocked(){ return stateRef.gameStatus==='cleared'||stateRef.gameStatus==='timeout'||stateRef.gameStatus==='giveup'; }
 function inputBlocked(){ return !!stateRef.modal || !!stateRef.timer.expired || gameLocked(); }
-function toggleCell(k){ if(inputBlocked()) return false; const s=stateRef.filled; const color=currentColor(); stateRef.crossed.delete(k); if(s.has(k)&&normalizeColorId(stateRef.cellColors.get(k))===color){ s.delete(k); stateRef.cellColors.delete(k); } else { s.add(k); stateRef.cellColors.set(k,color); } render(stateRef, actionsAPI); return true; }
-function toggleCross(k){ if(inputBlocked()) return false; const s=stateRef.crossed; stateRef.filled.delete(k); stateRef.cellColors.delete(k); s.has(k)?s.delete(k):s.add(k); render(stateRef, actionsAPI); return true; }
-function setFilled(k,color=currentColor()){ if(inputBlocked()) return false; color=normalizeColorId(color); const changed=stateRef.crossed.delete(k)||!stateRef.filled.has(k)||normalizeColorId(stateRef.cellColors.get(k))!==color; stateRef.filled.add(k); stateRef.cellColors.set(k,color); if(changed) render(stateRef, actionsAPI); return changed; }
-function setCrossed(k){ if(inputBlocked()) return false; const changed=stateRef.filled.delete(k)||stateRef.cellColors.delete(k)||!stateRef.crossed.has(k); stateRef.crossed.add(k); if(changed) render(stateRef, actionsAPI); return changed; }
+function toggleCell(k){ if(inputBlocked()) return false; const s=stateRef.filled; const color=currentColor(); stateRef.crossed.delete(k); if(s.has(k)&&normalizeColorId(stateRef.cellColors.get(k))===color){ s.delete(k); stateRef.cellColors.delete(k); } else { s.add(k); stateRef.cellColors.set(k,color); } updateGameCellDom(k); return true; }
+function toggleCross(k){ if(inputBlocked()) return false; const s=stateRef.crossed; stateRef.filled.delete(k); stateRef.cellColors.delete(k); s.has(k)?s.delete(k):s.add(k); updateGameCellDom(k); return true; }
+function setFilled(k,color=currentColor()){ if(inputBlocked()) return false; color=normalizeColorId(color); const changed=stateRef.crossed.delete(k)||!stateRef.filled.has(k)||normalizeColorId(stateRef.cellColors.get(k))!==color; stateRef.filled.add(k); stateRef.cellColors.set(k,color); if(changed) updateGameCellDom(k); return changed; }
+function setCrossed(k){ if(inputBlocked()) return false; const changed=stateRef.filled.delete(k)||stateRef.cellColors.delete(k)||!stateRef.crossed.has(k); stateRef.crossed.add(k); if(changed) updateGameCellDom(k); return changed; }
 function beginDrag(mode,k){ if(inputBlocked()) return false; stateRef.drag={active:true, mode, start:k, moved:false}; return true; }
 function applyDrag(k){ if(inputBlocked()) return false; const d=stateRef.drag; if(!d.active) return false; if(k!==d.start&&!d.moved){ d.moved=true; const first=d.mode==='fill'?setFilled(d.start):setCrossed(d.start); const next=d.mode==='fill'?setFilled(k):setCrossed(k); return first||next; } if(!d.moved) return false; return d.mode==='fill'?setFilled(k):setCrossed(k); }
 function endDrag(k){ if(inputBlocked()) return false; const d=stateRef.drag; if(!d.active) return false; stateRef.drag={active:false, mode:null, start:null, moved:false}; if(!k) return false; if(d.moved) return false; if(k!==d.start){ const first=d.mode==='fill'?setFilled(d.start):setCrossed(d.start); const last=d.mode==='fill'?setFilled(k):setCrossed(k); return first||last; } return d.mode==='fill'?toggleCell(k):toggleCross(k); }
@@ -820,6 +855,7 @@ function resetGameInput(){
   stateRef.cellColors.clear();
   stateRef.crossed.clear();
   stateRef.selectedColor=firstUsedColor(stateRef.game?.solution);
+  stateRef.boardScroll={left:0, top:0};
   initHintCount(stateRef.game);
   cancelDrag();
 }

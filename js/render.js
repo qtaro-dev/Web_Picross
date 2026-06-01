@@ -720,6 +720,7 @@ function renderSelect(state, actions){
 function renderGame(state, actions){
   const root=state.root; setAlignTop(root,false);
   const G=state.game; if(!G){ root.innerHTML=`<div class="screen"><div class="menu"><button class="btn" id="back">${GAME_UI.backSelect}</button><p>${GAME_UI.noPuzzle}</p></div></div>`; root.querySelector('#back').onclick=()=>actions.goto('select'); return; }
+  state.boardScroll=captureBoardScroll(root, state.boardScroll);
   const {w,h,solution}=G; const {rows,cols}=makeClues(solution,w,h,G.colorMode); const maxRowLen=Math.max(...rows.map(r=>r.length)); const maxColLen=Math.max(...cols.map(c=>c.length));
   const boardSize=Math.max(w,h); const zoom=Number(state.boardZoom||1); const baseCellSize=Math.max(18, Math.min(34, Math.floor(280/boardSize))); const cellSize=Math.round(baseCellSize*zoom); const clueSize=Math.max(14, Math.round(Math.max(18, Math.min(24, baseCellSize))*zoom));
   const timerText=formatGameTime(state.timer);
@@ -770,6 +771,8 @@ function renderGame(state, actions){
       </div>
     </div></div>`;
   const wrap=root.querySelector('#gamewrap');
+  const boardScrollToRestore=state.boardScroll;
+  wrap.addEventListener('scroll',()=>{ state.boardScroll={left:wrap.scrollLeft, top:wrap.scrollTop}; }, {passive:true});
   root.querySelector('.game-screen').addEventListener('contextmenu', e=>e.preventDefault());
   const solvedState=()=>({w,h,solution,filled:state.filled,cellColors:state.cellColors,colorMode:G.colorMode});
   const checkClear=changed=>{ if(changed&&isSolved(solvedState())) actions.finishClear(); };
@@ -792,7 +795,7 @@ function renderGame(state, actions){
       const seq=rows[y]; const num=seq[seq.length-maxRowLen+i]; applyClue(d,num,G.colorMode);
       d.style.gridColumn=`${i + 1}`; d.style.gridRow=`${maxColLen + y + 1}`;
       wrap.appendChild(d); }
-    for(let x=0;x<w;x++){ const k=`${x},${y}`; const isHover=state.hoverCell?.row===y&&state.hoverCell?.col===x; const isHoverRow=state.hoverCell?.row===y; const isHoverCol=state.hoverCell?.col===x; const b=document.createElement('button'); b.dataset.k=k; b.className='cell'+(state.filled.has(k)?' filled':'')+(state.crossed.has(k)?' cross':'')+(isHover?' is-hover':'')+(!isHover&&(isHoverRow||isHoverCol)?' is-crosshair':'');
+    for(let x=0;x<w;x++){ const k=`${x},${y}`; const isHover=state.hoverCell?.row===y&&state.hoverCell?.col===x; const isHoverRow=state.hoverCell?.row===y; const isHoverCol=state.hoverCell?.col===x; const b=document.createElement('button'); b.dataset.k=k; b.dataset.row=String(y); b.dataset.col=String(x); b.className='cell'+(state.filled.has(k)?' filled':'')+(state.crossed.has(k)?' cross':'')+(isHover?' is-hover':'')+(!isHover&&(isHoverRow||isHoverCol)?' is-crosshair':'');
       b.style.gridColumn=`${maxRowLen + x + 1}`; b.style.gridRow=`${maxColLen + y + 1}`;
       if(G.colorMode==='color'&&state.filled.has(k)){ b.style.background=MC_COLOR_MAP[normalizeColorId(state.cellColors.get(k))]?.hex||'#e0e0e0'; }
       const startInput=e=>{ if(state.modal) return; if(e.button===0){ e.preventDefault(); actions.beginDrag('fill',k); } else if(e.button===2){ e.preventDefault(); actions.beginDrag('cross',k); } };
@@ -812,6 +815,7 @@ function renderGame(state, actions){
       wrap.appendChild(b);
     }
   }
+  restoreBoardScroll(wrap, boardScrollToRestore);
   const moveOverCell=e=>{ const cell=e.target.closest?.('.cell'); if(cell) checkClear(actions.applyDrag(cell.dataset.k)); };
   wrap.addEventListener('pointermove',moveOverCell);
   wrap.addEventListener('mousemove',moveOverCell);
@@ -929,6 +933,17 @@ function readStoredBoolean(key, fallback){
 }
 function writeStoredValue(key, value){
   try{ localStorage.setItem(key, value); }catch{}
+}
+function captureBoardScroll(root, fallback={left:0, top:0}){
+  const wrap=root?.querySelector?.('#gamewrap');
+  if(!wrap) return fallback||{left:0, top:0};
+  return {left:wrap.scrollLeft||0, top:wrap.scrollTop||0};
+}
+function restoreBoardScroll(wrap, scroll){
+  if(!wrap||!scroll) return;
+  const left=Math.max(0, Number(scroll.left)||0);
+  const top=Math.max(0, Number(scroll.top)||0);
+  requestAnimationFrame(()=>{ wrap.scrollLeft=left; wrap.scrollTop=top; });
 }
 
 function renderModal(state, actions){
