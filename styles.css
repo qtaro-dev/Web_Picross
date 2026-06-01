@@ -182,6 +182,9 @@ a { color: #42a5f5; }
 .admin-status-label { align-self:flex-end; display:inline-flex; align-items:center; justify-content:center; height:var(--admin-action-height); min-height:var(--admin-action-height); padding:0 12px; border:1px solid #444; border-radius:7px; background:#111; color:#ddd; font-size:13px; line-height:1; white-space:nowrap; }
 .admin-status-label.is-disabled { border-color:#7d2b2b; background:rgba(70,12,12,.72); color:#fff; }
 .admin-password-reset-btn { font-size:14px; white-space:nowrap; }
+.admin-checkbox-label { align-self:flex-end; display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:var(--admin-action-height, 49px); padding:0 12px; border:1px solid #444; border-radius:7px; background:#111; color:#ddd; }
+.admin-checkbox-label input { width:18px; height:18px; accent-color:#42a5f5; }
+.admin-news-body { min-height:180px; }
 .admin-back-to-top { position:fixed; left:16px; bottom:16px; z-index:20; width:52px; height:52px; min-width:52px; padding:0; display:flex; justify-content:center; align-items:center; font-size:26px; border-radius:10px; background:rgba(11,11,11,.96); }
 .btn-danger { border-color:#a33; background:#2a0f0f; }
 

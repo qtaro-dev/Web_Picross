@@ -54,6 +54,14 @@ export async function loadAdminSnapshot(){
     .order('requested_at', { ascending:false })
     .limit(ADMIN_LIMIT);
 
+  const { data:newsPosts, error:newsPostsError } = await client
+    .from('news_posts')
+    .select('id, title, body, published_at, is_published, image_url, image_alt, image_caption, display_order, created_at, updated_at')
+    .order('published_at', { ascending:false, nullsFirst:false })
+    .order('display_order', { ascending:true })
+    .order('created_at', { ascending:false })
+    .limit(ADMIN_LIMIT);
+
   return {
     available:true,
     profiles:profiles || [],
@@ -62,7 +70,47 @@ export async function loadAdminSnapshot(){
     rankings:withProfile(rankings || [], profiles || []),
     deleteRequests:deleteRequestError ? [] : withProfile(deleteRequests || [], profiles || []),
     deleteRequestError:deleteRequestError ? 'アカウント削除申請を取得できませんでした。RLSポリシーで管理者のselectが許可されているか確認してください。' : '',
+    newsPosts:newsPostsError ? [] : newsPosts || [],
+    newsPostsError:newsPostsError ? 'お知らせ記事を取得できませんでした。news_postsテーブルとRLSポリシーを確認してください。' : '',
   };
+}
+
+export async function loadPublishedNewsPosts(){
+  if(!(await isSupabaseConfigured())) return { available:false };
+  const client = await getSupabaseClient();
+  if(!client) return { available:false };
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('news_posts')
+    .select('id, title, body, published_at, image_url, image_alt, image_caption, display_order, created_at')
+    .eq('is_published', true)
+    .or(`published_at.is.null,published_at.lte.${now}`)
+    .order('published_at', { ascending:false, nullsFirst:false })
+    .order('display_order', { ascending:true })
+    .order('created_at', { ascending:false })
+    .limit(100);
+  if(error) throw error;
+  return { available:true, posts:data || [] };
+}
+
+export async function saveAdminNewsPost(id, patch){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const payload = newsPayload(patch);
+  const query = id
+    ? client.from('news_posts').update(payload).eq('id', id).select('id').maybeSingle()
+    : client.from('news_posts').insert(payload).select('id').maybeSingle();
+  const { data, error } = await query;
+  if(error) throw error;
+  return { available:true, id:data?.id || id };
+}
+
+export async function deleteAdminNewsPost(id){
+  const client = await adminClient();
+  if(!client) return { available:false };
+  const { error } = await client.from('news_posts').delete().eq('id', id);
+  if(error) throw error;
+  return { available:true };
 }
 
 export async function checkAdminServerApi(){
@@ -313,4 +361,22 @@ function nullableNumber(value){
 function integerNumber(value){
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+}
+
+function newsPayload(patch){
+  const title = String(patch.title || '').trim();
+  const body = String(patch.body || '').trim();
+  if(!title || !body) throw new Error('タイトルと本文を入力してください');
+  const publishedAt = String(patch.published_at || '').trim();
+  const order = Number(patch.display_order);
+  return {
+    title,
+    body,
+    published_at: publishedAt ? new Date(publishedAt).toISOString() : null,
+    is_published: Boolean(patch.is_published),
+    image_url: String(patch.image_url || '').trim() || null,
+    image_alt: String(patch.image_alt || '').trim() || null,
+    image_caption: String(patch.image_caption || '').trim() || null,
+    display_order: Number.isFinite(order) ? Math.floor(order) : 0,
+  };
 }

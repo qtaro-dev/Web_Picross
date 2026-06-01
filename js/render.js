@@ -27,13 +27,14 @@ const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConf
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
 const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', currentEmail:'現在のメールアドレス', newEmail:'新しいメールアドレス', confirmEmail:'新しいメールアドレス確認', requestEmailChange:'メールアドレス変更申請', emailChangeHelp:'確認メールの完了後に新しいメールアドレスへ反映されます。', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
 const RANKING_UI = { title:'ランキング', back:'← 戻る', current:'現在の自分の順位', empty:'まだランキングデータがありません。パズルをクリアするとランキングに表示されます。', noUserRank:'まだこの難易度のクリア記録がありません。', sourceLocal:'Live Server環境では現在ユーザーのlocalStorage内データのみを表示します。' };
-const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', debug:'デバッグ操作', system:'システム情報', supabaseConfigStatus:'Supabase設定確認', passwordClear:'管理者再設定メール送信', backToTop:'一番上へ戻る' };
+const ADMIN_UI = { title:'管理者ページ', back:'← メニューへ戻る', denied:'管理者権限がありません', reload:'再読込', users:'ユーザー管理', progress:'ユーザー進行状況', ranking:'ランキング管理', deleteRequests:'アカウント削除申請', news:'お知らせ管理', debug:'デバッグ操作', system:'システム情報', supabaseConfigStatus:'Supabase設定確認', passwordClear:'管理者再設定メール送信', backToTop:'一番上へ戻る' };
 const ADMIN_SECTIONS = [
   ['admin-section-users', ADMIN_UI.users],
   ['admin-section-progress', ADMIN_UI.progress],
   ['admin-section-rankings', ADMIN_UI.ranking],
   ['admin-section-delete-requests', ADMIN_UI.deleteRequests],
   ['admin-section-puzzles', 'パズル管理'],
+  ['admin-section-news', ADMIN_UI.news],
   ['admin-section-debug', ADMIN_UI.debug],
   ['admin-section-system', ADMIN_UI.system],
 ];
@@ -420,6 +421,8 @@ function renderAdmin(state, actions){
   const deleteRequests=filterAccountDeleteRequests(data.deleteRequests||[], admin);
   const pendingDeleteCount=(data.deleteRequests||[]).filter(row=>row.status==='pending').length;
   const selectedDeleteRequest=(data.deleteRequests||[]).find(row=>row.id===admin.selectedDeleteRequestId)||deleteRequests[0]||null;
+  const newsPosts=data.newsPosts||[];
+  const selectedNews=(newsPosts.find(row=>row.id===admin.selectedNewsId))||newsPosts[0]||null;
   root.innerHTML = `<div class="screen admin-screen has-bg" id="admin-page-top">${renderBackgroundLayer('admin')}
     <div class="admin-topbar"><button class="btn btn-slim" id="backAdmin">${ADMIN_UI.back}</button><div class="admin-title">${ADMIN_UI.title}</div><button class="btn btn-debug" id="reloadAdmin">${ADMIN_UI.reload}</button></div>
     <div class="admin-status ${admin.error?'is-error':''}">${escapeHtml(admin.loading?'読み込み中...':(admin.error||admin.message||'profiles.role = admin のユーザーだけが利用できます'))}</div>
@@ -474,6 +477,14 @@ function renderAdmin(state, actions){
       </div>
       ${adminPuzzleUploadHtml(admin.puzzleUpload)}
     </section>
+    <section class="admin-panel admin-scroll-section" id="admin-section-news">
+      <div class="admin-section-title">${ADMIN_UI.news}</div>
+      <div class="admin-note">画像はURL指定のみ対応します。画像アップロードは後続チケットで扱います。</div>
+      ${data.newsPostsError?`<div class="admin-status is-error">${escapeHtml(data.newsPostsError)}</div>`:''}
+      <div class="admin-edit-grid"><button class="btn btn-slim" id="newAdminNews">新規作成</button></div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>公開日時</th><th>タイトル</th><th>状態</th><th>表示順</th><th>更新日時</th><th></th></tr></thead><tbody>${newsPosts.map(row=>`<tr class="${selectedNews?.id===row.id?'is-current-user':''}"><td>${escapeHtml(formatDateTimeForDisplay(row.published_at)||'-')}</td><td>${escapeHtml(row.title||'-')}</td><td>${row.is_published?'公開':'非公開'}</td><td>${escapeHtml(row.display_order??0)}</td><td>${escapeHtml(formatDateTimeForDisplay(row.updated_at))}</td><td><button class="btn btn-debug" data-admin-news="${escapeHtml(row.id)}">編集</button></td></tr>`).join('')||`<tr><td colspan="6">お知らせ記事がありません</td></tr>`}</tbody></table></div>
+      ${adminNewsDetailHtml(selectedNews)}
+    </section>
     <section class="admin-panel admin-danger admin-scroll-section" id="admin-section-debug">
       <div class="admin-section-title">${ADMIN_UI.debug}</div>
       <div class="admin-debug-actions">
@@ -494,7 +505,7 @@ function renderAdmin(state, actions){
     </section>
     <button class="btn admin-back-to-top" type="button" id="adminBackToTop" title="${ADMIN_UI.backToTop}" aria-label="${ADMIN_UI.backToTop}">↑</button>
   </div>`;
-  bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest, selectedUserRankings.length);
+  bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest, selectedUserRankings.length, selectedNews);
 }
 
 function adminUserDetailHtml(user, progress, history, rankings=[]){
@@ -581,7 +592,29 @@ function adminPuzzleUploadHtml(upload){
   </div>`;
 }
 
-function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest, selectedUserRankingCount=0){
+function adminNewsDetailHtml(row){
+  const isNew=!row;
+  return `<div class="admin-detail"><div class="admin-section-title">${isNew?'お知らせ新規作成':'お知らせ編集'}</div>
+    <div class="admin-edit-grid">
+      <label>タイトル<input id="adminNewsTitle" class="text-input admin-input" value="${escapeHtml(row?.title||'')}"></label>
+      <label>公開日時<input id="adminNewsPublishedAt" class="text-input admin-input" type="datetime-local" value="${escapeHtml(datetimeLocalValue(row?.published_at))}"></label>
+      <label>表示順<input id="adminNewsOrder" class="text-input admin-input" type="number" value="${escapeHtml(row?.display_order??0)}"></label>
+      <label class="admin-checkbox-label"><input id="adminNewsPublished" type="checkbox" ${row?.is_published?'checked':''}>公開する</label>
+    </div>
+    <label class="admin-subtitle">本文<textarea id="adminNewsBody" class="text-input admin-textarea admin-news-body">${escapeHtml(row?.body||'')}</textarea></label>
+    <div class="admin-edit-grid">
+      <label>画像URL<input id="adminNewsImageUrl" class="text-input admin-input" value="${escapeHtml(row?.image_url||'')}" placeholder="assets/news/example.png"></label>
+      <label>画像alt<input id="adminNewsImageAlt" class="text-input admin-input" value="${escapeHtml(row?.image_alt||'')}"></label>
+      <label>画像キャプション<input id="adminNewsImageCaption" class="text-input admin-input" value="${escapeHtml(row?.image_caption||'')}"></label>
+    </div>
+    <div class="admin-edit-grid">
+      <button class="btn btn-slim" id="saveAdminNews">${isNew?'作成':'保存'}</button>
+      ${isNew?'':`<button class="btn btn-slim btn-danger" id="deleteAdminNews">削除</button>`}
+    </div>
+  </div>`;
+}
+
+function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedDeleteRequest, selectedUserRankingCount=0, selectedNews=null){
   root.querySelector('#backAdmin').addEventListener('click',()=>actions.goto('menu'));
   root.querySelector('#reloadAdmin').addEventListener('click',()=>actions.loadAdminData());
   root.querySelector('#adminUserQuery').addEventListener('input',e=>actions.setAdminFilter('userQuery', e.target.value));
@@ -612,6 +645,10 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   });
   root.querySelector('#checkAdminPuzzles')?.addEventListener('click',()=>actions.checkAdminPuzzleUpload(root.querySelector('#adminPuzzleDifficulty')?.value, root.querySelector('#adminPuzzleFile')?.files?.[0]));
   root.querySelector('#uploadAdminPuzzles')?.addEventListener('click',()=>actions.executeAdminPuzzleUpload());
+  root.querySelector('#newAdminNews')?.addEventListener('click',()=>actions.selectAdminNews(''));
+  root.querySelectorAll('[data-admin-news]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminNews(btn.dataset.adminNews)));
+  root.querySelector('#saveAdminNews')?.addEventListener('click',()=>actions.saveAdminNews(selectedNews?.id||'', collectAdminNewsPatch(root)));
+  root.querySelector('#deleteAdminNews')?.addEventListener('click',()=>actions.deleteAdminNews(selectedNews?.id));
   root.querySelector('#adminExportAll').addEventListener('click',()=>actions.exportUserDataJson());
   root.querySelector('#adminExportCurrent').addEventListener('click',()=>actions.exportCurrentUserJson());
   root.querySelector('#adminResetClear').addEventListener('click',()=>actions.resetClearFlags());
@@ -620,6 +657,19 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
     root.querySelector(`#${button.dataset.adminScroll}`)?.scrollIntoView({behavior:'smooth', block:'start'});
   }));
   root.querySelector('#adminBackToTop').addEventListener('click',()=>root.querySelector('#admin-page-top')?.scrollIntoView({behavior:'smooth', block:'start'}));
+}
+
+function collectAdminNewsPatch(root){
+  return {
+    title:root.querySelector('#adminNewsTitle')?.value,
+    body:root.querySelector('#adminNewsBody')?.value,
+    published_at:root.querySelector('#adminNewsPublishedAt')?.value,
+    is_published:root.querySelector('#adminNewsPublished')?.checked,
+    display_order:root.querySelector('#adminNewsOrder')?.value,
+    image_url:root.querySelector('#adminNewsImageUrl')?.value,
+    image_alt:root.querySelector('#adminNewsImageAlt')?.value,
+    image_caption:root.querySelector('#adminNewsImageCaption')?.value,
+  };
 }
 
 function collectProgressPatch(root, id){
@@ -996,6 +1046,13 @@ function dateText(record, key){
 function countText(value){
   const n=Number(value);
   return Number.isFinite(n) ? String(Math.max(0, Math.floor(n))) : '0';
+}
+function datetimeLocalValue(value){
+  if(!value) return '';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime())) return '';
+  const pad=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 function formatMs(ms){
   if(typeof ms!=='number') return '-';
