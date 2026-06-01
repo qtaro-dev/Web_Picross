@@ -98,19 +98,22 @@ export async function saveAdminNewsPost(id, patch){
   const client = await adminClient();
   if(!client) return { available:false };
   const payload = newsPayload(patch);
+  const isUpdate = Boolean(String(id || '').trim());
   const query = id
     ? client.from('news_posts').update(payload).eq('id', id).select('id').maybeSingle()
     : client.from('news_posts').insert(payload).select('id').maybeSingle();
   const { data, error } = await query;
   if(error) throw error;
-  return { available:true, id:data?.id || id };
+  if(!data?.id) throw new Error(isUpdate ? '更新対象のお知らせ記事が見つかりません' : 'お知らせ記事を作成できませんでした');
+  return { available:true, id:data.id, created:!isUpdate };
 }
 
 export async function deleteAdminNewsPost(id){
   const client = await adminClient();
   if(!client) return { available:false };
-  const { error } = await client.from('news_posts').delete().eq('id', id);
+  const { data, error } = await client.from('news_posts').delete().eq('id', id).select('id').maybeSingle();
   if(error) throw error;
+  if(!data?.id) throw new Error('削除対象のお知らせ記事が見つかりません');
   return { available:true };
 }
 

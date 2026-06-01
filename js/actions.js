@@ -1,6 +1,6 @@
 import { render, updateGameMinimap } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
-import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, NEWS_IMAGE_STORAGE, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
+import { ADMIN_DEBUG_CONFIG, ADMIN_NEWS_PAGE_SIZE, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, NEWS_IMAGE_STORAGE, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
 import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, resolveSupabaseLoginEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
@@ -400,8 +400,48 @@ function saveAdminProfile(id,patch){ confirmModal('ユーザー情報を保存',
 function saveAdminProgress(id,patch){ confirmModal('進行状況を保存', 'このユーザーの進行状況を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminProgress(id, patch), '進行状況を保存しました'); }); }
 function saveAdminRanking(id,patch){ confirmModal('ランキングを保存', 'ランキング記録を変更します。よろしいですか？', async()=>{ await runAdminMutation(()=>updateAdminRanking(id, patch), 'ランキング記録を保存しました'); }); }
 function deleteAdminRankingRecord(id){ confirmModal('ランキング記録を削除', 'このランキング記録を削除します。よろしいですか？', async()=>{ await runAdminMutation(()=>deleteAdminRanking(id), 'ランキング記録を削除しました'); }, ACTION_TEXT.delete); }
-function saveAdminNews(id, patch){ confirmModal('お知らせ記事を保存', 'お知らせ記事を保存します。よろしいですか？', async()=>{ await runAdminMutation(()=>saveAdminNewsPost(id, patch), NEWS_TEXT.saved); stateRef.admin={...(stateRef.admin||{}), newsDraft:null, newsImageUpload:null}; render(stateRef, actionsAPI); }); }
-function deleteAdminNews(id){ if(!id) return false; confirmModal(NEWS_TEXT.deleteTitle, NEWS_TEXT.deleteConfirm, async()=>{ await runAdminMutation(()=>deleteAdminNewsPost(id), NEWS_TEXT.deleted); stateRef.admin={...(stateRef.admin||{}), selectedNewsId:''}; }, ACTION_TEXT.delete); }
+function saveAdminNews(id, patch){
+  const newsId=String(id||'').trim();
+  confirmModal('お知らせ記事を保存', 'お知らせ記事を保存します。よろしいですか？', async()=>{
+    try{
+      const result=await saveAdminNewsPost(newsId, patch);
+      if(result?.available===false){
+        stateRef.admin={...(stateRef.admin||{}), message:supabaseNotConfiguredMessage(), error:''};
+        render(stateRef, actionsAPI);
+        return;
+      }
+      await refreshAdminNewsData({
+        message:NEWS_TEXT.saved,
+        selectedNewsId:result.id,
+        newsPage:result.created ? 1 : stateRef.admin?.newsPage
+      });
+      stateRef.news={...(stateRef.news||{}), loaded:false};
+    }catch(err){
+      stateRef.admin={...(stateRef.admin||{}), message:'', error:`操作できませんでした: ${err.message||'RLSまたは権限設定を確認してください'}`};
+      render(stateRef, actionsAPI);
+    }
+  });
+}
+function deleteAdminNews(id){
+  const newsId=String(id||'').trim();
+  if(!newsId) return false;
+  confirmModal(NEWS_TEXT.deleteTitle, NEWS_TEXT.deleteConfirm, async()=>{
+    try{
+      const result=await deleteAdminNewsPost(newsId);
+      if(result?.available===false){
+        stateRef.admin={...(stateRef.admin||{}), message:supabaseNotConfiguredMessage(), error:''};
+        render(stateRef, actionsAPI);
+        return;
+      }
+      await refreshAdminNewsData({ message:NEWS_TEXT.deleted, selectedNewsId:'', newsPage:stateRef.admin?.newsPage });
+      stateRef.news={...(stateRef.news||{}), loaded:false};
+    }catch(err){
+      stateRef.admin={...(stateRef.admin||{}), message:'', error:`操作できませんでした: ${err.message||'RLSまたは権限設定を確認してください'}`};
+      render(stateRef, actionsAPI);
+    }
+  }, ACTION_TEXT.delete);
+  return true;
+}
 function previewAdminNewsImage(file, draft=null){
   if(!file){
     stateRef.admin={...(stateRef.admin||{}), newsDraft:draft, newsImageUpload:{...(stateRef.admin?.newsImageUpload||{}), file:null, fileName:'', previewUrl:'', error:NEWS_TEXT.noImageFile}};
@@ -611,6 +651,30 @@ async function runAdminMutation(task, successMessage){
     stateRef.admin={...(stateRef.admin||{}), message:'', error:`操作できませんでした: ${err.message||'RLSまたは権限設定を確認してください'}`};
     render(stateRef, actionsAPI);
   }
+}
+async function refreshAdminNewsData({ message='', selectedNewsId='', newsPage=1 }={}){
+  const [data, serverApi]=await Promise.all([loadAdminSnapshot(), checkAdminServerApi()]);
+  const total=data.newsPosts?.length || 0;
+  const pageCount=Math.max(1, Math.ceil(total / ADMIN_NEWS_PAGE_SIZE));
+  const page=Math.min(Math.max(1, Number(newsPage)||1), pageCount);
+  stateRef.admin={
+    ...(stateRef.admin||{}),
+    loading:false,
+    error:'',
+    message:message||data.message||'管理データを読み込みました',
+    data,
+    serverApi,
+    selectedNewsId,
+    newsPage:selectedNewsId ? pageForNewsId(data.newsPosts||[], selectedNewsId, page) : page,
+    newsDraft:null,
+    newsImageUpload:null,
+  };
+  render(stateRef, actionsAPI);
+}
+function pageForNewsId(posts, id, fallbackPage=1){
+  const index=(posts||[]).findIndex(row=>row.id===id);
+  if(index < 0) return fallbackPage;
+  return Math.floor(index / ADMIN_NEWS_PAGE_SIZE) + 1;
 }
 function showRegisterLoginAssist(username,email,password){
   stateRef.authMessage=AUTH_TEXT.registered;

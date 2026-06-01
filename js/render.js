@@ -3,7 +3,7 @@ import { loadPuzzles } from './data.js';
 import { PLACEHOLDERS, createPuzzleThumb } from './thumbs.js';
 import { makeClues, isSolved } from './engine.js';
 import { renderEditor } from './editor.js';
-import { AUTH_LIMITS, BACKGROUNDS, BUILD_INFO, MC_COLORS, MC_COLOR_MAP, NEWS_IMAGE_STORAGE, evaluatePasswordStrength, isFilledValue, normalizeColorId } from './config.js';
+import { ADMIN_NEWS_PAGE_SIZE, AUTH_LIMITS, BACKGROUNDS, BUILD_INFO, MC_COLORS, MC_COLOR_MAP, NEWS_IMAGE_STORAGE, evaluatePasswordStrength, isFilledValue, normalizeColorId } from './config.js';
 import { exportCurrentUserPayload, formatDateTimeForDisplay } from './userData.js';
 import { isAdminUser, newsImagePathFromUrl } from './admin.js';
 const MODE_LABELS = { Beginner:'ビギナー', Easy:'イージー', Normal:'ノーマル', Hard:'ハード', Endless:'エンドレス' };
@@ -422,7 +422,11 @@ function renderAdmin(state, actions){
   const pendingDeleteCount=(data.deleteRequests||[]).filter(row=>row.status==='pending').length;
   const selectedDeleteRequest=(data.deleteRequests||[]).find(row=>row.id===admin.selectedDeleteRequestId)||deleteRequests[0]||null;
   const newsPosts=data.newsPosts||[];
-  const selectedNews=(newsPosts.find(row=>row.id===admin.selectedNewsId))||newsPosts[0]||null;
+  const newsTotal=newsPosts.length;
+  const newsPageCount=Math.max(1, Math.ceil(newsTotal / ADMIN_NEWS_PAGE_SIZE));
+  const newsPage=Math.min(Math.max(1, Number(admin.newsPage)||1), newsPageCount);
+  const pagedNewsPosts=newsPosts.slice((newsPage - 1) * ADMIN_NEWS_PAGE_SIZE, newsPage * ADMIN_NEWS_PAGE_SIZE);
+  const selectedNews=admin.selectedNewsId ? newsPosts.find(row=>row.id===admin.selectedNewsId)||null : null;
   root.innerHTML = `<div class="screen admin-screen has-bg" id="admin-page-top">${renderBackgroundLayer('admin')}
     <div class="admin-topbar"><button class="btn btn-slim" id="backAdmin">${ADMIN_UI.back}</button><div class="admin-title">${ADMIN_UI.title}</div><button class="btn btn-debug" id="reloadAdmin">${ADMIN_UI.reload}</button></div>
     <div class="admin-status ${admin.error?'is-error':''}">${escapeHtml(admin.loading?'読み込み中...':(admin.error||admin.message||'profiles.role = admin のユーザーだけが利用できます'))}</div>
@@ -482,7 +486,8 @@ function renderAdmin(state, actions){
       <div class="admin-note">画像URL手入力に加えて、Supabase Storageの ${escapeHtml(NEWS_IMAGE_STORAGE.bucket)} バケットへ画像をアップロードできます。</div>
       ${data.newsPostsError?`<div class="admin-status is-error">${escapeHtml(data.newsPostsError)}</div>`:''}
       <div class="admin-edit-grid"><button class="btn btn-slim" id="newAdminNews">新規作成</button></div>
-      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>公開日時</th><th>タイトル</th><th>状態</th><th>表示順</th><th>更新日時</th><th></th></tr></thead><tbody>${newsPosts.map(row=>`<tr class="${selectedNews?.id===row.id?'is-current-user':''}"><td>${escapeHtml(formatDateTimeForDisplay(row.published_at)||'-')}</td><td>${escapeHtml(row.title||'-')}</td><td>${row.is_published?'公開':'非公開'}</td><td>${escapeHtml(row.display_order??0)}</td><td>${escapeHtml(formatDateTimeForDisplay(row.updated_at))}</td><td><button class="btn btn-debug" data-admin-news="${escapeHtml(row.id)}">編集</button></td></tr>`).join('')||`<tr><td colspan="6">お知らせ記事がありません</td></tr>`}</tbody></table></div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>公開日時</th><th>タイトル</th><th>状態</th><th>表示順</th><th>更新日時</th><th></th></tr></thead><tbody>${pagedNewsPosts.map(row=>`<tr class="${selectedNews?.id===row.id?'is-current-user':''}"><td>${escapeHtml(formatDateTimeForDisplay(row.published_at)||'-')}</td><td>${escapeHtml(row.title||'-')}</td><td>${row.is_published?'公開':'非公開'}</td><td>${escapeHtml(row.display_order??0)}</td><td>${escapeHtml(formatDateTimeForDisplay(row.updated_at))}</td><td><button class="btn btn-debug" data-admin-news="${escapeHtml(row.id)}">編集</button></td></tr>`).join('')||`<tr><td colspan="6">お知らせ記事がありません</td></tr>`}</tbody></table></div>
+      ${adminNewsPagerHtml(newsPage, newsPageCount, newsTotal)}
       ${adminNewsDetailHtml(selectedNews, admin.newsImageUpload, admin.newsDraft)}
     </section>
     <section class="admin-panel admin-danger admin-scroll-section" id="admin-section-debug">
@@ -592,6 +597,16 @@ function adminPuzzleUploadHtml(upload){
   </div>`;
 }
 
+function adminNewsPagerHtml(page, pageCount, total){
+  if(total <= ADMIN_NEWS_PAGE_SIZE) return `<div class="admin-news-pager is-compact">全${escapeHtml(total)}件</div>`;
+  return `<div class="admin-news-pager">
+    <button class="btn btn-slim" data-admin-news-page="${page - 1}" ${page<=1?'disabled':''}>前へ</button>
+    <span>${escapeHtml(page)} / ${escapeHtml(pageCount)}ページ</span>
+    <strong>全${escapeHtml(total)}件</strong>
+    <button class="btn btn-slim" data-admin-news-page="${page + 1}" ${page>=pageCount?'disabled':''}>次へ</button>
+  </div>`;
+}
+
 function adminNewsDetailHtml(row, upload=null, draft=null){
   const isNew=!row;
   const uploadState=upload||{};
@@ -668,6 +683,7 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   root.querySelector('#uploadAdminPuzzles')?.addEventListener('click',()=>actions.executeAdminPuzzleUpload());
   root.querySelector('#newAdminNews')?.addEventListener('click',()=>actions.selectAdminNews(''));
   root.querySelectorAll('[data-admin-news]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminNews(btn.dataset.adminNews)));
+  root.querySelectorAll('[data-admin-news-page]').forEach(btn=>btn.addEventListener('click',()=>actions.setAdminFilter('newsPage', Number(btn.dataset.adminNewsPage)||1)));
   root.querySelector('#adminNewsImageFile')?.addEventListener('change',e=>actions.previewAdminNewsImage(e.target.files?.[0], collectAdminNewsPatch(root)));
   root.querySelector('#uploadAdminNewsImage')?.addEventListener('click',()=>actions.uploadSelectedAdminNewsImage(selectedNews?.id||'', collectAdminNewsPatch(root)));
   root.querySelector('#clearAdminNewsImage')?.addEventListener('click',()=>actions.clearAdminNewsImage(collectAdminNewsPatch(root)));

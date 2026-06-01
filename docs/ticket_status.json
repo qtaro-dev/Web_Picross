@@ -1340,6 +1340,15 @@
       "status": "修正済",
       "note": "Supabase Storageのnews-imagesバケット用SQLを追加し、管理者だけがアップロード・更新・削除できるRLSを用意しました。\nお知らせ管理フォームに画像選択、保存前プレビュー、アップロード、画像URL解除、Storage削除の操作を追加しました。\nアップロード画像はPNG/JPG/WebP・2MBまでに制限し、成功後は記事のimage_urlへ反映できるようにしました。",
       "updatedAt": "2026-06-01T12:24:20.906Z"
+    },
+    {
+      "number": "128",
+      "title": "チケット128：お知らせ管理で2件目以降の記事作成が反映されない問題の修正とページング対応",
+      "fileName": "128_news_multiple_create_and_pagination_fix.md",
+      "path": "docs/128_news_multiple_create_and_pagination_fix.md",
+      "status": "修正済",
+      "note": "新規作成時に先頭のお知らせ記事を選択扱いに戻してしまう状態を修正し、insert/update/deleteの結果を確認してから成功表示する専用保存フローにしました。\n保存・削除後は管理者のお知らせ一覧を再取得し、新規作成後は1ページ目へ戻して作成記事を選択します。\n管理者用お知らせ一覧に10件単位の前へ/次へページングと件数表示を追加しました。",
+      "updatedAt": "2026-06-01T12:55:08.560Z"
     }
   ]
 }

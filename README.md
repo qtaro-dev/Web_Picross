@@ -257,6 +257,7 @@ http://127.0.0.1:8000/
 - 管理者ページの「お知らせ管理」から、記事の作成・編集・削除、公開/非公開、画像URL、alt、キャプション、画像アップロードを管理できます。
 - 画像アップロードは Supabase Storage の `news-images` バケットを使います。対応形式はPNG / JPG / WebP、上限は2MBで、SVGはアップロード不可です。
 - 画像URL手入力も引き続き利用できます。アップロードした画像はStorageからの削除と、記事からURLだけ外す操作を分けています。
+- 管理者のお知らせ一覧は10件ごとにページングします。新規作成後は、一般向け表示順に合わせた一覧の1ページ目へ戻ります。
 - 本文はプレーンテキストとして改行を反映します。
 - Supabase側のテーブルとRLSは [docs/supabase/006_news_posts.sql](docs/supabase/006_news_posts.sql) を適用してください。
 - お知らせ画像用StorageバケットとRLSは [docs/supabase/007_news_storage.sql](docs/supabase/007_news_storage.sql) を適用してください。
