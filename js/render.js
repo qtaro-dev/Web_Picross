@@ -391,7 +391,11 @@ function renderAdmin(state, actions){
       <div class="admin-note">難易度ごとのJSONだけをSupabaseへ反映します。puzzles.id のuuid主キーは変更せず、JSON側の id は管理用 puzzle_key として扱います。</div>
       <div class="admin-puzzle-upload-fields">
         <select id="adminPuzzleDifficulty" class="text-input admin-input admin-puzzle-difficulty">${['beginner','easy','normal','hard','endless'].map(key=>`<option value="${key}" ${admin.puzzleUpload?.difficulty===key?'selected':''}>${key}</option>`).join('')}</select>
-        <input id="adminPuzzleFile" class="text-input admin-input admin-puzzle-file" type="file" accept=".json,application/json">
+        <div class="admin-puzzle-file-control">
+          <label class="btn btn-slim admin-puzzle-file-button" for="adminPuzzleFile">ファイルを選択</label>
+          <span class="admin-puzzle-file-name" id="adminPuzzleFileName">${escapeHtml(admin.puzzleUpload?.fileName||'ファイルを選択してください')}</span>
+          <input id="adminPuzzleFile" class="admin-puzzle-file-input" type="file" accept=".json,application/json">
+        </div>
       </div>
       <div class="admin-puzzle-upload-actions">
         <button class="btn btn-slim" id="checkAdminPuzzles">アップロード前チェック</button>
@@ -530,6 +534,11 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   root.querySelectorAll('[data-admin-delete-request]').forEach(btn=>btn.addEventListener('click',()=>actions.selectAdminDeleteRequest(btn.dataset.adminDeleteRequest)));
   root.querySelector('#approveDeleteRequest')?.addEventListener('click',()=>actions.saveAdminDeleteRequestReview(selectedDeleteRequest.id,{status:'approved',user_id:selectedDeleteRequest.user_id,admin_note:root.querySelector('#adminDeleteRequestNote')?.value}));
   root.querySelector('#rejectDeleteRequest')?.addEventListener('click',()=>actions.saveAdminDeleteRequestReview(selectedDeleteRequest.id,{status:'rejected',user_id:selectedDeleteRequest.user_id,admin_note:root.querySelector('#adminDeleteRequestNote')?.value}));
+  root.querySelector('#adminPuzzleFile')?.addEventListener('change',e=>{
+    const name=e.target.files?.[0]?.name||'ファイルを選択してください';
+    const label=root.querySelector('#adminPuzzleFileName');
+    if(label) label.textContent=name;
+  });
   root.querySelector('#checkAdminPuzzles')?.addEventListener('click',()=>actions.checkAdminPuzzleUpload(root.querySelector('#adminPuzzleDifficulty')?.value, root.querySelector('#adminPuzzleFile')?.files?.[0]));
   root.querySelector('#uploadAdminPuzzles')?.addEventListener('click',()=>actions.executeAdminPuzzleUpload());
   root.querySelector('#adminExportAll').addEventListener('click',()=>actions.exportUserDataJson());

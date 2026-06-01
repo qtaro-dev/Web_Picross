@@ -116,8 +116,10 @@ a { color: #42a5f5; }
 .admin-puzzle-upload-fields { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
 .admin-puzzle-upload-actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
 .admin-puzzle-difficulty { flex:0 0 180px; }
-.admin-puzzle-file { flex:1 1 420px; min-width:320px; max-width:100%; }
-.admin-puzzle-file::file-selector-button { margin-right:12px; padding:7px 12px; border:1px solid #666; border-radius:7px; background:#111; color:#fff; cursor:pointer; }
+.admin-puzzle-file-control { flex:1 1 520px; min-width:360px; max-width:100%; display:flex; align-items:center; gap:12px; min-height:49px; }
+.admin-puzzle-file-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.admin-puzzle-file-button { flex:0 0 auto; padding:9px 14px; font-size:15px; border-radius:8px; }
+.admin-puzzle-file-name { flex:1 1 auto; min-width:0; color:#ddd; font-size:15px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .admin-system-actions { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
 .admin-system-actions .btn { text-decoration:none; }
 .admin-edit-grid { --admin-action-height:49px; }
@@ -326,7 +328,9 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
   .admin-account-counter-grid { grid-template-columns:1fr; }
   .admin-card-grid { grid-template-columns:1fr; }
   .admin-puzzle-upload-fields, .admin-puzzle-upload-actions { flex-direction:column; align-items:stretch; }
-  .admin-puzzle-difficulty, .admin-puzzle-file { flex-basis:auto; width:100%; min-width:0; }
+  .admin-puzzle-difficulty, .admin-puzzle-file-control { flex-basis:auto; width:100%; min-width:0; }
+  .admin-puzzle-file-control { align-items:flex-start; flex-direction:column; }
+  .admin-puzzle-file-name { width:100%; white-space:normal; overflow-wrap:anywhere; }
   .admin-back-to-top { left:10px; bottom:10px; width:46px; height:46px; min-width:46px; font-size:22px; }
   .user-info-grid, .stats-grid, .difficulty-summary { grid-template-columns:1fr; }
   .option-row { grid-template-columns:1fr; }
