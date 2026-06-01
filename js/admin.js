@@ -404,7 +404,9 @@ function integerNumber(value){
 function newsPayload(patch){
   const title = String(patch.title || '').trim();
   const body = String(patch.body || '').trim();
-  if(!title || !body) throw new Error('タイトルと本文を入力してください');
+  const imageUrl = String(patch.image_url || '').trim();
+  if(!title) throw new Error('タイトルを入力してください');
+  if(!body && !imageUrl) throw new Error('本文または画像を入力してください');
   const publishedAt = String(patch.published_at || '').trim();
   const order = Number(patch.display_order);
   return {
@@ -412,7 +414,7 @@ function newsPayload(patch){
     body,
     published_at: publishedAt ? new Date(publishedAt).toISOString() : null,
     is_published: Boolean(patch.is_published),
-    image_url: String(patch.image_url || '').trim() || null,
+    image_url: imageUrl || null,
     image_alt: String(patch.image_alt || '').trim() || null,
     image_caption: String(patch.image_caption || '').trim() || null,
     display_order: Number.isFinite(order) ? Math.floor(order) : 0,

@@ -182,10 +182,14 @@ a { color: #42a5f5; }
 .admin-status-label { align-self:flex-end; display:inline-flex; align-items:center; justify-content:center; height:var(--admin-action-height); min-height:var(--admin-action-height); padding:0 12px; border:1px solid #444; border-radius:7px; background:#111; color:#ddd; font-size:13px; line-height:1; white-space:nowrap; }
 .admin-status-label.is-disabled { border-color:#7d2b2b; background:rgba(70,12,12,.72); color:#fff; }
 .admin-password-reset-btn { font-size:14px; white-space:nowrap; }
+.admin-inline-field { display:flex; align-items:center; gap:8px; }
+.admin-inline-field .admin-input { flex:1 1 auto; min-width:0; }
+.admin-field-help { display:block; margin-top:6px; color:#aaa; font-size:13px; line-height:1.45; }
 .admin-checkbox-label { align-self:flex-end; display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:var(--admin-action-height, 49px); padding:0 12px; border:1px solid #444; border-radius:7px; background:#111; color:#ddd; }
 .admin-checkbox-label input { width:18px; height:18px; accent-color:#42a5f5; }
 .admin-news-body { min-height:180px; }
 .admin-news-upload { display:grid; gap:10px; margin:12px 0; }
+.admin-news-url-actions { align-items:center; justify-content:flex-start; margin:8px 0 4px; }
 .admin-news-upload .admin-puzzle-file-control { flex-basis:auto; }
 .admin-news-upload-actions { justify-content:flex-start; }
 .admin-news-preview { margin:0; border:1px solid #333; border-radius:10px; background:#111; padding:10px; max-width:520px; }
@@ -395,6 +399,7 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
   .news-layout { grid-template-columns:1fr; }
   .news-list { max-height:260px; }
   .admin-puzzle-upload-fields, .admin-puzzle-upload-actions { flex-direction:column; align-items:stretch; }
+  .admin-inline-field { flex-direction:column; align-items:stretch; }
   .admin-puzzle-difficulty, .admin-puzzle-file-control { flex-basis:auto; width:100%; min-width:0; }
   .admin-puzzle-file-control { align-items:flex-start; flex-direction:column; }
   .admin-puzzle-file-name { width:100%; white-space:normal; overflow-wrap:anywhere; }

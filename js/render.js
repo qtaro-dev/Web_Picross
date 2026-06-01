@@ -253,12 +253,13 @@ function renderNews(state, actions){
       <img class="news-image" src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt||selected.title||NEWS_UI.title)}">
       ${image.caption?`<figcaption>${escapeHtml(image.caption)}</figcaption>`:''}
     </figure>`).join('')}</div>` : '';
+  const bodyText=displayNewsBody(selected);
   const detailHtml=news.loading ? `<div class="news-empty">${NEWS_UI.loading}</div>` :
     news.error ? `<div class="news-empty is-error">${escapeHtml(news.error||NEWS_UI.loadFailed)}</div>` :
     selected ? `<article class="news-detail">
       <div class="news-detail-date">${escapeHtml(selected.date)}</div>
       <h2>${escapeHtml(selected.title||NEWS_UI.title)}</h2>
-      <div class="news-body">${escapeHtml(selected.body)}</div>
+      ${bodyText?`<div class="news-body">${escapeHtml(bodyText)}</div>`:''}
       ${imagesHtml}
     </article>` : `<div class="news-empty">${NEWS_UI.empty}</div>`;
   root.innerHTML = `<div class="screen news-screen has-bg">${renderBackgroundLayer('news')}
@@ -280,6 +281,15 @@ function renderNews(state, actions){
     fallback.textContent=img.alt||NEWS_UI.imageFailed;
     img.replaceWith(fallback);
   }));
+}
+
+function displayNewsBody(item){
+  const imageUrls=new Set((item?.images||[]).map(image=>String(image.src||'').trim()).filter(Boolean));
+  return String(item?.body||'')
+    .split(/\r?\n/)
+    .filter(line=>!imageUrls.has(line.trim()))
+    .join('\n')
+    .trim();
 }
 
 function renderUserData(state, actions){
@@ -618,18 +628,23 @@ function adminNewsDetailHtml(row, upload=null, draft=null){
   return `<div class="admin-detail"><div class="admin-section-title">${isNew?'お知らせ新規作成':'お知らせ編集'}</div>
     <div class="admin-edit-grid">
       <label>タイトル<input id="adminNewsTitle" class="text-input admin-input" value="${escapeHtml(values.title||'')}"></label>
-      <label>公開日時<input id="adminNewsPublishedAt" class="text-input admin-input" type="datetime-local" value="${escapeHtml(datetimeLocalValue(values.published_at))}"></label>
+      <label>公開日時<div class="admin-inline-field"><input id="adminNewsPublishedAt" class="text-input admin-input" type="datetime-local" value="${escapeHtml(datetimeLocalValue(values.published_at))}"><button class="btn btn-slim" type="button" id="setAdminNewsNow">現在日時を入れる</button></div></label>
       <label>表示順<input id="adminNewsOrder" class="text-input admin-input" type="number" value="${escapeHtml(values.display_order??0)}"></label>
       <label class="admin-checkbox-label"><input id="adminNewsPublished" type="checkbox" ${values.is_published?'checked':''}>公開する</label>
     </div>
-    <label class="admin-subtitle">本文<textarea id="adminNewsBody" class="text-input admin-textarea admin-news-body">${escapeHtml(values.body||'')}</textarea></label>
+    <label class="admin-subtitle">本文<textarea id="adminNewsBody" class="text-input admin-textarea admin-news-body">${escapeHtml(values.body||'')}</textarea><span class="admin-field-help">本文はプレーンテキストで表示されます。HTMLタグは使用できません。本文または画像のどちらかが必要です。</span></label>
     <div class="admin-edit-grid">
       <label>画像URL<input id="adminNewsImageUrl" class="text-input admin-input" value="${escapeHtml(imageUrl)}" placeholder="assets/news/example.png"></label>
       <label>画像alt<input id="adminNewsImageAlt" class="text-input admin-input" value="${escapeHtml(values.image_alt||'')}"></label>
       <label>画像キャプション<input id="adminNewsImageCaption" class="text-input admin-input" value="${escapeHtml(values.image_caption||'')}"></label>
     </div>
+    <div class="admin-puzzle-upload-actions admin-news-url-actions">
+      <button class="btn btn-slim" id="copyAdminNewsImageUrl" ${imageUrl?'':'disabled'}>画像URLをコピー</button>
+      <span class="admin-field-help">画像URLは記事のメイン画像として本文下に表示されます。本文欄へURLやimgタグを貼る必要はありません。</span>
+    </div>
     <div class="admin-news-upload">
       <div class="admin-note">対応形式はPNG / JPG / WebP、上限は${escapeHtml(uploadLimitMb)}MBです。SVGはアップロードできません。画像URL手入力も引き続き利用できます。</div>
+      ${uploadState.publicUrl?`<div class="admin-status">画像をアップロードしました。保存すると記事に反映されます。この画像は記事のメイン画像として表示されます。</div>`:''}
       <div class="admin-puzzle-file-control">
         <label class="btn btn-slim admin-puzzle-file-button" for="adminNewsImageFile">画像を選択</label>
         <span class="admin-puzzle-file-name" id="adminNewsImageFileName">${escapeHtml(uploadState.fileName||'画像ファイルを選択してください')}</span>
@@ -644,7 +659,8 @@ function adminNewsDetailHtml(row, upload=null, draft=null){
       ${previewUrl?`<figure class="admin-news-preview"><img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(values.image_alt||'')}"><figcaption>${escapeHtml(uploadState.publicUrl?'アップロード済み画像':uploadState.fileName?'保存前プレビュー':'現在の画像')}</figcaption></figure>`:`<div class="admin-news-preview-empty">画像プレビューはありません</div>`}
     </div>
     <div class="admin-edit-grid">
-      <button class="btn btn-slim" id="saveAdminNews">${isNew?'作成':'保存'}</button>
+      <button class="btn btn-slim" id="draftAdminNews">下書き保存</button>
+      <button class="btn btn-slim" id="publishAdminNewsNow">今すぐ公開</button>
       ${isNew?'':`<button class="btn btn-slim btn-danger" id="deleteAdminNews">削除</button>`}
     </div>
   </div>`;
@@ -688,7 +704,14 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
   root.querySelector('#uploadAdminNewsImage')?.addEventListener('click',()=>actions.uploadSelectedAdminNewsImage(selectedNews?.id||'', collectAdminNewsPatch(root)));
   root.querySelector('#clearAdminNewsImage')?.addEventListener('click',()=>actions.clearAdminNewsImage(collectAdminNewsPatch(root)));
   root.querySelector('#deleteAdminNewsImage')?.addEventListener('click',()=>actions.deleteAdminNewsImage(root.querySelector('#adminNewsImageUrl')?.value, collectAdminNewsPatch(root)));
-  root.querySelector('#saveAdminNews')?.addEventListener('click',()=>actions.saveAdminNews(selectedNews?.id||'', collectAdminNewsPatch(root)));
+  root.querySelector('#setAdminNewsNow')?.addEventListener('click',()=>{ const input=root.querySelector('#adminNewsPublishedAt'); if(input) input.value=datetimeLocalNow(); });
+  root.querySelector('#copyAdminNewsImageUrl')?.addEventListener('click',async()=>{
+    const input=root.querySelector('#adminNewsImageUrl');
+    const ok=await actions.copyAdminNewsImageUrl(input?.value);
+    if(!ok) input?.select();
+  });
+  root.querySelector('#draftAdminNews')?.addEventListener('click',()=>actions.saveAdminNewsDraft(selectedNews?.id||'', collectAdminNewsPatch(root)));
+  root.querySelector('#publishAdminNewsNow')?.addEventListener('click',()=>actions.publishAdminNewsNow(selectedNews?.id||'', collectAdminNewsPatch(root)));
   root.querySelector('#deleteAdminNews')?.addEventListener('click',()=>actions.deleteAdminNews(selectedNews?.id));
   root.querySelector('#adminExportAll').addEventListener('click',()=>actions.exportUserDataJson());
   root.querySelector('#adminExportCurrent').addEventListener('click',()=>actions.exportCurrentUserJson());
@@ -1092,6 +1115,11 @@ function datetimeLocalValue(value){
   if(!value) return '';
   const d=new Date(value);
   if(Number.isNaN(d.getTime())) return '';
+  const pad=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function datetimeLocalNow(){
+  const d=new Date();
   const pad=n=>String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
