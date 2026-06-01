@@ -4,8 +4,12 @@ import { normalizePuzzles as normalizeLoadedPuzzles } from './data.js';
 import { BACKGROUNDS, BOARD_SIZE_OPTIONS_BY_DIFFICULTY, COLOR_MODES, DIFFICULTY_RULES, EDITOR_SAVE_KEY, MC_COLORS, MC_COLOR_MAP, difficultyFromFileName, normalizeColorId, normalizeColorMode, normalizeDifficulty, normalizeSizeForDifficulty } from './config.js';
 import { createPuzzleThumb } from './thumbs.js';
 const MAX_LOADED_SLOTS = 100;
-const DEFAULTS = { w:5, h:5, mode:'mono', difficulty:'beginner', stageNo:1, title:'エディタ作成', active:'1', cells:{}, importMessage:'', loadedPuzzles:[], loadedSelected:'1', loadedFileName:'', loadedFileDifficulty:'' };
+const EDITOR_SLOT_COLLAPSED_KEY = 'web_picross_editor_slot_panel_collapsed';
+const EDITOR_ZOOM_KEY = 'web_picross_editor_zoom';
+const EDITOR_ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const DEFAULTS = { w:5, h:5, mode:'mono', difficulty:'beginner', stageNo:1, title:'エディタ作成', active:'1', cells:{}, importMessage:'', loadedPuzzles:[], loadedSelected:'1', loadedFileName:'', loadedFileDifficulty:'', slotPanelCollapsed:false, zoom:1, editorUiRestored:false };
 const EDITOR_TEXT = { importJson:'JSON読込', importOk:'JSONを読み込みました', importLinked:'難易度と盤面サイズ候補を自動設定しました。', importInvalid:'読み込めるパズルデータではありません', importError:'JSONの読み込みに失敗しました', mixedDifficulty:'このJSONには複数の難易度が混在しているため読み込みできません。1つのJSONファイルには1つの難易度のみ含めてください。', fileDifficultyMismatch:'読み込んだファイル名とパズル難易度が一致しないため読み込みできません。', exportMixedDifficulty:'このファイルには複数の難易度が混在しているため保存できません。1つのJSONファイルには1つの難易度のみ含めてください。', loadedTitle:'読み込み済みJSONスロット', loadedFile:'読込中', notLoaded:'未読込', loadLoaded:'スロット読込', writeLoaded:'スロットへ保存', addLoaded:'空きへ追加', writeOk:'選択中スロットへ保存しました。PC上のJSONを更新するにはJSON出力してください。', addOk:'現在の盤面を空きスロットへ追加しました。', loadedEmpty:'空スロットです', slotOverwriteTitle:'スロット保存確認', slotOverwrite:'選択中スロットを上書きしますか？', slotLimit:'読み込みは最大100スロットまでです。101件目以降は無視しました。', saveNote:'スロット保存は画面内データへの反映です。\nPC上のJSONファイルを更新するにはJSON出力したファイルを保存してください。', editPlay:'エディットプレイ', exportSame:'読込ファイル名でJSON出力', exportAlias:'別名でJSON出力', filePlaceholder:'別名ファイル名', save:'保存', tempSaved:'一時保存', loadSaved:'一時保存読込', deleteSaved:'一時保存削除', saveOk:'保存しました', loadOk:'保存データを読み込みました', noSaved:'一時保存データがありません', overwriteTitle:'保存確認', overwrite:'同じ難易度・面数の保存があります。上書きしますか？', overwriteAction:'上書き' };
+Object.assign(EDITOR_TEXT, { slotOpen:'開く', slotClose:'閉じる', zoomOut:'縮小', zoomReset:'100%', zoomIn:'拡大', zoomLabel:'表示倍率', previewTitle:'完成プレビュー' });
 function renderEditorBackground(){
   const path=BACKGROUNDS.editor;
   return typeof path === 'string' ? `<div class="screen-bg" aria-hidden="true" style="background-image:url('${escapeAttr(path)}')"></div>` : '';
@@ -14,6 +18,12 @@ function renderEditorBackground(){
 export function renderEditor(state, actions){
   const root = state.root; if(!state.edit) state.edit = JSON.parse(JSON.stringify(DEFAULTS)); const E = state.edit;
   const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+  if(!E.editorUiRestored){
+    E.slotPanelCollapsed=readStoredBoolean(EDITOR_SLOT_COLLAPSED_KEY, false);
+    E.zoom=readStoredNumber(EDITOR_ZOOM_KEY, 1);
+    E.editorUiRestored=true;
+  }
+  E.zoom=normalizeEditorZoom(E.zoom);
   const rule=DIFFICULTY_RULES[E.difficulty]||DIFFICULTY_RULES.beginner; if(!rule.color&&E.mode==='color') E.mode='mono';
   if(E.mode==='mono') E.active='1';
   const currentSize=`${E.w}x${E.h}`; const sizeList=BOARD_SIZE_OPTIONS_BY_DIFFICULTY[E.difficulty]||BOARD_SIZE_OPTIONS_BY_DIFFICULTY.beginner;
@@ -40,12 +50,17 @@ export function renderEditor(state, actions){
         </div>
         <div class="editor-body">
           <aside class="editor-side">
-            <div class="editor-side-section">
-              <div class="editor-side-title">${EDITOR_TEXT.loadedTitle}</div>
-              <div id="loadedSlots" class="slot-list" role="listbox" aria-label="${EDITOR_TEXT.loadedTitle}"></div>
-              <button class="btn editor-side-btn" id="loadLoaded">${EDITOR_TEXT.loadLoaded}</button>
-              <button class="btn editor-side-btn" id="writeLoaded">${EDITOR_TEXT.writeLoaded}</button>
-              <button class="btn editor-side-btn" id="addLoaded">${EDITOR_TEXT.addLoaded}</button>
+            <div class="editor-side-section editor-slot-section ${E.slotPanelCollapsed?'is-collapsed':''}">
+              <div class="editor-side-title editor-side-title-row">
+                <span>${EDITOR_TEXT.loadedTitle}</span>
+                <button class="btn btn-slim editor-collapse-btn" id="toggleLoadedSlots" aria-expanded="${!E.slotPanelCollapsed}">${E.slotPanelCollapsed?EDITOR_TEXT.slotOpen:EDITOR_TEXT.slotClose}</button>
+              </div>
+              <div class="editor-slot-panel-body">
+                <div id="loadedSlots" class="slot-list" role="listbox" aria-label="${EDITOR_TEXT.loadedTitle}"></div>
+                <button class="btn editor-side-btn" id="loadLoaded">${EDITOR_TEXT.loadLoaded}</button>
+                <button class="btn editor-side-btn" id="writeLoaded">${EDITOR_TEXT.writeLoaded}</button>
+                <button class="btn editor-side-btn" id="addLoaded">${EDITOR_TEXT.addLoaded}</button>
+              </div>
             </div>
             <div class="editor-side-section">
               <div class="editor-side-title">${EDITOR_TEXT.tempSaved}</div>
@@ -76,6 +91,18 @@ export function renderEditor(state, actions){
               <label>パズル名：<input class="filename" id="titleInput" value="${escapeAttr(E.title||'')}" /></label>
             </div>
             <div class="editor-message" id="importMessage">${E.importMessage||''}</div>
+            <div class="editor-assist-row">
+              <div class="editor-zoom-controls" role="group" aria-label="${EDITOR_TEXT.zoomLabel}">
+                <button class="btn btn-slim" id="editorZoomOut">${EDITOR_TEXT.zoomOut}</button>
+                <button class="btn btn-slim" id="editorZoomReset">${EDITOR_TEXT.zoomReset}</button>
+                <div class="editor-zoom-label">${EDITOR_TEXT.zoomLabel}: ${Math.round(E.zoom*100)}%</div>
+                <button class="btn btn-slim" id="editorZoomIn">${EDITOR_TEXT.zoomIn}</button>
+              </div>
+              <div class="editor-live-preview">
+                <div class="editor-live-preview-title">${EDITOR_TEXT.previewTitle}</div>
+                <canvas id="editorThumbPreview" class="editor-live-preview-canvas" width="160" height="160" aria-label="${EDITOR_TEXT.previewTitle}"></canvas>
+              </div>
+            </div>
             <div class="palette" id="palette"></div>
             <div class="editor-bar">
               <button class="btn" id="test">${EDITOR_TEXT.editPlay}</button>
@@ -102,7 +129,7 @@ export function renderEditor(state, actions){
     sw.textContent=color.id; sw.title=`${color.id} = ${color.label}`;
     sw.addEventListener('click', ()=>{ if(!enabled) return; E.active=color.id; render(state, actions); }); pal.appendChild(sw); }
 
-  const grid=root.querySelector('#grid'); const px=24;
+  const grid=root.querySelector('#grid'); const px=Math.round(24*E.zoom);
   grid.style.gridTemplateColumns=`repeat(${E.w}, ${px}px)`; grid.style.gridTemplateRows=`repeat(${E.h}, ${px}px)`;
   
   // === Data preview box ===
@@ -127,6 +154,7 @@ export function renderEditor(state, actions){
     const obj = buildPuzzle(E, gridNum, gridStr);
     obj.title = root.querySelector('#titleInput')?.value || obj.title;
     root.querySelector('#previewJson').textContent = JSON.stringify(obj, null, 2);
+    drawEditorThumbPreview(root.querySelector('#editorThumbPreview'), E, gridNum);
   };
   updatePreview();
   grid.addEventListener('click', updatePreview);
@@ -170,6 +198,10 @@ for(let y=0;y<E.h;y++){ for(let x=0;x<E.w;x++){ const k=`${x},${y}`; const v=E.c
   root.querySelector('#colorMode').addEventListener('change', e=>{ E.mode=normalizeColorMode(e.target.value,E.difficulty); if(E.mode==='mono'){ E.active='1'; normalizeMonoCells(E); } render(state, actions); });
   root.querySelector('#stageNo').addEventListener('input', e=>{ E.stageNo=clamp(parseInt(e.target.value,10)||1,1,MAX_LOADED_SLOTS); E.loadedSelected=String(E.stageNo); updatePreview(); });
   root.querySelector('#titleInput').addEventListener('input', e=>{ E.title=e.target.value; updatePreview(); });
+  root.querySelector('#toggleLoadedSlots').addEventListener('click', ()=>{ E.slotPanelCollapsed=!E.slotPanelCollapsed; writeStoredValue(EDITOR_SLOT_COLLAPSED_KEY, E.slotPanelCollapsed?'1':'0'); render(state, actions); });
+  root.querySelector('#editorZoomOut').addEventListener('click', ()=>changeEditorZoom(E, -1, state, actions));
+  root.querySelector('#editorZoomReset').addEventListener('click', ()=>{ E.zoom=1; writeStoredValue(EDITOR_ZOOM_KEY, String(E.zoom)); render(state, actions); });
+  root.querySelector('#editorZoomIn').addEventListener('click', ()=>changeEditorZoom(E, 1, state, actions));
   root.querySelector('#importJson').addEventListener('click', async ()=>{ const file=root.querySelector('#importFile').files?.[0]; if(!file){ actions.notify(EDITOR_TEXT.importJson, EDITOR_TEXT.importInvalid); return; } try{ const text=await file.text(); const json=JSON.parse(text); const inferred=difficultyFromFileName(file.name); const check=validateImportDifficulty(json, inferred, E.difficulty); if(!check.ok){ E.importMessage=check.message; actions.notify(EDITOR_TEXT.importJson, check.message); return; } const puzzles=normalizeSlotList(normalizeLoadedPuzzles(json, {mode:DIFFICULTY_RULES[check.difficulty]?.modeKey})).map(p=>normalizePuzzleDifficulty(p, check.difficulty)); if(!puzzles.length) throw new Error(EDITOR_TEXT.importInvalid); E.loadedFileName=file.name||''; E.loadedFileDifficulty=check.difficulty; E.loadedPuzzles=puzzles; E.loadedSelected=String(puzzles[0].stageNo||1); applyPuzzle(E,puzzles[0], check.difficulty); E.importMessage=`${EDITOR_TEXT.importOk}（${puzzles.length}件）${inferred?' '+EDITOR_TEXT.importLinked:''}${puzzles.length>=MAX_LOADED_SLOTS?' / '+EDITOR_TEXT.slotLimit:''}`; render(state, actions); }catch{ E.importMessage=EDITOR_TEXT.importError; actions.notify(EDITOR_TEXT.importJson, EDITOR_TEXT.importError); } });
   root.querySelector('#loadedSlots').addEventListener('click', e=>{ const card=e.target.closest?.('.slot-card'); if(!card) return; E.loadedSelected=card.dataset.slot; E.stageNo=getSelectedSlot(E); render(state, actions); });
   root.querySelector('#loadLoaded').addEventListener('click', ()=>{ const slot=getSelectedSlot(E); const p=findSlotPuzzle(E.loadedPuzzles, slot); if(!p){ loadEmptySlot(E, slot); E.importMessage=EDITOR_TEXT.loadedEmpty; render(state, actions); return; } applyPuzzle(E,p,E.loadedFileDifficulty); E.loadedSelected=String(slot); E.importMessage=EDITOR_TEXT.loadOk; render(state, actions); });
@@ -183,6 +215,51 @@ for(let y=0;y<E.h;y++){ for(let x=0;x<E.w;x++){ const k=`${x},${y}`; const v=E.c
   root.querySelector('#exportAlias').addEventListener('click', ()=>downloadJson(E, (root.querySelector('#fname').value||defaultAliasName()).trim()));
   root.querySelector('#backTop').addEventListener('click', ()=> actions.goto('menu'));
   root.querySelector('#backBottom').addEventListener('click', ()=> actions.goto('menu'));
+}
+function normalizeEditorZoom(value){
+  const numeric=Number(value)||1;
+  return EDITOR_ZOOM_LEVELS.reduce((best,level)=>Math.abs(level-numeric)<Math.abs(best-numeric)?level:best, 1);
+}
+function changeEditorZoom(E, delta, state, actions){
+  const current=normalizeEditorZoom(E.zoom);
+  const index=Math.max(0, EDITOR_ZOOM_LEVELS.indexOf(current));
+  E.zoom=EDITOR_ZOOM_LEVELS[Math.max(0, Math.min(EDITOR_ZOOM_LEVELS.length-1, index+delta))] || 1;
+  writeStoredValue(EDITOR_ZOOM_KEY, String(E.zoom));
+  render(state, actions);
+}
+function readStoredBoolean(key, fallback){
+  try{ const value=localStorage.getItem(key); return value===null?fallback:value==='1'; }catch{ return fallback; }
+}
+function readStoredNumber(key, fallback){
+  try{ const value=Number(localStorage.getItem(key)); return Number.isFinite(value)&&value>0?value:fallback; }catch{ return fallback; }
+}
+function writeStoredValue(key, value){
+  try{ localStorage.setItem(key, value); }catch{}
+}
+function drawEditorThumbPreview(canvas, E, grid=toGrid(E)){
+  if(!canvas) return;
+  const ctx=canvas.getContext?.('2d');
+  if(!ctx) return;
+  const size=Math.min(canvas.width, canvas.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#111';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const w=Math.max(1, Number(E.w)||1);
+  const h=Math.max(1, Number(E.h)||1);
+  const scale=Math.max(1, Math.floor((size-12)/Math.max(w,h)));
+  const drawW=w*scale;
+  const drawH=h*scale;
+  const offsetX=Math.floor((canvas.width-drawW)/2);
+  const offsetY=Math.floor((canvas.height-drawH)/2);
+  ctx.fillStyle='#222';
+  ctx.fillRect(offsetX-1, offsetY-1, drawW+2, drawH+2);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const value=normalizeColorId(grid[y]?.[x]);
+      ctx.fillStyle=value==='0'?'#080808':((E.mode||'mono')==='color'?(MC_COLOR_MAP[value]?.hex||'#e0e0e0'):'#e0e0e0');
+      ctx.fillRect(offsetX+x*scale, offsetY+y*scale, scale, scale);
+    }
+  }
 }
 function toGrid(E){ return Array.from({length:E.h},(_,y)=>Array.from({length:E.w},(_,x)=>normalizeColorId(E.cells[`${x},${y}`]??'0'))); }
 function escapeAttr(s){ return String(s).replace(/[&<>"']/g,ch=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch])); }

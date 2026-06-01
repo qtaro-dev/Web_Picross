@@ -345,6 +345,10 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
 .editor-side { display:flex; flex-direction:column; gap:14px; width:100%; position:sticky; top:18px; }
 .editor-side-section { border:1px solid #444; border-radius:10px; background:rgba(10,10,10,.94); padding:12px; display:flex; flex-direction:column; gap:10px; }
 .editor-side-title { font-size:16px; font-weight:700; text-align:center; }
+.editor-side-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:left; }
+.editor-collapse-btn { padding:6px 10px; font-size:14px; border-radius:8px; white-space:nowrap; }
+.editor-slot-panel-body { display:flex; flex-direction:column; gap:10px; }
+.editor-slot-section.is-collapsed .editor-slot-panel-body { display:none; }
 .editor-file-tools { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; border:1px solid #444; border-radius:10px; background:rgba(10,10,10,.94); padding:10px; }
 .editor-file-input { width:100%; font-size:14px; padding:8px; }
 .editor-file-name { grid-column:1 / -1; font-size:13px; color:#ddd; border:1px solid #333; border-radius:8px; padding:6px 8px; background:#111; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -366,6 +370,12 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
 .editor-side-btn { width:100%; padding:10px 12px; font-size:16px; border-radius:10px; }
 .editor-main-panel { min-width:0; display:flex; flex-direction:column; align-items:center; gap:14px; }
 .editor-bar { display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; }
+.editor-assist-row { width:100%; display:flex; gap:14px; align-items:stretch; justify-content:center; flex-wrap:wrap; }
+.editor-zoom-controls { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; border:1px solid #444; border-radius:10px; background:rgba(10,10,10,.94); padding:10px; }
+.editor-zoom-label { min-width:112px; padding:6px 10px; border:1px solid #444; border-radius:8px; background:#111; text-align:center; font-weight:700; }
+.editor-live-preview { width:190px; border:1px solid #444; border-radius:10px; background:rgba(10,10,10,.94); padding:10px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.editor-live-preview-title { font-size:14px; font-weight:700; }
+.editor-live-preview-canvas { width:160px; height:160px; border:1px solid #555; background:#111; image-rendering:pixelated; }
 .mode-toggle { display:flex; gap:8px; align-items:center; }
 .toggle-btn { padding:10px 16px; font-size:17px; border-radius:10px; }
 .toggle-btn.is-active { border-color:#42a5f5; background:#132235; box-shadow:0 0 0 3px rgba(66,165,245,.35) inset; }
@@ -382,5 +392,5 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
   .editor-side { order:2; }
   .editor-main-panel { order:1; }
 }
-.editor-grid { display:grid; gap:2px; margin-top:12px; }
+.editor-grid { display:grid; gap:2px; margin-top:12px; max-width:100%; overflow:auto; }
 .filename { background:#111; color:#fff; border:1px solid #555; border-radius:8px; padding:10px 12px; font-size:18px; width:min(360px, 80vw); }
