@@ -14,7 +14,7 @@ const GAME_MINIMAP_ZOOM_KEY = 'web_picross_endless_minimap_zoom';
 const GAME_MINIMAP_ZOOMS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
 const GAME_UI = { backSelect:'← セレクトに戻る', backEditor:'← エディタに戻る', backMenu:'メニューへ戻る', clear:'やりなおし', check:'判定', giveUp:'ギブアップ', hint:'ヒント', zoomOut:'縮小', zoomIn:'拡大', panelHide:'操作パネルを隠す', panelShow:'操作パネルを表示', minimapTitle:'ミニマップ', minimapHide:'ミニマップを隠す', minimapShow:'ミニマップを表示', minimapZoom:'倍率', timeLabel:'残り時間', unlimited:'無制限', timePending:'--:--', inputHelp:'左クリック：塗る／解除　右クリック：×（マーク）', noPuzzle:'パズルが選択されていません。' };
 const MENU_UI = { notice:'お知らせ', noticePending:'お知らせ機能は準備中です。', editor:'エディタ' };
-const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConfirmation:'確認メールを再送する' };
+const LOGIN_UI = { passwordReset:'パスワードを忘れた場合', resendConfirmation:'確認メールを再送する', loginHelp:'ログインはユーザー名とパスワードのみで行えます。', registerEmail:'ユーザー登録用メールアドレス', registerEmailHelp:'登録・確認メール用 / ログイン時は不要です', remember:'ユーザー名とパスワードを記録する', resetEmail:'パスワード再設定メールアドレス', resetSend:'再設定メールを送信', resendEmail:'確認メール再送先メールアドレス', resendSend:'確認メールを再送', closeSupport:'閉じる' };
 const RECOVERY_UI = { title:'新しいパスワードの設定', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード（確認）', update:'パスワードを更新する', cancel:'ログイン画面へ戻る' };
 const USER_DATA_UI = { title:'ユーザーデータ', menuTitle:'メニュー画面', button:'ユーザーデータ', back:'← 戻る', reload:'ユーザーデータ再読込', empty:'まだプレイ記録がありません。ゲームをクリア、失敗、またはギブアップすると記録されます。', note:'現在ユーザーの進行状況を表示しています。', accountTitle:'アカウント管理', currentEmail:'現在のメールアドレス', newEmail:'新しいメールアドレス', confirmEmail:'新しいメールアドレス確認', requestEmailChange:'メールアドレス変更申請', emailChangeHelp:'確認メールの完了後に新しいメールアドレスへ反映されます。', newPassword:'新しいパスワード', confirmPassword:'新しいパスワード確認', changePassword:'パスワード変更', deleteRequest:'アカウント削除申請', localAccountNote:'Supabaseログイン時にパスワード変更と削除申請を利用できます。' };
 const RANKING_UI = { title:'ランキング', back:'← 戻る', current:'現在の自分の順位', empty:'まだランキングデータがありません。パズルをクリアするとランキングに表示されます。', noUserRank:'まだこの難易度のクリア記録がありません。', sourceLocal:'Live Server環境では現在ユーザーのlocalStorage内データのみを表示します。' };
@@ -119,19 +119,28 @@ function renderLogin(state, actions){
   root.innerHTML = `<div class="screen login-screen has-bg">${renderBackgroundLayer('login')}
       <div class="login-panel">
       <div class="login-title">ログイン / ユーザー登録</div>
+      <div class="login-mode-note">${LOGIN_UI.loginHelp}</div>
       <label class="login-field">ユーザー名<input id="loginUser" class="text-input" autocomplete="username" maxlength="${AUTH_LIMITS.usernameMax}" value="${escapeHtml(form.username||'')}"><span class="input-help">10文字まで / 日本語OK / 記号は _ - のみ</span></label>
       <label class="login-field">パスワード<span class="password-input-wrap"><input id="loginPass" class="text-input" type="password" autocomplete="current-password" minlength="${AUTH_LIMITS.passwordMin}" maxlength="${AUTH_LIMITS.passwordMax}" value="${escapeHtml(form.password||'')}"><button class="password-toggle" type="button" data-toggle-password="#loginPass" aria-label="パスワードを表示">表示</button></span><span class="input-help">${AUTH_LIMITS.passwordMin}〜${AUTH_LIMITS.passwordMax}文字 / 半角英数字・記号</span></label>
       ${passwordStrengthHtml(form.password||'', form.username||'', form.email||'')}
-      <label class="login-field">メールアドレス<input id="loginEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}" value="${escapeHtml(form.email||'')}"><span class="input-help">50文字まで</span></label>
+      <label class="login-field register-email-field">${LOGIN_UI.registerEmail}<input id="loginEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}" value="${escapeHtml(form.email||'')}"><span class="input-help">${AUTH_LIMITS.emailMax}文字まで / ${LOGIN_UI.registerEmailHelp}</span></label>
       <div class="login-support-actions">
         <button class="password-reset-action" type="button" id="passwordReset">${LOGIN_UI.passwordReset}</button>
         <button class="password-reset-action" type="button" id="resendConfirmation">${LOGIN_UI.resendConfirmation}</button>
+      </div>
+      <div class="login-support-panel" id="passwordResetPanel" hidden>
+        <label class="login-field">${LOGIN_UI.resetEmail}<input id="passwordResetEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}"><span class="input-help">${AUTH_LIMITS.emailMax}文字まで</span></label>
+        <div class="login-support-panel-actions"><button class="btn btn-slim" id="sendPasswordReset">${LOGIN_UI.resetSend}</button><button class="btn btn-slim" type="button" data-close-support>${LOGIN_UI.closeSupport}</button></div>
+      </div>
+      <div class="login-support-panel" id="resendConfirmationPanel" hidden>
+        <label class="login-field">${LOGIN_UI.resendEmail}<input id="resendConfirmationEmail" class="text-input" type="email" autocomplete="email" maxlength="${AUTH_LIMITS.emailMax}"><span class="input-help">${AUTH_LIMITS.emailMax}文字まで</span></label>
+        <div class="login-support-panel-actions"><button class="btn btn-slim" id="sendResendConfirmation">${LOGIN_UI.resendSend}</button><button class="btn btn-slim" type="button" data-close-support>${LOGIN_UI.closeSupport}</button></div>
       </div>
       <div class="login-actions">
         <button class="btn" id="loginBtn">ログイン</button>
         <button class="btn" id="registerBtn">ユーザー登録</button>
       </div>
-      <label class="remember-login"><input id="rememberLogin" type="checkbox" ${form.remember?'checked':''}>メールアドレスとパスワードを記録する</label>
+      <label class="remember-login"><input id="rememberLogin" type="checkbox" ${form.remember?'checked':''}>${LOGIN_UI.remember}</label>
       <div class="login-message ${state.authMessage?'is-error':''}" aria-live="polite">${escapeHtml(state.authMessage)}</div>
     </div>
   </div>`;
@@ -141,7 +150,7 @@ function renderLogin(state, actions){
   const remember=root.querySelector('#rememberLogin');
   const loginBtn=root.querySelector('#loginBtn');
   const values=()=>[user.value, pass.value, remember.checked, email.value];
-  const refreshLoginButton=()=>{ loginBtn.disabled=!((email.value.trim()||user.value.trim())&&pass.value); };
+  const refreshLoginButton=()=>{ loginBtn.disabled=!(user.value.trim()&&pass.value); };
   const message=root.querySelector('.login-message');
   const syncForm=()=>{ actions.updateLoginForm({username:user.value, email:email.value, password:pass.value}); updatePasswordStrength(root, pass.value, user.value, email.value); if(message){ message.textContent=''; message.classList.remove('is-error'); } refreshLoginButton(); };
   refreshLoginButton();
@@ -151,8 +160,14 @@ function renderLogin(state, actions){
   remember.addEventListener('change', ()=>actions.updateLoginForm({username:user.value, email:email.value, password:pass.value, remember:remember.checked}));
   root.querySelector('#loginBtn').addEventListener('click',()=>actions.login(...values()));
   root.querySelector('#registerBtn').addEventListener('click',()=>actions.registerUser(user.value, pass.value, email.value));
-  root.querySelector('#passwordReset').addEventListener('click',()=>actions.requestPasswordReset(email.value));
-  root.querySelector('#resendConfirmation').addEventListener('click',()=>actions.resendConfirmationEmail(email.value));
+  const resetPanel=root.querySelector('#passwordResetPanel');
+  const resendPanel=root.querySelector('#resendConfirmationPanel');
+  const showSupport=panel=>{ resetPanel.hidden=panel!=='reset'; resendPanel.hidden=panel!=='resend'; };
+  root.querySelector('#passwordReset').addEventListener('click',()=>{ showSupport('reset'); root.querySelector('#passwordResetEmail').focus(); });
+  root.querySelector('#resendConfirmation').addEventListener('click',()=>{ showSupport('resend'); root.querySelector('#resendConfirmationEmail').focus(); });
+  root.querySelectorAll('[data-close-support]').forEach(btn=>btn.addEventListener('click',()=>showSupport('')));
+  root.querySelector('#sendPasswordReset').addEventListener('click',()=>actions.requestPasswordReset(root.querySelector('#passwordResetEmail').value));
+  root.querySelector('#sendResendConfirmation').addEventListener('click',()=>actions.resendConfirmationEmail(root.querySelector('#resendConfirmationEmail').value));
   pass.addEventListener('keydown',e=>{ if(e.key==='Enter') actions.login(...values()); });
   bindPasswordToggles(root);
 }

@@ -2,7 +2,7 @@ import { render, updateGameMinimap } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
 import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
-import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
+import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, resolveSupabaseLoginEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
 import { checkAdminServerApi, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking, uploadAdminPuzzles } from './admin.js';
 import { supabaseNotConfiguredMessage } from './supabaseClient.js';
@@ -80,19 +80,18 @@ function authValidationMessage(results){
 async function login(username,password,remember=stateRef.loginForm?.remember,email=stateRef.loginForm?.email){
   username=String(username||'').trim(); email=String(email||'').trim(); password=String(password||'');
   stateRef.loginForm={username, email, password, remember:!!remember};
-  if((!username&&!email)||!password){ stateRef.authMessage=AUTH_TEXT.required; render(stateRef, actionsAPI); return false; }
+  if(!username||!password){ stateRef.authMessage=AUTH_TEXT.required; render(stateRef, actionsAPI); return false; }
   const emailCheck = validateEmail(email, { required:false });
-  const usernameCheck = username ? validateUsername(username) : {ok:true, errors:[]};
-  const validation = authValidationMessage([emailCheck, usernameCheck]);
+  const validation = authValidationMessage([emailCheck, validateUsername(username)]);
   if(validation){ stateRef.authMessage=validation; render(stateRef, actionsAPI); return false; }
   const supabaseAvailable=await isSupabaseAuthAvailable();
-  if(supabaseAvailable&&!email&&!(username===DEV_USER.username&&password===DEV_USER.password)){
-    stateRef.authMessage=AUTH_TEXT.emailRequired;
-    render(stateRef, actionsAPI);
-    return false;
-  }
   try{
-    const supabase=supabaseAvailable&&email ? await loginSupabaseUser(email,password) : {available:false};
+    let loginEmail=email;
+    if(supabaseAvailable&&!loginEmail&&!(username===DEV_USER.username&&password===DEV_USER.password)){
+      const resolved=await resolveSupabaseLoginEmail(username);
+      loginEmail=resolved.email||'';
+    }
+    const supabase=supabaseAvailable&&loginEmail ? await loginSupabaseUser(loginEmail,password) : {available:false};
     if(supabase.available){
       if(supabase.emailUnconfirmed){
         stateRef.authMessage=EMAIL_VERIFICATION_TEXT.required;
@@ -107,7 +106,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember,ema
       }
       stateRef.currentUser=supabase.user;
       prepareUserData('Supabase Auth', false);
-      saveRememberedLogin(username, email, password, remember);
+      saveRememberedLogin(username, '', password, remember);
       stateRef.authMessage='';
       goto('menu');
       return true;
@@ -572,7 +571,6 @@ function loadRememberedLogin(){
     remember=localStorage.getItem(REMEMBER_LOGIN_KEY)==='true';
     if(remember){
       username=localStorage.getItem(SAVED_USERNAME_KEY)||'';
-      email=localStorage.getItem(SAVED_EMAIL_KEY)||'';
       password=localStorage.getItem(SAVED_PASSWORD_KEY)||'';
     }
   }catch{}
@@ -589,7 +587,7 @@ function saveRememberedLogin(username,email,password,remember){
     localStorage.setItem(REMEMBER_LOGIN_KEY, remember?'true':'false');
     if(remember){
       localStorage.setItem(SAVED_USERNAME_KEY, username);
-      localStorage.setItem(SAVED_EMAIL_KEY, email);
+      localStorage.removeItem(SAVED_EMAIL_KEY);
       localStorage.setItem(SAVED_PASSWORD_KEY, password);
     }else{
       localStorage.removeItem(SAVED_USERNAME_KEY);

@@ -182,6 +182,20 @@ export async function loginSupabaseUser(email, password){
   return { available:true, user:publicProfile(profile, data.user, profile?.username) };
 }
 
+export async function resolveSupabaseLoginEmail(username){
+  if(!(await isSupabaseConfigured())) return { available:false };
+  const response = await fetch('/api/resolve-login-email', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify({ username:normalizeUsername(username) }),
+  });
+  const body = await response.json().catch(()=>({}));
+  if(!response.ok || body.ok === false){
+    throw new Error('ユーザー名またはパスワードが違います');
+  }
+  return { available:true, email:normalizeEmail(body.email) };
+}
+
 export async function logoutSupabaseUser(){
   if(!(await isSupabaseConfigured())) return false;
   const client = await getSupabaseClient();

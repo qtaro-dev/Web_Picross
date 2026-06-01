@@ -10,6 +10,7 @@ const adminUpdateAuthEmailHandler = require('./api/admin-update-auth-email');
 const adminUploadPuzzlesHandler = require('./api/admin-upload-puzzles');
 const adminResetAuthUserHandler = require('./api/admin-reset-auth-user');
 const userChangeEmailHandler = require('./api/user-change-email');
+const resolveLoginEmailHandler = require('./api/resolve-login-email');
 
 const rootDir = __dirname;
 const port = Number(process.env.PORT || 8000);
@@ -300,6 +301,10 @@ async function handleApi(req, res){
   }
   if(req.method === 'POST' && req.url === '/api/user-change-email'){
     await invokeApiHandler(userChangeEmailHandler, req, res);
+    return;
+  }
+  if(req.method === 'POST' && req.url === '/api/resolve-login-email'){
+    await invokeApiHandler(resolveLoginEmailHandler, req, res);
     return;
   }
   if(req.method === 'GET' && req.url?.startsWith('/api/ranking')){
