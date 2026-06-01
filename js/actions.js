@@ -6,7 +6,7 @@ import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDele
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
 import { checkAdminServerApi, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking, uploadAdminPuzzles } from './admin.js';
 import { supabaseNotConfiguredMessage } from './supabaseClient.js';
-const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'解けています', checkMessage:(mistakes,empty)=>`間違い: ${mistakes}個\n未入力: ${empty}個`, pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
+const ACTION_TEXT = { noHint:'ヒントにできる行・列がありません', noHintLeft:'ヒントを使い切りました。', hintTitle:'ヒントを使いますか？', hintMessage:'未完成の行または列を1つ選び、正解セルと×を表示します。', hintRow:index=>`${index + 1}行目の正解セルと×を表示しました。`, hintCol:index=>`${index + 1}列目の正解セルと×を表示しました。`, giveUpTitle:'ギブアップしますか？', giveUpMessage:'記録はクリアされます。よろしいですか？', exitTitle:'確認', exitMessage:'記録はクリアされます。よろしいですか？', retryTitle:'やりなおし', retryMessage:'この面を最初からやりなおしますか？', puzzleMissing:'このパズルのデータがありません', clearTitle:'クリア！', clearMessage:'パズルを完成しました。', solvedTitle:'判定', solvedMessage:'正解です', checkIncompleteMessage:'まだ完成していません', checkMistakeMessage:'まだ違うところがあります', pendingTitle:'準備中', resetClearTitle:'クリア状況リセット', resetClearMessage:'現在保存されているクリア状態を削除します。パズルデータとエディタ一時保存は削除されません。', resetUserTitle:'ユーザーデータ削除', resetUserMessage:'ゲーム進行データを削除します。ログイン情報、固定ユーザー、エディタ一時保存、パズルJSONは削除されません。', resetDone:'削除しました', cancel:'キャンセル', ok:'OK', delete:'削除', use:'使う', giveUp:'ギブアップ', select:'セレクトへ戻る', retry:'リトライ', restart:'やりなおし' };
 const AUTH_TEXT = { required:'ユーザー名またはメールアドレスとパスワードを入力してください', registerRequired:'ユーザー名、パスワード、メールアドレスを入力してください', emailRequired:'メールアドレスを入力してください', loginFailed:'ユーザー名、メールアドレス、またはパスワードが違います', registerOffline:'サーバ未接続のため登録できません', registered:'登録しました。', duplicate:'同じユーザー名は登録できません', passwordMismatch:'新しいパスワードが一致しません', passwordShort:`パスワードは${AUTH_LIMITS.passwordMin}文字以上で入力してください`, passwordChanged:'パスワードを変更しました', supabaseOnly:'この操作はSupabaseログイン時のみ利用できます', deleteTitle:'アカウント削除申請', deleteMessage:'この画面ではアカウントを直接削除しません。\n削除申請として受け付け、管理者確認後に対応します。\n\nアカウント削除はAuthユーザー、プロフィール、進行データ、ランキング記録に影響します。安全のため、この画面では直接削除しません。', deleteRequestConfirm:'削除申請する', deleteRequested:'アカウント削除申請を受け付けました。\n管理者確認後に対応します。', deleteDuplicate:'すでにアカウント削除申請済みです。\n管理者確認後に対応します。', deleteFailed:'アカウント削除申請の保存に失敗しました。\n時間をおいて再度お試しください。' };
 const REGISTER_TEXT = { title:'ユーザー登録', message:'登録しました。\n登録したユーザでログインしますか？', yes:'はい', no:'いいえ' };
 const DEV_USER = { username:'admin', password:'admin' };
@@ -829,18 +829,16 @@ function pauseTimer(reason='modal'){ if(stateRef.screen!=='game'||stateRef.gameS
 function resumeTimer(){ if(stateRef.screen!=='game'||stateRef.gameStatus!=='playing'||!stateRef.timer.paused||stateRef.modal) return; stateRef.timer.running=stateRef.timer.limit!=null; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
 function stopTimer(){ if(stateRef.timer.intervalId) clearInterval(stateRef.timer.intervalId); stateRef.timer.intervalId=null; stateRef.timer.running=false; stateRef.timer.paused=false; stateRef.timer.pauseReason=null; }
 function finishClear(){ if(stateRef.gameStatus==='cleared') return false; if(accountDisabled()){ notify(DISABLED_ACCOUNT_TEXT.title, DISABLED_ACCOUNT_TEXT.message); return false; } stateRef.gameStatus='cleared'; markCurrentPuzzleSolved(); const entry=recordResult('clear'); saveServerProgress(entry,'clear'); stopTimer(); cancelDrag(); notify(ACTION_TEXT.clearTitle, ACTION_TEXT.clearMessage, [{label:ACTION_TEXT.ok, action:'close'}, {label:ACTION_TEXT.select, action:'backToSelect'}]); return true; }
-function showCheckResult(solved){ if(stateRef.gameStatus==='cleared') return false; if(solved) return finishClear(); const result=checkBoardState(); notify(ACTION_TEXT.solvedTitle, ACTION_TEXT.checkMessage(result.mistakes, result.empty)); return false; }
+function showCheckResult(solved){ if(stateRef.gameStatus==='cleared') return false; if(solved) return finishClear(); const result=checkBoardState(); notify(ACTION_TEXT.solvedTitle, result.mistakes>0?ACTION_TEXT.checkMistakeMessage:ACTION_TEXT.checkIncompleteMessage); return false; }
 function checkBoardState(){
-  const G=stateRef.game; const result={mistakes:0, empty:0}; if(!G) return result;
+  const G=stateRef.game; const result={mistakes:0, incomplete:0}; if(!G) return result;
   for(let y=0;y<G.h;y++) for(let x=0;x<G.w;x++){
-    const k=`${x},${y}`; const value=G.solution[y]?.[x]; const shouldFill=isFilledValue(value); const filled=stateRef.filled.has(k); const crossed=stateRef.crossed.has(k);
+    const k=`${x},${y}`; const value=G.solution[y]?.[x]; const shouldFill=isFilledValue(value); const filled=stateRef.filled.has(k);
     if(shouldFill){
-      if(crossed) result.mistakes++;
-      else if(!filled) result.empty++;
+      if(!filled) result.incomplete++;
       else if(G.colorMode==='color'&&normalizeColorId(stateRef.cellColors.get(k))!==normalizeColorId(value)) result.mistakes++;
     }else{
       if(filled) result.mistakes++;
-      else if(!crossed) result.empty++;
     }
   }
   return result;
