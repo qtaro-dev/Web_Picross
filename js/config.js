@@ -6,7 +6,7 @@ export const DIFFICULTY_RULES = {
   endless: { key:'endless', modeKey:'Endless', label:'エンドレス', sizes:[[20,20],[25,25],[30,30],[40,40],[50,50]], color:true, min:20, max:50 },
 };
 
-export const BUILD_INFO = { number: 135, label: 'Build #0000135' };
+export const BUILD_INFO = { number: 136, label: 'Build #0000136' };
 export const SUPABASE_PUBLIC_CONFIG = {
   url: '',
   publishableKey: '',

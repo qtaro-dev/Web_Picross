@@ -20,6 +20,8 @@ export const state = {
   boardZoom: 1,
   boardScroll: { left:0, top:0 },
   gamePanelCollapsed: null,
+  minimapVisible: null,
+  minimapZoom: null,
   modal: null,
   currentUser: null,
   userDataStatus: { storage:'localStorage', fileSave:false, filePath:null, lastLoad:null, lastSave:null, lastResult:'' },

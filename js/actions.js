@@ -1,4 +1,4 @@
-import { render } from './render.js';
+import { render, updateGameMinimap } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
 import { ADMIN_DEBUG_CONFIG, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
@@ -738,6 +738,7 @@ function updateGameCellDom(k){
   }else{
     cell.style.background='';
   }
+  updateGameMinimap(stateRef);
   return true;
 }
 function updateHoverDom(previous, next){
