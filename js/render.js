@@ -820,7 +820,7 @@ function renderGame(state, actions){
   const solvedState=()=>({w,h,solution,filled:state.filled,cellColors:state.cellColors,colorMode:G.colorMode});
   const checkClear=changed=>{ if(changed&&isSolved(solvedState())) actions.finishClear(); };
   for(let y=0;y<maxColLen;y++) for(let x=0;x<maxRowLen;x++){
-    const corner=document.createElement('div'); corner.className='clue-cell clue-corner';
+    const corner=document.createElement('div'); corner.className='clue-cell clue-corner'+(x===maxRowLen-1?' clue-boundary-right':'')+(y===maxColLen-1?' clue-boundary-bottom':'');
     corner.style.gridColumn=`${x + 1}`; corner.style.gridRow=`${y + 1}`;
     corner.style.left=`${x*clueSize}px`; corner.style.top=`${y*clueSize}px`;
     wrap.appendChild(corner);
@@ -828,7 +828,7 @@ function renderGame(state, actions){
   for(let x=0;x<w;x++){
     const seq=cols[x];
     for(let i=0;i<maxColLen;i++){
-      const d=document.createElement('div'); d.className='clue-cell clue-cell-col';
+      const d=document.createElement('div'); d.className='clue-cell clue-cell-col'+(i===maxColLen-1?' clue-boundary-bottom':'');
       const num=seq[seq.length-maxColLen+i]; applyClue(d,num,G.colorMode);
       d.style.gridColumn=`${maxRowLen + x + 1}`; d.style.gridRow=`${i + 1}`;
       d.style.top=`${i*clueSize}px`;
@@ -836,12 +836,12 @@ function renderGame(state, actions){
     }
   }
   for(let y=0;y<h;y++){
-    for(let i=0;i<maxRowLen;i++){ const d=document.createElement('div'); d.className='clue-cell clue-cell-row';
+    for(let i=0;i<maxRowLen;i++){ const d=document.createElement('div'); d.className='clue-cell clue-cell-row'+(i===maxRowLen-1?' clue-boundary-right':'');
       const seq=rows[y]; const num=seq[seq.length-maxRowLen+i]; applyClue(d,num,G.colorMode);
       d.style.gridColumn=`${i + 1}`; d.style.gridRow=`${maxColLen + y + 1}`;
       d.style.left=`${i*clueSize}px`;
       wrap.appendChild(d); }
-    for(let x=0;x<w;x++){ const k=`${x},${y}`; const isHover=state.hoverCell?.row===y&&state.hoverCell?.col===x; const isHoverRow=state.hoverCell?.row===y; const isHoverCol=state.hoverCell?.col===x; const b=document.createElement('button'); b.dataset.k=k; b.dataset.row=String(y); b.dataset.col=String(x); b.className='cell'+(state.filled.has(k)?' filled':'')+(state.crossed.has(k)?' cross':'')+(isHover?' is-hover':'')+(!isHover&&(isHoverRow||isHoverCol)?' is-crosshair':'');
+    for(let x=0;x<w;x++){ const k=`${x},${y}`; const isHover=state.hoverCell?.row===y&&state.hoverCell?.col===x; const isHoverRow=state.hoverCell?.row===y; const isHoverCol=state.hoverCell?.col===x; const b=document.createElement('button'); b.dataset.k=k; b.dataset.row=String(y); b.dataset.col=String(x); b.className='cell'+(state.filled.has(k)?' filled':'')+(state.crossed.has(k)?' cross':'')+(x>0&&x%5===0?' guide-left':'')+(y>0&&y%5===0?' guide-top':'')+(isHover?' is-hover':'')+(!isHover&&(isHoverRow||isHoverCol)?' is-crosshair':'');
       b.style.gridColumn=`${maxRowLen + x + 1}`; b.style.gridRow=`${maxColLen + y + 1}`;
       if(G.colorMode==='color'&&state.filled.has(k)){ b.style.background=MC_COLOR_MAP[normalizeColorId(state.cellColors.get(k))]?.hex||'#e0e0e0'; }
       const startInput=e=>{ if(state.modal) return; if(e.button===0){ e.preventDefault(); actions.beginDrag('fill',k); } else if(e.button===2){ e.preventDefault(); actions.beginDrag('cross',k); } };

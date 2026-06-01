@@ -311,6 +311,8 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
 .game-layout.is-endless-board .clue-cell-col { position:sticky; top:0; z-index:4; background:rgba(17,17,17,.98); }
 .game-layout.is-endless-board .clue-cell-row { position:sticky; left:0; z-index:5; background:rgba(17,17,17,.98); }
 .game-layout.is-endless-board .clue-corner { position:sticky; top:0; left:0; z-index:6; background:rgba(17,17,17,.98); }
+.clue-boundary-bottom { border-bottom:3px solid #f0c24b; }
+.clue-boundary-right { border-right:3px solid #f0c24b; }
 .game-help { opacity:.8; margin:0; text-align:center; }
 .board { display:grid; gap:2px; }
 .clue-cell { display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; padding:0; margin:0; font-size:clamp(12px, calc(var(--clue-size, 22px) * .64), 15px); line-height:1; }
@@ -319,6 +321,8 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
 .clue-cell-row { width:var(--clue-size, 22px); height:var(--cell-size, var(--cell)); }
 .clue-corner { width:var(--clue-size, 22px); height:var(--clue-size, 22px); }
 .cell { appearance:none; -webkit-appearance:none; display:block; width:var(--cell-size, var(--cell)); height:var(--cell-size, var(--cell)); aspect-ratio:1 / 1; min-width:0; min-height:0; margin:0; padding:0; border:1px solid #555; border-radius:0; background:#111; color:#fff; cursor:pointer; line-height:1; }
+.cell.guide-left { border-left-color:#9aa8b8; border-left-width:2px; }
+.cell.guide-top { border-top-color:#9aa8b8; border-top-width:2px; }
 .cell.filled { background:#e0e0e0; color:#111; }
 .cell.cross { position:relative; }
 .cell.cross::before, .cell.cross::after { content:''; position:absolute; left:50%; top:50%; width:70%; height:2px; background:#777; }
