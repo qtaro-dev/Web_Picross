@@ -64,6 +64,8 @@ Supabase接続は `js/supabaseClient.js` で管理します。未設定時はSup
 
 `YOUR_SUPABASE_URL`、`YOUR_SUPABASE_PUBLISHABLE_KEY`、`YOUR_SUPABASE_ANON_KEY` のような雛形文字列は未設定として扱います。公開表示で必要なプロフィール情報は `public_profiles` ビューの `id`、`username`、`display_name` だけを参照し、`profiles` 本体のSELECTは本人または管理者に限定します。
 
+Supabase Security Advisorで `public.public_profiles` にSecurity Definer View警告が出る場合があります。このビューはランキング表示用に、activeな非管理者の `id`、`username`、`display_name` だけを公開する最小ビューとして維持しています。`security_invoker = true` に変更すると、現在の `profiles` RLSでは未ログインのランキング表示がプロフィール名を解決できなくなるため、`profiles` 本体の公開SELECTを広げずに安全な列だけを出す設計を優先しています。メールアドレス、権限、アカウント状態、管理用カウンタはこのビューに含めません。
+
 ローカル用の雛形は `.env.example` を使います。`.env` と `.env.*` はGit管理しません。
 
 ```env

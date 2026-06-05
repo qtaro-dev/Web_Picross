@@ -1439,6 +1439,15 @@
       "status": "修正済",
       "note": "リポジトリ全体のsecret混入、Supabase公開キー/API secret利用、RLS、Storage公開範囲を監査しました。\nsecret風サンプル値を安全なプレースホルダーへ置き換え、.gitignoreとサーバー側placeholder判定を補強しました。\npublic_profilesのSecurity Definer View警告とnews-images公開bucketは影響が大きいため設計課題として報告対象にしています。",
       "updatedAt": "2026-06-05T10:33:08.909Z"
+    },
+    {
+      "number": "139",
+      "title": "チケット139：public_profiles の Security Definer View 警告対応",
+      "fileName": "139_public_profiles_security_invoker_audit.md",
+      "path": "docs/139_public_profiles_security_invoker_audit.md",
+      "status": "修正済",
+      "note": "public_profilesの公開列がid/username/display_nameのみで、emailやrole等を含まないことを確認しました。\nsecurity_invoker=true化は現行RLSでは匿名ランキング表示を壊すため見送り、現状維持理由をREADMEとSQLコメントに明記しました。\n既存DB向けに011_public_profiles_security_invoker.sqlを追加し、安全な公開ビュー定義を再適用できるようにしました。",
+      "updatedAt": "2026-06-05T12:22:03.988Z"
     }
   ]
 }

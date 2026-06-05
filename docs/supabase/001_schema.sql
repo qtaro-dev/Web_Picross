@@ -276,7 +276,7 @@ after insert on public.account_delete_requests
 for each row execute function public.sync_account_delete_request_profile_counters();
 
 comment on table public.profiles is 'Supabase Auth user profile. Local admin/admin is development only and must not be used as production authentication.';
-comment on view public.public_profiles is 'Public-safe profile fields for rankings. Does not expose email, role, account status, counters, or password reset flags.';
+comment on view public.public_profiles is 'Public-safe profile fields for rankings. Exposes only id, username, and display_name for active non-admin profiles. Does not expose email, role, account status, counters, or password reset flags. Kept as a default security-definer view so anonymous rankings can read the safe projection while profiles table SELECT stays limited by RLS.';
 comment on table public.puzzles is 'Puzzle definitions migrated from data/*.json. solution stores mono/color answer cells as JSON.';
 comment on table public.user_progress is 'Per-user aggregate progress migrated from user/*.json.';
 comment on table public.play_history is 'Append-only play result history for clear, fail, and giveup events.';
