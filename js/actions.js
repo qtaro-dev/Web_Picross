@@ -2,7 +2,7 @@ import { render, updateGameMinimap } from './render.js';
 import { loadPuzzles, findPuzzle } from './data.js';
 import { ADMIN_DEBUG_CONFIG, ADMIN_NEWS_PAGE_SIZE, AUTH_LIMITS, BOARD_ZOOM_LEVELS, HINT_LIMITS_BY_DIFFICULTY, MC_COLORS, MC_COLOR_MAP, MODE_TO_DIFFICULTY, NEWS_IMAGE_STORAGE, isFilledValue, normalizeColorId, normalizeColorMode, validateEmail, validatePassword, validateUsername } from './config.js';
 import { authenticateLocalUser, downloadCurrentUserJson, downloadUserDataJson, ensureUserProgress, exportCurrentUserPayload, loadSolvedForUser, mergeServerUserProgress, persistSolvedForUser, recordGameResultForUser, registerLocalUser, resetProgressForUser, userIdFor } from './userData.js';
-import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUser, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, resolveSupabaseLoginEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
+import { beginSupabasePasswordRecovery, isSupabaseAuthAvailable, loadAccountDeleteRequest, loginSupabaseUserByUsername, logoutSupabaseUser, registerSupabaseUser, requestSupabasePasswordReset, resendSupabaseConfirmationEmail, submitAccountDeleteRequest, updateSupabaseEmail, updateSupabasePassword } from './supabaseAuth.js';
 import { loadSupabaseRanking, saveSupabaseGameResult } from './supabaseProgress.js';
 import { checkAdminServerApi, deleteAdminNewsImageByPath, deleteAdminNewsPost, deleteAdminRanking, deleteAdminRankingsForUser, isAdminUser, loadAdminSnapshot, loadPublishedNewsPosts, newsImagePathFromUrl, reactivateAdminUser, repairAdminAuthEmail, requestAdminPasswordClearReset, saveAdminNewsPost, updateAccountDeleteRequest, updateAdminProfile, updateAdminProgress, updateAdminRanking, uploadAdminNewsImage, uploadAdminPuzzles } from './admin.js';
 import { supabaseNotConfiguredMessage } from './supabaseClient.js';
@@ -82,17 +82,13 @@ async function login(username,password,remember=stateRef.loginForm?.remember,ema
   username=String(username||'').trim(); email=String(email||'').trim(); password=String(password||'');
   stateRef.loginForm={username, email, password, remember:!!remember};
   if(!username||!password){ stateRef.authMessage=AUTH_TEXT.required; render(stateRef, actionsAPI); return false; }
-  const emailCheck = validateEmail(email, { required:false });
-  const validation = authValidationMessage([emailCheck, validateUsername(username)]);
+  const validation = authValidationMessage([validateUsername(username)]);
   if(validation){ stateRef.authMessage=validation; render(stateRef, actionsAPI); return false; }
   const supabaseAvailable=await isSupabaseAuthAvailable();
   try{
-    let loginEmail=email;
-    if(supabaseAvailable&&!loginEmail&&!(username===DEV_USER.username&&password===DEV_USER.password)){
-      const resolved=await resolveSupabaseLoginEmail(username);
-      loginEmail=resolved.email||'';
-    }
-    const supabase=supabaseAvailable&&loginEmail ? await loginSupabaseUser(loginEmail,password) : {available:false};
+    const supabase=supabaseAvailable&&!(username===DEV_USER.username&&password===DEV_USER.password)
+      ? await loginSupabaseUserByUsername(username,password)
+      : {available:false};
     if(supabase.available){
       if(supabase.emailUnconfirmed){
         stateRef.authMessage=EMAIL_VERIFICATION_TEXT.required;
@@ -107,7 +103,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember,ema
       }
       stateRef.currentUser=supabase.user;
       prepareUserData('Supabase Auth', false);
-      saveRememberedLogin(username, '', password, remember);
+      saveRememberedLogin(username, remember);
       stateRef.authMessage='';
       goto('menu');
       return true;
@@ -124,7 +120,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember,ema
     stateRef.currentUser={username:result.user?.username||username, id:result.user?.id||userIdFor(result.user?.username||username), source:'server'};
     mergeServerUserProgress(stateRef.currentUser, {progress:result.progress, stats:result.stats, history:result.history, user:result.user});
     prepareUserData('server users.json', true);
-    saveRememberedLogin(username, email, password, remember);
+    saveRememberedLogin(username, remember);
     stateRef.authMessage='';
     goto('menu');
     return true;
@@ -132,7 +128,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember,ema
     if(username===DEV_USER.username&&password===DEV_USER.password){
       stateRef.currentUser={username:DEV_USER.username, id:userIdFor(DEV_USER.username), source:'built-in'};
       prepareUserData('localStorage', false);
-      saveRememberedLogin(username, email, password, remember);
+      saveRememberedLogin(username, remember);
       stateRef.authMessage='';
       goto('menu');
       return true;
@@ -141,7 +137,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember,ema
     if(localUser){
       stateRef.currentUser=localUser;
       prepareUserData('localStorage', false);
-      saveRememberedLogin(username, email, password, remember);
+      saveRememberedLogin(username, remember);
       stateRef.authMessage='';
       goto('menu');
       return true;
@@ -753,9 +749,10 @@ function loadRememberedLogin(){
   let remember=false, username='', email='', password='';
   try{
     remember=localStorage.getItem(REMEMBER_LOGIN_KEY)==='true';
+    localStorage.removeItem(SAVED_PASSWORD_KEY);
+    localStorage.removeItem(SAVED_EMAIL_KEY);
     if(remember){
       username=localStorage.getItem(SAVED_USERNAME_KEY)||'';
-      password=localStorage.getItem(SAVED_PASSWORD_KEY)||'';
     }
   }catch{}
   stateRef.loginForm={username, email, password, remember};
@@ -766,13 +763,13 @@ function persistRememberPreference(remember){
     if(!remember) clearRememberedLogin();
   }catch{}
 }
-function saveRememberedLogin(username,email,password,remember){
+function saveRememberedLogin(username, remember){
   try{
     localStorage.setItem(REMEMBER_LOGIN_KEY, remember?'true':'false');
     if(remember){
       localStorage.setItem(SAVED_USERNAME_KEY, username);
       localStorage.removeItem(SAVED_EMAIL_KEY);
-      localStorage.setItem(SAVED_PASSWORD_KEY, password);
+      localStorage.removeItem(SAVED_PASSWORD_KEY);
     }else{
       localStorage.removeItem(SAVED_USERNAME_KEY);
       localStorage.removeItem(SAVED_EMAIL_KEY);

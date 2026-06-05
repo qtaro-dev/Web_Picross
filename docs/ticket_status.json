@@ -1394,6 +1394,24 @@
       "status": "修正済",
       "note": "ranking_records の一般ユーザー直接insert/updateポリシーを削除し、管理者更新とservice role経由の保存に限定しました。\n/api/save-ranking-record を追加し、Bearerトークン、対象パズル、検証済みuser_progress、タイム下限を確認してランキングを保存します。\n通常クリア時のランキング保存はクライアント直接upsertではなく、サーバーAPI呼び出しへ変更しました。",
       "updatedAt": "2026-06-05T08:39:35.746Z"
+    },
+    {
+      "number": "134",
+      "title": "チケット134：ユーザー名ログイン用メール解決APIの秘匿化",
+      "fileName": "134_resolve_login_email_api_privacy_hardening.md",
+      "path": "docs/134_resolve_login_email_api_privacy_hardening.md",
+      "status": "修正済",
+      "note": "/api/resolve-login-email をメール返却APIから username + password のサーバー側ログインAPIへ変更しました。\nレスポンスには実メールアドレスを含めず、Supabaseセッション情報と公開プロフィールのみ返します。\nIP+ユーザー名単位のレート制限と汎用エラーを追加し、存在確認やメール列挙に使いにくくしました。",
+      "updatedAt": "2026-06-05T09:09:13.675Z"
+    },
+    {
+      "number": "135",
+      "title": "チケット135：localStorageへのパスワード保存廃止",
+      "fileName": "135_remove_password_from_localstorage.md",
+      "path": "docs/135_remove_password_from_localstorage.md",
+      "status": "修正済",
+      "note": "ログイン情報記憶はユーザー名のみ保存する仕様へ変更しました。\nパスワードとメールアドレスは保存せず、旧保存キー picross_saved_password / picross_saved_email はログイン画面初期化時に削除します。\nUI文言とREADMEも「ユーザー名を記憶する」に更新しました。",
+      "updatedAt": "2026-06-05T09:09:13.675Z"
     }
   ]
 }

@@ -164,18 +164,30 @@ export async function loginSupabaseUser(email, password){
   return { available:true, user:publicProfile(profile, data.user, profile?.username) };
 }
 
-export async function resolveSupabaseLoginEmail(username){
+export async function loginSupabaseUserByUsername(username, password){
   if(!(await isSupabaseConfigured())) return { available:false };
+  const client = await getSupabaseClient();
+  if(!client) return { available:false };
   const response = await fetch('/api/resolve-login-email', {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
-    body:JSON.stringify({ username:normalizeUsername(username) }),
+    body:JSON.stringify({ username:normalizeUsername(username), password }),
   });
   const body = await response.json().catch(()=>({}));
   if(!response.ok || body.ok === false){
-    throw new Error('ユーザー名またはパスワードが違います');
+    throw new Error(body.message || 'ユーザー名またはパスワードを確認してください');
   }
-  return { available:true, email:normalizeEmail(body.email) };
+  if(body.emailUnconfirmed) return { available:true, emailUnconfirmed:true, user:null };
+  const session = body.session || {};
+  if(!session.access_token || !session.refresh_token){
+    throw new Error('ログイン状態を確認できません');
+  }
+  const { error } = await client.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
+  if(error) throw authError(error.message);
+  return { available:true, user:publicProfile(body.user || {}, { id:body.user?.id, created_at:body.user?.created_at }, body.user?.username) };
 }
 
 export async function logoutSupabaseUser(){
