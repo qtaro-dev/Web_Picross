@@ -74,7 +74,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxx
 
 # Server-side admin API and import scripts only. Never expose this to browsers.
-SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxx
+SUPABASE_SECRET_KEY=YOUR_SERVER_SIDE_SUPABASE_SECRET_KEY
 
 # Password reset redirect destination used by admin password clear.
 APP_BASE_URL=https://web-picross.vercel.app/
@@ -91,6 +91,10 @@ VercelではProject SettingsのEnvironment Variablesへ次の3つを設定しま
 管理者サーバーAPIは `Authorization: Bearer <Supabase access_token>` を必須にし、サーバー側でJWT検証と `profiles.role = admin`、`profiles.account_status = active` を確認します。`SUPABASE_SECRET_KEY` はVercel Environment Variablesまたはローカル `.env` にだけ保存し、ブラウザ側JSや `js/config.js` には絶対に書きません。
 
 `APP_BASE_URL` は管理者が送るSupabaseパスワード再設定メールと、ユーザー本人のメールアドレス変更確認メールの戻り先です。本番では `https://web-picross.vercel.app/` を設定します。
+
+GitHub公開前提では、公開してよい値は `SUPABASE_URL` と `SUPABASE_PUBLISHABLE_KEY` だけです。`SUPABASE_SECRET_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、DB接続文字列、DBパスワード、JWT secret、Vercel/GitHub token は `.env` やVercelの非公開Environment Variablesだけで管理します。cloneしてローカル起動された場合でも、公開キーで読める範囲はRLSで許可した公開パズル、公開お知らせ、ランキング表示用の `public_profiles` 最小列に限定します。
+
+`news-images` Storageバケットは公開お知らせ画像用のpublic bucketです。URLを知っている人は画像を読めますが、アップロード・更新・削除は `public.is_admin()` を通る管理者だけに制限します。下書き画像や未使用画像を非公開にしたい場合は、private bucket + signed URL など別設計が必要です。
 
 Supabase設定済みの場合、既存のログイン画面からSupabase Authへ登録・ログインします。`profiles` には `username`、`display_name`、`role` を保存し、ログイン成功時のユーザー情報は `state.currentUser` に `loginSource: "supabase"` として保持します。Supabase未設定時は従来のローカルログインに戻ります。固定ユーザー `admin` / `admin` は開発用です。
 

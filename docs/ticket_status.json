@@ -1421,6 +1421,15 @@
       "status": "修正済",
       "note": "/api/login と /api/register でローカル一時セッショントークンを発行し、/api/user-progress はusernameとトークン一致時だけ保存するようにしました。\nクライアントはserverログイン時のトークンを保持し、進捗保存時に送信します。\nserveStatic() のroot外判定を filePath.startsWith(rootDir) から path.relative(rootDir, filePath) ベースへ変更しました。",
       "updatedAt": "2026-06-05T09:43:53.514Z"
+    },
+    {
+      "number": "138",
+      "title": "チケット138：GitHub公開前提のsecret混入・Supabase公開アクセス監査",
+      "fileName": "138_secret_exposure_and_supabase_public_access_audit.md",
+      "path": "docs/138_secret_exposure_and_supabase_public_access_audit.md",
+      "status": "修正済",
+      "note": "リポジトリ全体のsecret混入、Supabase公開キー/API secret利用、RLS、Storage公開範囲を監査しました。\nsecret風サンプル値を安全なプレースホルダーへ置き換え、.gitignoreとサーバー側placeholder判定を補強しました。\npublic_profilesのSecurity Definer View警告とnews-images公開bucketは影響が大きいため設計課題として報告対象にしています。",
+      "updatedAt": "2026-06-05T10:33:08.909Z"
     }
   ]
 }

@@ -140,7 +140,7 @@ supabasePublishableKey
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxx
-SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxx
+SUPABASE_SECRET_KEY=YOUR_SERVER_SIDE_SUPABASE_SECRET_KEY
 ```
 
 以下の旧名は、必要なら「旧名」としてコメントに残すだけにする。

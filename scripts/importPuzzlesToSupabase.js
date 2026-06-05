@@ -10,6 +10,16 @@ const difficulties = ['beginner', 'easy', 'normal', 'hard', 'endless'];
 const publish = String(process.env.SUPABASE_IMPORT_PUBLISHED || 'true').toLowerCase() !== 'false';
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has('--dry-run');
+const placeholderValues = new Set([
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_SECRET_KEY',
+  'YOUR_SERVER_SIDE_SUPABASE_SECRET_KEY',
+  'YOUR_SUPABASE_SERVICE_ROLE_KEY',
+]);
+
+function isPlaceholder(value){
+  return placeholderValues.has(String(value || '').trim());
+}
 
 function printHelp(){
   console.log(`Usage:
@@ -92,9 +102,9 @@ async function main(){
     console.log(`Dry run. ${total} puzzles would be imported. is_published=${publish}`);
     return;
   }
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if(!supabaseUrl || !key){
+  const supabaseUrl = String(process.env.SUPABASE_URL || '').trim();
+  const key = String(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  if(!supabaseUrl || !key || isPlaceholder(supabaseUrl) || isPlaceholder(key)){
     throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required for puzzle import.');
   }
   const client = createClient(supabaseUrl, key);
