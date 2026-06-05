@@ -117,7 +117,7 @@ async function login(username,password,remember=stateRef.loginForm?.remember,ema
   }
   try{
     const result=await apiPost('/api/login',{username,password});
-    stateRef.currentUser={username:result.user?.username||username, id:result.user?.id||userIdFor(result.user?.username||username), source:'server'};
+    stateRef.currentUser={username:result.user?.username||username, id:result.user?.id||userIdFor(result.user?.username||username), source:'server', localSessionToken:result.sessionToken||''};
     mergeServerUserProgress(stateRef.currentUser, {progress:result.progress, stats:result.stats, history:result.history, user:result.user});
     prepareUserData('server users.json', true);
     saveRememberedLogin(username, remember);
@@ -1182,5 +1182,5 @@ function saveServerProgress(entry,type='clear'){
     return;
   }
   if(stateRef.currentUser?.source!=='server') return;
-  apiPost('/api/user-progress',{username:stateRef.currentUser.username, mode:String(game?.mode||'Custom').toLowerCase(), type, entry}).then(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'userフォルダJSONへ保存しました'}; }).catch(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'server保存に失敗しました'}; });
+  apiPost('/api/user-progress',{username:stateRef.currentUser.username, sessionToken:stateRef.currentUser.localSessionToken||'', mode:String(game?.mode||'Custom').toLowerCase(), type, entry}).then(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'userフォルダJSONへ保存しました'}; }).catch(()=>{ stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'server保存に失敗しました'}; });
 }

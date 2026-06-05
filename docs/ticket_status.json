@@ -1412,6 +1412,15 @@
       "status": "修正済",
       "note": "ログイン情報記憶はユーザー名のみ保存する仕様へ変更しました。\nパスワードとメールアドレスは保存せず、旧保存キー picross_saved_password / picross_saved_email はログイン画面初期化時に削除します。\nUI文言とREADMEも「ユーザー名を記憶する」に更新しました。",
       "updatedAt": "2026-06-05T09:09:13.675Z"
+    },
+    {
+      "number": "136",
+      "title": "チケット136：ローカル進捗APIと静的配信の安全性改善",
+      "fileName": "136_local_server_api_static_security_hardening.md",
+      "path": "docs/136_local_server_api_static_security_hardening.md",
+      "status": "修正済",
+      "note": "/api/login と /api/register でローカル一時セッショントークンを発行し、/api/user-progress はusernameとトークン一致時だけ保存するようにしました。\nクライアントはserverログイン時のトークンを保持し、進捗保存時に送信します。\nserveStatic() のroot外判定を filePath.startsWith(rootDir) から path.relative(rootDir, filePath) ベースへ変更しました。",
+      "updatedAt": "2026-06-05T09:43:53.514Z"
     }
   ]
 }

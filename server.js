@@ -3,6 +3,7 @@ require('dotenv').config();
 const http = require('node:http');
 const { readFile, writeFile, access, mkdir, readdir } = require('node:fs/promises');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { publicConfigJson, renderConfigStatusHtml } = require('./api/_supabaseConfigStatus');
 const adminAuthCheckHandler = require('./api/admin-auth-check');
 const adminDeleteAuthUserHandler = require('./api/admin-delete-auth-user');
@@ -20,6 +21,8 @@ const userDir = process.env.USER_DIR || path.join(rootDir, 'user');
 const devAdmin = { id:'user_admin', username: 'admin', password: 'admin', createdAt: '2026-05-17T00:00:00.000Z', source:'built-in' };
 const modeKeys = ['beginner', 'easy', 'normal', 'hard', 'endless', 'custom'];
 const historyLimit = 300;
+const localSessions = new Map();
+const localSessionMaxAgeMs = 12 * 60 * 60 * 1000;
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -243,6 +246,28 @@ function sendJson(res, status, body){
   res.end(JSON.stringify(body));
 }
 
+function issueLocalSession(user){
+  const token = crypto.randomBytes(32).toString('base64url');
+  localSessions.set(token, {
+    username: user.username,
+    userId: user.id || `user_${safeUsername(user.username).toLowerCase()}`,
+    createdAt: Date.now(),
+  });
+  return token;
+}
+
+function verifyLocalSession(token, username){
+  const cleanToken = String(token || '').trim();
+  const cleanUsername = String(username || '').trim();
+  const session = cleanToken ? localSessions.get(cleanToken) : null;
+  if(!session) return false;
+  if(Date.now() - Number(session.createdAt || 0) > localSessionMaxAgeMs){
+    localSessions.delete(cleanToken);
+    return false;
+  }
+  return session.username === cleanUsername;
+}
+
 async function invokeApiHandler(handler, req, res){
   const headers = {};
   const wrapper = {
@@ -341,22 +366,30 @@ async function handleApi(req, res){
   }
   const username = String(body.username || '').trim();
   const password = String(body.password || '');
-  if(!username || (!password && req.url !== '/api/user-progress')){
+  if(!username){
     sendJson(res, 400, { ok:false, message:'ユーザー名とパスワードを入力してください' });
     return;
   }
   const users = await readUsers();
   if(req.url === '/api/login'){
+    if(!password){
+      sendJson(res, 400, { ok:false, message:'ユーザー名とパスワードを入力してください' });
+      return;
+    }
     const user = users.find(u => u.username === username && u.password === password);
     if(!user){
       sendJson(res, 401, { ok:false, message:'ユーザー名またはパスワードが違います' });
       return;
     }
     const data=await ensureUserJson(user);
-    sendJson(res, 200, { ok:true, user:{ id:user.id||data.user.id, username:user.username, source:user.source||'server' }, stats:data.stats, progress:data.progress, history:data.history, storage:'server users.json' });
+    sendJson(res, 200, { ok:true, user:{ id:user.id||data.user.id, username:user.username, source:user.source||'server' }, sessionToken:issueLocalSession(user), stats:data.stats, progress:data.progress, history:data.history, storage:'server users.json' });
     return;
   }
   if(req.url === '/api/register'){
+    if(!password){
+      sendJson(res, 400, { ok:false, message:'ユーザー名とパスワードを入力してください' });
+      return;
+    }
     if(users.some(u => u.username === username)){
       sendJson(res, 409, { ok:false, message:'同じユーザー名は登録できません' });
       return;
@@ -366,10 +399,14 @@ async function handleApi(req, res){
     users.push(user);
     await writeUsers(users);
     await ensureUserJson(user);
-    sendJson(res, 201, { ok:true, user:{ id:user.id, username }, storage:'server users.json' });
+    sendJson(res, 201, { ok:true, user:{ id:user.id, username }, sessionToken:issueLocalSession(user), storage:'server users.json' });
     return;
   }
   if(req.url === '/api/user-progress'){
+    if(!verifyLocalSession(body.sessionToken, username)){
+      sendJson(res, 401, { ok:false, message:'ログイン状態を確認できません' });
+      return;
+    }
     const saved=await saveUserProgress(username, body.mode, body.entry, body.type);
     if(!saved){
       sendJson(res, 404, { ok:false, message:'ユーザーが見つかりません' });
@@ -382,11 +419,27 @@ async function handleApi(req, res){
 }
 
 async function serveStatic(req, res){
-  const url = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
-  const decoded = decodeURIComponent(url.pathname);
+  let url;
+  let decoded;
+  try{
+    const rawPath = String(req.url || '').split('?')[0];
+    const decodedRawPath = decodeURIComponent(rawPath);
+    if(decodedRawPath.split(/[\\/]/).includes('..')){
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+    url = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
+    decoded = decodeURIComponent(url.pathname);
+  }catch{
+    res.writeHead(400);
+    res.end('Bad Request');
+    return;
+  }
   const requestPath = decoded === '/' ? '/index.html' : decoded;
   const filePath = path.resolve(rootDir, `.${requestPath}`);
-  if(!filePath.startsWith(rootDir)){
+  const relativePath = path.relative(rootDir, filePath);
+  if(relativePath.startsWith('..') || path.isAbsolute(relativePath)){
     res.writeHead(403);
     res.end('Forbidden');
     return;
