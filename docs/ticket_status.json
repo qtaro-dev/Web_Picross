@@ -1457,6 +1457,15 @@
       "status": "修正済",
       "note": "news-imagesは公開お知らせ画像用のpublic bucketとして継続する方針にしました。\nREADMEと管理者お知らせUIに、URLを知っている人は下書き/未使用画像も閲覧可能であることを明記しました。\n既存DB向けに012_news_images_visibility.sqlを追加し、public readと管理者限定write/deleteポリシーを再適用できるようにしました。",
       "updatedAt": "2026-06-05T12:42:05.463Z"
+    },
+    {
+      "number": "140fix1",
+      "title": "チケット140fix1：お知らせ画像の右クリック保存・ドラッグ操作を抑止",
+      "fileName": "140_fix1_news_image_contextmenu_drag_suppression.md",
+      "path": "docs/140_fix1_news_image_contextmenu_drag_suppression.md",
+      "status": "修正済",
+      "note": "一般お知らせ画像と管理者プレビュー画像に限定して、右クリックメニューとドラッグ操作を抑止しました。\n画像要素へdraggable=falseと局所イベントを追加し、ゲーム盤面やdocument全体の右クリック処理には影響しないようにしました。\nREADMEに、これはcasual copy防止・誤操作防止でありセキュリティ対策ではないことを明記しました。",
+      "updatedAt": "2026-06-05T13:33:40.651Z"
     }
   ]
 }

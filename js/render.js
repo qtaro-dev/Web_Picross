@@ -250,7 +250,7 @@ function renderNews(state, actions){
       <strong>${escapeHtml(item.title||NEWS_UI.title)}</strong>
     </button>`).join('');
   const imagesHtml=selected?.images?.length ? `<div class="news-images">${selected.images.map(image=>`<figure class="news-image-figure">
-      <img class="news-image" src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt||selected.title||NEWS_UI.title)}">
+      <img class="news-image news-protected-image" src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt||selected.title||NEWS_UI.title)}" draggable="false">
       ${image.caption?`<figcaption>${escapeHtml(image.caption)}</figcaption>`:''}
     </figure>`).join('')}</div>` : '';
   const bodyText=displayNewsBody(selected);
@@ -281,6 +281,7 @@ function renderNews(state, actions){
     fallback.textContent=img.alt||NEWS_UI.imageFailed;
     img.replaceWith(fallback);
   }));
+  bindProtectedNewsImages(root);
 }
 
 function displayNewsBody(item){
@@ -658,7 +659,7 @@ function adminNewsDetailHtml(row, upload=null, draft=null){
         <button class="btn btn-slim btn-danger" id="deleteAdminNewsImage" ${canDeleteStorage?'':'disabled'}>Storageから削除</button>
       </div>
       ${uploadState.error?`<div class="admin-status is-error">${escapeHtml(uploadState.error)}</div>`:''}
-      ${previewUrl?`<figure class="admin-news-preview"><img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(values.image_alt||'')}"><figcaption>${escapeHtml(uploadState.publicUrl?'アップロード済み画像':uploadState.fileName?'保存前プレビュー':'現在の画像')}</figcaption></figure>`:`<div class="admin-news-preview-empty">画像プレビューはありません</div>`}
+      ${previewUrl?`<figure class="admin-news-preview"><img class="news-protected-image" src="${escapeHtml(previewUrl)}" alt="${escapeHtml(values.image_alt||'')}" draggable="false"><figcaption>${escapeHtml(uploadState.publicUrl?'アップロード済み画像':uploadState.fileName?'保存前プレビュー':'現在の画像')}</figcaption></figure>`:`<div class="admin-news-preview-empty">画像プレビューはありません</div>`}
     </div>
     <div class="admin-news-form-actions">
       <div class="admin-news-save-actions">
@@ -725,6 +726,14 @@ function bindAdminEvents(root, actions, selectedUser, selectedRanking, selectedD
     root.querySelector(`#${button.dataset.adminScroll}`)?.scrollIntoView({behavior:'smooth', block:'start'});
   }));
   root.querySelector('#adminBackToTop').addEventListener('click',()=>root.querySelector('#admin-page-top')?.scrollIntoView({behavior:'smooth', block:'start'}));
+  bindProtectedNewsImages(root);
+}
+
+function bindProtectedNewsImages(root){
+  root.querySelectorAll('.news-protected-image').forEach(img=>{
+    img.addEventListener('contextmenu', e=>e.preventDefault());
+    img.addEventListener('dragstart', e=>e.preventDefault());
+  });
 }
 
 function collectAdminNewsPatch(root){
