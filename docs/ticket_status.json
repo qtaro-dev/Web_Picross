@@ -1466,6 +1466,15 @@
       "status": "修正済",
       "note": "一般お知らせ画像と管理者プレビュー画像に限定して、右クリックメニューとドラッグ操作を抑止しました。\n画像要素へdraggable=falseと局所イベントを追加し、ゲーム盤面やdocument全体の右クリック処理には影響しないようにしました。\nREADMEに、これはcasual copy防止・誤操作防止でありセキュリティ対策ではないことを明記しました。",
       "updatedAt": "2026-06-05T13:33:40.651Z"
+    },
+    {
+      "number": "141",
+      "title": "チケット141：エディタにgrid_strings文字列入力・反映機能を追加",
+      "fileName": "141_editor_grid_strings_text_import.md",
+      "path": "docs/141_editor_grid_strings_text_import.md",
+      "status": "修正済",
+      "note": "エディタ下部に開閉式のgrid_strings入力パネルを追加しました。\n0〜Fの複数行文字列を現在の盤面サイズで検証し、問題なければ盤面と完成プレビューへ反映します。\n現在の盤面からgrid_strings文字列を生成し、入力欄だけをクリアできる操作も追加しました。",
+      "updatedAt": "2026-06-05T14:51:37.871Z"
     }
   ]
 }

@@ -7,9 +7,10 @@ const MAX_LOADED_SLOTS = 100;
 const EDITOR_SLOT_COLLAPSED_KEY = 'web_picross_editor_slot_panel_collapsed';
 const EDITOR_ZOOM_KEY = 'web_picross_editor_zoom';
 const EDITOR_ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
-const DEFAULTS = { w:5, h:5, mode:'mono', difficulty:'beginner', stageNo:1, title:'エディタ作成', active:'1', cells:{}, importMessage:'', loadedPuzzles:[], loadedSelected:'1', loadedFileName:'', loadedFileDifficulty:'', slotPanelCollapsed:false, zoom:1, editorUiRestored:false };
+const DEFAULTS = { w:5, h:5, mode:'mono', difficulty:'beginner', stageNo:1, title:'エディタ作成', active:'1', cells:{}, importMessage:'', gridStringsText:'', gridStringsMessage:'', loadedPuzzles:[], loadedSelected:'1', loadedFileName:'', loadedFileDifficulty:'', slotPanelCollapsed:false, zoom:1, editorUiRestored:false };
 const EDITOR_TEXT = { importJson:'JSON読込', importOk:'JSONを読み込みました', importLinked:'難易度と盤面サイズ候補を自動設定しました。', importInvalid:'読み込めるパズルデータではありません', importError:'JSONの読み込みに失敗しました', mixedDifficulty:'このJSONには複数の難易度が混在しているため読み込みできません。1つのJSONファイルには1つの難易度のみ含めてください。', fileDifficultyMismatch:'読み込んだファイル名とパズル難易度が一致しないため読み込みできません。', exportMixedDifficulty:'このファイルには複数の難易度が混在しているため保存できません。1つのJSONファイルには1つの難易度のみ含めてください。', loadedTitle:'読み込み済みJSONスロット', loadedFile:'読込中', notLoaded:'未読込', loadLoaded:'スロット読込', writeLoaded:'スロットへ保存', addLoaded:'空きへ追加', writeOk:'選択中スロットへ保存しました。PC上のJSONを更新するにはJSON出力してください。', addOk:'現在の盤面を空きスロットへ追加しました。', loadedEmpty:'空スロットです', slotOverwriteTitle:'スロット保存確認', slotOverwrite:'選択中スロットを上書きしますか？', slotLimit:'読み込みは最大100スロットまでです。101件目以降は無視しました。', saveNote:'スロット保存は画面内データへの反映です。\nPC上のJSONファイルを更新するにはJSON出力したファイルを保存してください。', editPlay:'エディットプレイ', exportSame:'読込ファイル名でJSON出力', exportAlias:'別名でJSON出力', filePlaceholder:'別名ファイル名', save:'保存', tempSaved:'一時保存', loadSaved:'一時保存読込', deleteSaved:'一時保存削除', saveOk:'保存しました', loadOk:'保存データを読み込みました', noSaved:'一時保存データがありません', overwriteTitle:'保存確認', overwrite:'同じ難易度・面数の保存があります。上書きしますか？', overwriteAction:'上書き' };
 Object.assign(EDITOR_TEXT, { slotOpen:'開く', slotClose:'閉じる', zoomOut:'縮小', zoomReset:'100%', zoomIn:'拡大', zoomLabel:'表示倍率', previewTitle:'完成プレビュー' });
+Object.assign(EDITOR_TEXT, { gridStringsTitle:'文字列から盤面作成', gridStringsHelp:'0〜Fの文字を、現在の盤面サイズに合わせて入力してください。1行が盤面の1行になります。小文字a〜fは自動で大文字に変換されます。', gridStringsSize:(w,h)=>`現在の盤面サイズ：${w}x${h} / ${h}行、各行${w}文字で入力してください。`, gridStringsPlaceholder:'0000EE0000\n000EBBE000\nEEEEBBEEEE', gridStringsApply:'盤面へ反映', gridStringsGenerate:'現在の盤面から文字列生成', gridStringsClear:'入力クリア', gridStringsApplied:'grid_stringsを盤面へ反映しました。', gridStringsGenerated:'現在の盤面からgrid_stringsを生成しました。', gridStringsCleared:'入力欄をクリアしました。', gridStringsRequired:'grid_stringsを入力してください。', gridStringsRows:h=>`${h}行で入力してください。`, gridStringsColumns:(line,w)=>`${line}行目は${w}文字で入力してください。`, gridStringsInvalid:(line,column)=>`${line}行目${column}文字目が不正です。使用できる文字は 0〜9 / A〜F のみです。` });
 function renderEditorBackground(){
   const path=BACKGROUNDS.editor;
   return typeof path === 'string' ? `<div class="screen-bg" aria-hidden="true" style="background-image:url('${escapeAttr(path)}')"></div>` : '';
@@ -132,6 +133,27 @@ export function renderEditor(state, actions){
   const grid=root.querySelector('#grid'); const px=Math.round(24*E.zoom);
   grid.style.gridTemplateColumns=`repeat(${E.w}, ${px}px)`; grid.style.gridTemplateRows=`repeat(${E.h}, ${px}px)`;
   
+  let gridStringsBox = root.querySelector('#gridStringsBox');
+  if(!gridStringsBox){
+    gridStringsBox = document.createElement('details');
+    gridStringsBox.id = 'gridStringsBox';
+    gridStringsBox.className = 'editor-grid-strings-panel';
+    const sum = document.createElement('summary'); sum.textContent = EDITOR_TEXT.gridStringsTitle;
+    const body = document.createElement('div'); body.className = 'editor-grid-strings-body';
+    body.innerHTML = `
+      <div class="editor-grid-strings-help">${EDITOR_TEXT.gridStringsHelp}</div>
+      <div class="editor-grid-strings-size">${EDITOR_TEXT.gridStringsSize(E.w,E.h)}</div>
+      <textarea id="gridStringsInput" class="text-input editor-grid-strings-input" spellcheck="false" placeholder="${escapeAttr(EDITOR_TEXT.gridStringsPlaceholder)}">${escapeAttr(E.gridStringsText||'')}</textarea>
+      <div class="editor-grid-strings-actions">
+        <button class="btn btn-slim" id="applyGridStrings">${EDITOR_TEXT.gridStringsApply}</button>
+        <button class="btn btn-slim" id="generateGridStrings">${EDITOR_TEXT.gridStringsGenerate}</button>
+        <button class="btn btn-slim" id="clearGridStrings">${EDITOR_TEXT.gridStringsClear}</button>
+      </div>
+      <div class="editor-grid-strings-message ${E.gridStringsMessage?'':'is-empty'}" id="gridStringsMessage">${escapeAttr(E.gridStringsMessage||'')}</div>`;
+    gridStringsBox.appendChild(sum); gridStringsBox.appendChild(body);
+    root.querySelector('.editor-wrap').appendChild(gridStringsBox);
+  }
+
   // === Data preview box ===
   let prevBox = root.querySelector('#previewBox');
   if(!prevBox){
@@ -157,6 +179,44 @@ export function renderEditor(state, actions){
     drawEditorThumbPreview(root.querySelector('#editorThumbPreview'), E, gridNum);
   };
   updatePreview();
+  const gridStringsInput=root.querySelector('#gridStringsInput');
+  const gridStringsMessage=root.querySelector('#gridStringsMessage');
+  const setGridStringsMessage=(message, isError=false)=>{
+    E.gridStringsMessage=message||'';
+    if(gridStringsMessage){
+      gridStringsMessage.textContent=E.gridStringsMessage;
+      gridStringsMessage.classList.toggle('is-empty', !E.gridStringsMessage);
+      gridStringsMessage.classList.toggle('is-error', !!isError);
+    }
+  };
+  gridStringsInput?.addEventListener('input', e=>{ E.gridStringsText=e.target.value; if(E.gridStringsMessage) setGridStringsMessage(''); });
+  root.querySelector('#applyGridStrings')?.addEventListener('click', ()=>{
+    const parsed=parseGridStringsText(gridStringsInput?.value||'', E);
+    if(!parsed.ok){ setGridStringsMessage(parsed.message, true); return; }
+    const needsColor=parsed.lines.some(line=>/[2-9A-F]/.test(line));
+    E.gridStringsText=parsed.lines.join('\n');
+    E.cells=cellsFromGridStrings(parsed.lines);
+    if(needsColor && E.mode!=='color'){
+      E.mode=normalizeColorMode('color', E.difficulty);
+      E.gridStringsMessage=EDITOR_TEXT.gridStringsApplied;
+      render(state, actions);
+      return;
+    }
+    if(gridStringsInput) gridStringsInput.value=E.gridStringsText;
+    setGridStringsMessage(EDITOR_TEXT.gridStringsApplied);
+    updateEditorGridButtons(grid, E);
+    updatePreview();
+  });
+  root.querySelector('#generateGridStrings')?.addEventListener('click', ()=>{
+    E.gridStringsText=gridStringsFromEditor(E);
+    if(gridStringsInput) gridStringsInput.value=E.gridStringsText;
+    setGridStringsMessage(EDITOR_TEXT.gridStringsGenerated);
+  });
+  root.querySelector('#clearGridStrings')?.addEventListener('click', ()=>{
+    E.gridStringsText='';
+    if(gridStringsInput) gridStringsInput.value='';
+    setGridStringsMessage(EDITOR_TEXT.gridStringsCleared);
+  });
   grid.addEventListener('click', updatePreview);
   const editorDrag={active:false, mode:null, start:null, moved:false};
   const styleCell=(button,k)=>{ const v=E.cells[k]??0; button.style.background = E.mode==='mono' ? (v&&v!=='0'?'#e0e0e0':'#111') : (MC_COLOR_MAP[normalizeColorId(v)]?.hex||'#111'); };
@@ -262,6 +322,32 @@ function drawEditorThumbPreview(canvas, E, grid=toGrid(E)){
   }
 }
 function toGrid(E){ return Array.from({length:E.h},(_,y)=>Array.from({length:E.w},(_,x)=>normalizeColorId(E.cells[`${x},${y}`]??'0'))); }
+function gridStringsFromEditor(E){ return toGrid(E).map(row=>row.join('')).join('\n'); }
+function parseGridStringsText(text, E){
+  const raw=String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  if(!raw.trim()) return {ok:false, message:EDITOR_TEXT.gridStringsRequired};
+  const lines=raw.split('\n').map(line=>line.trim().toUpperCase());
+  if(lines.some(line=>line==='')) return {ok:false, message:EDITOR_TEXT.gridStringsRows(E.h)};
+  if(lines.length!==Number(E.h)) return {ok:false, message:EDITOR_TEXT.gridStringsRows(E.h)};
+  for(let y=0;y<lines.length;y++){
+    if(lines[y].length!==Number(E.w)) return {ok:false, message:EDITOR_TEXT.gridStringsColumns(y+1,E.w)};
+    for(let x=0;x<lines[y].length;x++){
+      if(!MC_COLOR_MAP[lines[y][x]]) return {ok:false, message:EDITOR_TEXT.gridStringsInvalid(y+1,x+1)};
+    }
+  }
+  return {ok:true, lines};
+}
+function cellsFromGridStrings(lines){
+  const cells={};
+  lines.forEach((line,y)=>line.split('').forEach((ch,x)=>{ const id=normalizeColorId(ch); if(id!=='0') cells[`${x},${y}`]=id; }));
+  return cells;
+}
+function updateEditorGridButtons(grid, E){
+  grid?.querySelectorAll('button[data-k]').forEach(button=>{
+    const v=E.cells[button.dataset.k]??'0';
+    button.style.background = E.mode==='mono' ? (v&&v!=='0'?'#e0e0e0':'#111') : (MC_COLOR_MAP[normalizeColorId(v)]?.hex||'#111');
+  });
+}
 function escapeAttr(s){ return String(s).replace(/[&<>"']/g,ch=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch])); }
 function rawPuzzleList(json){ return Array.isArray(json)?json:(Array.isArray(json?.puzzles)?json.puzzles:[]); }
 function explicitDifficulty(raw){
@@ -291,7 +377,20 @@ function validatePuzzleDifficulties(puzzles, filename=''){
   return {ok:true, difficulty:inferred || unique[0] || ''};
 }
 function buildPuzzle(E, grid=toGrid(E), gridStr=grid.map(row=>row.join(''))){ const stageNo=Math.max(1,parseInt(E.stageNo,10)||1); const difficulty=normalizeDifficulty(E.difficulty); const mode=normalizeColorMode(E.mode,difficulty); return { id:E.id||`${difficulty}_${mode}_id${String(stageNo).padStart(8,'0')}`, stageNo, title:E.title||'エディタ作成', difficulty, mode, colorMode:mode, w:E.w, h:E.h, grid, grid_strings:gridStr, updatedAt:new Date().toISOString() }; }
-function exportPuzzles(E){ const gridNum=toGrid(E); const gridStr=gridNum.map(row=>row.join('')); return (Array.isArray(E.loadedPuzzles)&&E.loadedPuzzles.length)?normalizeSlotList(E.loadedPuzzles):[buildPuzzle(E, gridNum, gridStr)]; }
+function exportPuzzles(E){
+  const gridNum=toGrid(E);
+  const gridStr=gridNum.map(row=>row.join(''));
+  const current=buildPuzzle(E, gridNum, gridStr);
+  if(!(Array.isArray(E.loadedPuzzles)&&E.loadedPuzzles.length)) return [current];
+  const slot=getSelectedSlot(E);
+  const list=normalizeSlotList(E.loadedPuzzles);
+  const idx=list.findIndex(p=>Number(p.stageNo)===Number(slot));
+  const exported={...current, stageNo:slot};
+  if(idx>=0 && list[idx].id) exported.id=list[idx].id;
+  else exported.id=`${exported.difficulty}_${exported.mode}_id${String(slot).padStart(8,'0')}`;
+  if(idx>=0) list[idx]=exported; else list.push(exported);
+  return normalizeSlotList(list);
+}
 function downloadJson(E, name){ const filename=(name||'puzzles.json').endsWith('.json')?name:(name+'.json'); const puzzles=exportPuzzles(E); const check=validatePuzzleDifficulties(puzzles, filename); if(!check.ok){ E.importMessage=check.message; alert(check.message); return; } const blob=new Blob([JSON.stringify(puzzles.map(p=>normalizePuzzleDifficulty(p, check.difficulty||p.difficulty)),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href); }
 function defaultAliasName(){ const d=new Date(); const pad=n=>String(n).padStart(2,'0'); return `edit_puzzles_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.json`; }
 export function normalizePuzzle(json){ const src=Array.isArray(json)?json[0]:(Array.isArray(json?.puzzles)?json.puzzles[0]:json); if(!src) return null; const grid=Array.isArray(src.grid)?src.grid:(Array.isArray(src.grid_strings)?src.grid_strings.map(row=>String(row).split('').map(ch=>normalizeColorId(ch))):null); if(!grid||!grid.length||!Array.isArray(grid[0])) return null; const h=parseInt(src.h||src.height||grid.length,10); const w=parseInt(src.w||src.width||grid[0].length,10); if(!w||!h) return null; const difficulty=normalizeDifficulty(src.difficulty||src.level||'beginner'); const mode=normalizeColorMode(src.colorMode||src.mode||'mono',difficulty); return { id:src.id, stageNo:Math.max(1,parseInt(src.stageNo||src.no||src.id,10)||1), title:src.title||src.name||'エディタ作成', difficulty, mode, w, h, grid:grid.map(row=>row.map(v=>normalizeColorId(v))) }; }
