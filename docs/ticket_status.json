@@ -1475,6 +1475,15 @@
       "status": "修正済",
       "note": "エディタ下部に開閉式のgrid_strings入力パネルを追加しました。\n0〜Fの複数行文字列を現在の盤面サイズで検証し、問題なければ盤面と完成プレビューへ反映します。\n現在の盤面からgrid_strings文字列を生成し、入力欄だけをクリアできる操作も追加しました。",
       "updatedAt": "2026-06-05T14:51:37.871Z"
+    },
+    {
+      "number": "141fix1",
+      "title": "チケット141_fix1：grid_strings入力欄の表示高さと入力制限を改善",
+      "fileName": "141_fix1_grid_strings_textarea_height_input_filter.md",
+      "path": "docs/141_fix1_grid_strings_textarea_height_input_filter.md",
+      "status": "修正済",
+      "note": "grid_strings入力欄の表示行数を現在の盤面高さに合わせ、最大100行まで広げられるようにしました。\n通常入力では0〜9/A〜F/a〜f/改行以外を拒否し、貼り付け時は不正文字を含む内容を拒否してエラー表示します。\n盤面反映時の行数・文字数・使用文字検証は維持し、生成・反映・クリアの既存操作と完成プレビュー更新を保っています。",
+      "updatedAt": "2026-06-06T01:14:08.717+09:00"
     }
   ]
 }

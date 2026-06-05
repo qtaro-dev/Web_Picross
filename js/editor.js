@@ -10,7 +10,7 @@ const EDITOR_ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const DEFAULTS = { w:5, h:5, mode:'mono', difficulty:'beginner', stageNo:1, title:'エディタ作成', active:'1', cells:{}, importMessage:'', gridStringsText:'', gridStringsMessage:'', loadedPuzzles:[], loadedSelected:'1', loadedFileName:'', loadedFileDifficulty:'', slotPanelCollapsed:false, zoom:1, editorUiRestored:false };
 const EDITOR_TEXT = { importJson:'JSON読込', importOk:'JSONを読み込みました', importLinked:'難易度と盤面サイズ候補を自動設定しました。', importInvalid:'読み込めるパズルデータではありません', importError:'JSONの読み込みに失敗しました', mixedDifficulty:'このJSONには複数の難易度が混在しているため読み込みできません。1つのJSONファイルには1つの難易度のみ含めてください。', fileDifficultyMismatch:'読み込んだファイル名とパズル難易度が一致しないため読み込みできません。', exportMixedDifficulty:'このファイルには複数の難易度が混在しているため保存できません。1つのJSONファイルには1つの難易度のみ含めてください。', loadedTitle:'読み込み済みJSONスロット', loadedFile:'読込中', notLoaded:'未読込', loadLoaded:'スロット読込', writeLoaded:'スロットへ保存', addLoaded:'空きへ追加', writeOk:'選択中スロットへ保存しました。PC上のJSONを更新するにはJSON出力してください。', addOk:'現在の盤面を空きスロットへ追加しました。', loadedEmpty:'空スロットです', slotOverwriteTitle:'スロット保存確認', slotOverwrite:'選択中スロットを上書きしますか？', slotLimit:'読み込みは最大100スロットまでです。101件目以降は無視しました。', saveNote:'スロット保存は画面内データへの反映です。\nPC上のJSONファイルを更新するにはJSON出力したファイルを保存してください。', editPlay:'エディットプレイ', exportSame:'読込ファイル名でJSON出力', exportAlias:'別名でJSON出力', filePlaceholder:'別名ファイル名', save:'保存', tempSaved:'一時保存', loadSaved:'一時保存読込', deleteSaved:'一時保存削除', saveOk:'保存しました', loadOk:'保存データを読み込みました', noSaved:'一時保存データがありません', overwriteTitle:'保存確認', overwrite:'同じ難易度・面数の保存があります。上書きしますか？', overwriteAction:'上書き' };
 Object.assign(EDITOR_TEXT, { slotOpen:'開く', slotClose:'閉じる', zoomOut:'縮小', zoomReset:'100%', zoomIn:'拡大', zoomLabel:'表示倍率', previewTitle:'完成プレビュー' });
-Object.assign(EDITOR_TEXT, { gridStringsTitle:'文字列から盤面作成', gridStringsHelp:'0〜Fの文字を、現在の盤面サイズに合わせて入力してください。1行が盤面の1行になります。小文字a〜fは自動で大文字に変換されます。', gridStringsSize:(w,h)=>`現在の盤面サイズ：${w}x${h} / ${h}行、各行${w}文字で入力してください。`, gridStringsPlaceholder:'0000EE0000\n000EBBE000\nEEEEBBEEEE', gridStringsApply:'盤面へ反映', gridStringsGenerate:'現在の盤面から文字列生成', gridStringsClear:'入力クリア', gridStringsApplied:'grid_stringsを盤面へ反映しました。', gridStringsGenerated:'現在の盤面からgrid_stringsを生成しました。', gridStringsCleared:'入力欄をクリアしました。', gridStringsRequired:'grid_stringsを入力してください。', gridStringsRows:h=>`${h}行で入力してください。`, gridStringsColumns:(line,w)=>`${line}行目は${w}文字で入力してください。`, gridStringsInvalid:(line,column)=>`${line}行目${column}文字目が不正です。使用できる文字は 0〜9 / A〜F のみです。` });
+Object.assign(EDITOR_TEXT, { gridStringsTitle:'文字列から盤面作成', gridStringsHelp:'0〜Fの文字を、現在の盤面サイズに合わせて入力してください。1行が盤面の1行になります。小文字a〜fは自動で大文字に変換されます。', gridStringsSize:(w,h)=>`現在の盤面サイズ：${w}x${h} / ${h}行、各行${w}文字で入力してください。`, gridStringsPlaceholder:'0000EE0000\n000EBBE000\nEEEEBBEEEE', gridStringsApply:'盤面へ反映', gridStringsGenerate:'現在の盤面から文字列生成', gridStringsClear:'入力クリア', gridStringsApplied:'grid_stringsを盤面へ反映しました。', gridStringsGenerated:'現在の盤面からgrid_stringsを生成しました。', gridStringsCleared:'入力欄をクリアしました。', gridStringsRequired:'grid_stringsを入力してください。', gridStringsRows:h=>`${h}行で入力してください。`, gridStringsColumns:(line,w)=>`${line}行目は${w}文字で入力してください。`, gridStringsInvalid:(line,column)=>`${line}行目${column}文字目が不正です。使用できる文字は 0〜9 / A〜F のみです。`, gridStringsPasteInvalid:'使用できる文字は 0〜9 / A〜F / 改行 のみです。\n貼り付け内容に使用できない文字が含まれています。' });
 function renderEditorBackground(){
   const path=BACKGROUNDS.editor;
   return typeof path === 'string' ? `<div class="screen-bg" aria-hidden="true" style="background-image:url('${escapeAttr(path)}')"></div>` : '';
@@ -143,7 +143,7 @@ export function renderEditor(state, actions){
     body.innerHTML = `
       <div class="editor-grid-strings-help">${EDITOR_TEXT.gridStringsHelp}</div>
       <div class="editor-grid-strings-size">${EDITOR_TEXT.gridStringsSize(E.w,E.h)}</div>
-      <textarea id="gridStringsInput" class="text-input editor-grid-strings-input" spellcheck="false" placeholder="${escapeAttr(EDITOR_TEXT.gridStringsPlaceholder)}">${escapeAttr(E.gridStringsText||'')}</textarea>
+      <textarea id="gridStringsInput" class="text-input editor-grid-strings-input" rows="${gridStringsRows(E)}" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="${escapeAttr(EDITOR_TEXT.gridStringsPlaceholder)}">${escapeAttr(E.gridStringsText||'')}</textarea>
       <div class="editor-grid-strings-actions">
         <button class="btn btn-slim" id="applyGridStrings">${EDITOR_TEXT.gridStringsApply}</button>
         <button class="btn btn-slim" id="generateGridStrings">${EDITOR_TEXT.gridStringsGenerate}</button>
@@ -189,7 +189,26 @@ export function renderEditor(state, actions){
       gridStringsMessage.classList.toggle('is-error', !!isError);
     }
   };
-  gridStringsInput?.addEventListener('input', e=>{ E.gridStringsText=e.target.value; if(E.gridStringsMessage) setGridStringsMessage(''); });
+  if(gridStringsInput) applyGridStringsInputSize(gridStringsInput, E);
+  gridStringsInput?.addEventListener('beforeinput', e=>{
+    if(e.inputType==='insertFromPaste') return;
+    if(typeof e.data==='string' && e.data && !isAllowedGridStringsInput(e.data)){
+      e.preventDefault();
+    }
+  });
+  gridStringsInput?.addEventListener('paste', e=>{
+    const text=e.clipboardData?.getData('text')||'';
+    if(!isAllowedGridStringsInput(text)){
+      e.preventDefault();
+      setGridStringsMessage(EDITOR_TEXT.gridStringsPasteInvalid, true);
+    }
+  });
+  gridStringsInput?.addEventListener('input', e=>{
+    const clean=sanitizeGridStringsInput(e.target.value);
+    if(clean!==e.target.value) e.target.value=clean;
+    E.gridStringsText=clean;
+    if(E.gridStringsMessage) setGridStringsMessage('');
+  });
   root.querySelector('#applyGridStrings')?.addEventListener('click', ()=>{
     const parsed=parseGridStringsText(gridStringsInput?.value||'', E);
     if(!parsed.ok){ setGridStringsMessage(parsed.message, true); return; }
@@ -323,6 +342,14 @@ function drawEditorThumbPreview(canvas, E, grid=toGrid(E)){
 }
 function toGrid(E){ return Array.from({length:E.h},(_,y)=>Array.from({length:E.w},(_,x)=>normalizeColorId(E.cells[`${x},${y}`]??'0'))); }
 function gridStringsFromEditor(E){ return toGrid(E).map(row=>row.join('')).join('\n'); }
+function gridStringsRows(E){ return Math.max(1, Math.min(100, Number(E.h)||1)); }
+function applyGridStringsInputSize(textarea, E){
+  const rows=gridStringsRows(E);
+  textarea.rows=rows;
+  textarea.style.minHeight=`calc(${rows} * 1.35em + 18px)`;
+}
+function isAllowedGridStringsInput(text){ return /^[0-9A-Fa-f\r\n]*$/.test(String(text||'')); }
+function sanitizeGridStringsInput(text){ return String(text||'').replace(/[^0-9A-Fa-f\r\n]/g,''); }
 function parseGridStringsText(text, E){
   const raw=String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
   if(!raw.trim()) return {ok:false, message:EDITOR_TEXT.gridStringsRequired};

@@ -474,7 +474,7 @@ body.pseudo-borderless #app { min-height:100vh; width:100vw; padding:0; }
 .editor-grid-strings-panel summary { cursor:pointer; font-weight:700; }
 .editor-grid-strings-body { display:flex; flex-direction:column; gap:10px; padding-top:10px; }
 .editor-grid-strings-help, .editor-grid-strings-size { color:#ddd; font-size:14px; line-height:1.5; }
-.editor-grid-strings-input { min-height:180px; font-family:Consolas, "Courier New", monospace; font-size:15px; line-height:1.35; white-space:pre; overflow:auto; resize:vertical; }
+.editor-grid-strings-input { font-family:Consolas, "Courier New", monospace; font-size:15px; line-height:1.35; white-space:pre; overflow:auto; overflow-wrap:normal; resize:vertical; }
 .editor-grid-strings-actions { display:flex; gap:8px; flex-wrap:wrap; }
 .editor-grid-strings-message { min-height:22px; color:#b3e5fc; font-size:14px; white-space:pre-line; }
 .editor-grid-strings-message.is-empty { min-height:0; }
