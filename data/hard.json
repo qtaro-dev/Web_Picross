@@ -1,6 +1,6 @@
 [
   {
-    "id": "1",
+    "id": "hard_mono_id00000001",
     "stageNo": 1,
     "title": "キャラクター",
     "difficulty": "hard",
@@ -475,7 +475,7 @@
     "updatedAt": "2026-05-20T09:22:31.317Z"
   },
   {
-    "id": "2",
+    "id": "hard_color_id00000002",
     "stageNo": 2,
     "title": "サボテン",
     "difficulty": "hard",

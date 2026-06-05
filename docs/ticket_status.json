@@ -1484,6 +1484,15 @@
       "status": "修正済",
       "note": "grid_strings入力欄の表示行数を現在の盤面高さに合わせ、最大100行まで広げられるようにしました。\n通常入力では0〜9/A〜F/a〜f/改行以外を拒否し、貼り付け時は不正文字を含む内容を拒否してエラー表示します。\n盤面反映時の行数・文字数・使用文字検証は維持し、生成・反映・クリアの既存操作と完成プレビュー更新を保っています。",
       "updatedAt": "2026-06-06T01:14:08.717+09:00"
+    },
+    {
+      "number": "142",
+      "title": "チケット142：既存パズルのpuzzle_key命名を統一",
+      "fileName": "142_normalize_puzzle_key_naming.md",
+      "path": "docs/142_normalize_puzzle_key_naming.md",
+      "status": "修正済",
+      "note": "data/*.json の古い番号idと種別不一致idを {difficulty}_{mode}_id{8桁連番} 形式へ整理しました。\n管理アップロードAPI、Supabaseインポートスクリプト、初期スキーマのpuzzle_key補完を同じ命名規則へ統一しました。\n既存Supabase DB向けに、UUIDを変更せずpuzzle_keyだけを更新する 013_normalize_puzzle_keys.sql を追加しました。",
+      "updatedAt": "2026-06-06T01:49:29.209+09:00"
     }
   ]
 }

@@ -45,7 +45,7 @@
 - ビルドナンバーは `js/config.js` の `BUILD_INFO` で管理します。
 - チケット50時点の初期ビルドは `Build #0000050` です。
 - チケット修正・訂正・編集のたびに +1 します。
-- 現在のビルドは `Build #0000149` です。
+- 現在のビルドは `Build #0000150` です。
 
 ## 公開構成方針
 
@@ -177,6 +177,10 @@ Supabase管理者ユーザーは、管理者ページの「パズル管理」か
 パズル管理のアップロード欄は、難易度・ファイル選択と操作ボタンを段分けして表示します。アップロード前チェック後の一覧は全件をスクロールして確認できます。
 
 パズル管理のファイル選択欄は、「ファイルを選択」ボタンとファイル名表示を分け、未選択時も文字が切れにくい表示にしています。
+
+パズルJSONの `id` はSupabase上の管理用 `puzzle_key` として扱い、Supabase `puzzles.id` のUUID主キーとは別物です。今後の推奨命名規則は `{difficulty}_{mode}_id{8桁連番}` です。例: `normal_mono_id00000001`、`normal_color_id00000002`。管理者ページのパズルJSONアップロードは、既存の同一難易度・同一stageNoがあればUUIDを維持して `puzzle_key` を更新します。
+
+初期パズルに残っていた `"1"` / `"2"` などの番号キーと、一部の種別不一致キーは正式な `puzzle_key` へ整理済みです。既存Supabase DBへ反映する場合は、先に [docs/supabase/013_normalize_puzzle_keys.sql](docs/supabase/013_normalize_puzzle_keys.sql) の確認SELECTで対象行を確認し、問題なければ同SQLを手動適用してください。このSQLは `puzzles.id` UUIDを変更せず、`puzzle_key` だけを更新します。
 
 ## 起動方法
 

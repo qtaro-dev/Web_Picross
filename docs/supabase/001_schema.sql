@@ -140,7 +140,7 @@ alter table public.puzzles
 add column if not exists puzzle_key text;
 
 update public.puzzles
-set puzzle_key = difficulty || lpad(stage_no::text, 5, '0')
+set puzzle_key = difficulty || '_' || color_mode || '_id' || lpad(stage_no::text, 8, '0')
 where puzzle_key is null;
 
 create table if not exists public.user_progress (

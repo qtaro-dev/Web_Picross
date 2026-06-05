@@ -87,7 +87,8 @@ function normalizeUpload(input, targetDifficulty){
     if(difficulty !== targetDifficulty) errors.push(`#${rowNo}: 難易度が選択値と一致しません。`);
     const stageNo = Number(raw?.stageNo ?? raw?.stage_no ?? raw?.no);
     if(!Number.isInteger(stageNo) || stageNo <= 0) errors.push(`#${rowNo}: stageNo が正しくありません。`);
-    const puzzleKey = normalizePuzzleKey(raw?.puzzle_key || raw?.puzzleKey || raw?.id || makePuzzleKey(targetDifficulty, stageNo));
+    const colorMode = normalizeColorMode(raw?.colorMode || raw?.color_mode || raw?.mode);
+    const puzzleKey = normalizePuzzleKey(raw?.puzzle_key || raw?.puzzleKey || raw?.id || makePuzzleKey(targetDifficulty, colorMode, stageNo));
     if(!puzzleKey) errors.push(`#${rowNo}: id または puzzle_key が必要です。`);
     if(keys.has(puzzleKey)) errors.push(`#${rowNo}: puzzle_key が重複しています。`);
     keys.add(puzzleKey);
@@ -110,7 +111,7 @@ function normalizeUpload(input, targetDifficulty){
       title,
       width,
       height,
-      color_mode: normalizeColorMode(raw?.colorMode || raw?.color_mode || raw?.mode),
+      color_mode: colorMode,
       palette: Array.isArray(raw?.palette) ? raw.palette : [],
       solution: grid,
       thumbnail_path: raw?.thumbnailPath || raw?.thumbnail_path || null,
@@ -169,8 +170,8 @@ function normalizePuzzleKey(value){
   return String(value || '').trim();
 }
 
-function makePuzzleKey(difficulty, stageNo){
-  return Number.isInteger(stageNo) && stageNo > 0 ? `${difficulty}${String(stageNo).padStart(5, '0')}` : '';
+function makePuzzleKey(difficulty, mode, stageNo){
+  return Number.isInteger(stageNo) && stageNo > 0 ? `${difficulty}_${mode || 'mono'}_id${String(stageNo).padStart(8, '0')}` : '';
 }
 
 function apiError(message, status, code, cause){

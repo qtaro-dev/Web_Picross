@@ -66,9 +66,11 @@ function normalizePuzzle(raw, difficulty, index){
   if(!width || !height) return null;
   const stageNo = Number(raw.stageNo ?? raw.no ?? index + 1);
   const colorMode = String(raw.colorMode || raw.mode || 'mono').toLowerCase() === 'color' ? 'color' : 'mono';
+  const safeStageNo = Number.isFinite(stageNo) ? stageNo : index + 1;
   return {
     difficulty,
-    stage_no: Number.isFinite(stageNo) ? stageNo : index + 1,
+    stage_no: safeStageNo,
+    puzzle_key: String(raw.puzzle_key || raw.puzzleKey || raw.id || makePuzzleKey(difficulty, colorMode, safeStageNo)),
     title: String(raw.title || raw.name || `#${index + 1}`),
     width,
     height,
@@ -78,6 +80,10 @@ function normalizePuzzle(raw, difficulty, index){
     thumbnail_path: raw.thumbnailPath || raw.thumbnail_path || null,
     is_published: publish,
   };
+}
+
+function makePuzzleKey(difficulty, mode, stageNo){
+  return Number.isFinite(stageNo) && stageNo > 0 ? `${difficulty}_${mode || 'mono'}_id${String(stageNo).padStart(8, '0')}` : '';
 }
 
 async function loadDifficulty(difficulty){
