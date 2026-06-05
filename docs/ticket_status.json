@@ -1358,6 +1358,33 @@
       "status": "修正済",
       "note": "お知らせ編集フォームの保存操作を下書き保存と今すぐ公開に分け、今すぐ公開では現在日時をpublished_atへ設定するようにしました。\n本文なし・画像ありの記事を保存可能にし、タイトルのみの記事は本文または画像が必要なエラーにしました。\n本文のプレーンテキスト説明、現在日時入力、画像URLコピー、アップロード画像がメイン画像である案内を追加しました。\n一般お知らせ画面では本文内の画像URL行を表示せず、本文が空の場合は本文枠を出さないようにしました。",
       "updatedAt": "2026-06-01T13:23:46.426Z"
+    },
+    {
+      "number": "130",
+      "title": "チケット130：お知らせ編集フォームのレイアウト整理",
+      "fileName": "130_news_editor_form_layout_improvements.md",
+      "path": "docs/130_news_editor_form_layout_improvements.md",
+      "status": "修正済",
+      "note": "お知らせ編集フォーム上部をタイトル行と公開設定行に分け、公開日時・現在日時ボタン・表示順・公開チェックの並びを整理しました。\n現在日時ボタンが縦長になりにくい幅を確保し、1024px付近では縦積みに切り替わるレスポンシブ配置にしました。\n下書き保存・今すぐ公開と削除ボタンをフォーム下部で分離し、画像操作UIと保存操作が混ざらないよう余白を調整しました。",
+      "updatedAt": "2026-06-03T05:54:29.922Z"
+    },
+    {
+      "number": "131",
+      "title": "チケット131：profiles自己更新による管理者権限昇格リスクの修正",
+      "fileName": "131_rls_profiles_role_self_update_fix.md",
+      "path": "docs/131_rls_profiles_role_self_update_fix.md",
+      "status": "修正済",
+      "note": "profiles の自己更新ポリシーを廃止し、active管理者だけが profiles を更新できるRLSへ変更しました。\n本番DB向けの 008_fix_profiles_update_policy.sql を追加し、削除申請カウンタはDBトリガーで更新する形にしました。\nブラウザ側から profiles.email / 内部フラグ / 削除申請カウンタを直接更新する処理を停止しました。",
+      "updatedAt": "2026-06-05T07:43:01.814Z"
+    },
+    {
+      "number": "132",
+      "title": "チケット132：is_admin()で利用停止中管理者を除外する",
+      "fileName": "132_rls_is_admin_excludes_disabled_accounts.md",
+      "path": "docs/132_rls_is_admin_excludes_disabled_accounts.md",
+      "status": "修正済",
+      "note": "public.is_admin() に account_status の disabled 除外条件を追加しました。\n初期構築用の 002_rls.sql と、本番DB向けの 009_fix_is_admin_disabled.sql の両方へ同じ判定を反映しました。\naccount_status がNULLの場合は active 相当として扱い、既存ユーザー互換を維持しています。",
+      "updatedAt": "2026-06-05T07:43:01.814Z"
     }
   ]
 }

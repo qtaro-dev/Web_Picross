@@ -76,32 +76,14 @@ async function getProfile(client, userId){
 async function syncOwnProfileEmail(client, authUser, profile){
   const authEmail = normalizeEmail(authUser?.email);
   if(!authUser?.id || !authEmail || normalizeEmail(profile?.email)===authEmail) return profile;
-  const { data, error } = await client
-    .from('profiles')
-    .update({ email:authEmail })
-    .eq('id', authUser.id)
-    .select(PROFILE_SELECT)
-    .maybeSingle();
-  if(error){
-    console.info(`Supabase profile email sync skipped: ${error.message}`);
-    return profile;
-  }
-  return data || profile;
+  console.info('Supabase profile email sync skipped: profile email is server-managed.');
+  return profile;
 }
 
 async function clearLegacyPasswordClearRequired(client, authUser, profile){
   if(!authUser?.id || profile?.password_clear_required !== true) return profile;
-  const { data, error } = await client
-    .from('profiles')
-    .update({ password_clear_required:false })
-    .eq('id', authUser.id)
-    .select(PROFILE_SELECT)
-    .maybeSingle();
-  if(error){
-    console.info(`Supabase legacy password clear flag sync skipped: ${error.message}`);
-    return { ...profile, password_clear_required:false };
-  }
-  return data || { ...profile, password_clear_required:false };
+  console.info('Supabase legacy password clear flag sync skipped: profile flags are server-managed.');
+  return profile;
 }
 
 async function upsertProfile(client, authUser, username){
@@ -324,23 +306,5 @@ export async function submitAccountDeleteRequest(user){
     .select('id, user_id, username, display_name, email, status, requested_at, reviewed_at, reviewed_by, admin_note, created_at, updated_at')
     .single();
   if(error) throw new Error('アカウント削除申請の保存に失敗しました。時間をおいて再度お試しください。');
-  await incrementDeleteRequestCount(client, user.id, data.requested_at || new Date().toISOString());
   return { available:true, duplicate:false, request:data };
-}
-
-async function incrementDeleteRequestCount(client, userId, requestedAt){
-  const { data:profile, error:selectError } = await client
-    .from('profiles')
-    .select('delete_request_count')
-    .eq('id', userId)
-    .maybeSingle();
-  if(selectError) throw new Error('削除申請カウントの確認に失敗しました');
-  const { error } = await client
-    .from('profiles')
-    .update({
-      delete_request_count: Math.max(0, Number(profile?.delete_request_count || 0) + 1),
-      last_delete_requested_at: requestedAt,
-    })
-    .eq('id', userId);
-  if(error) throw new Error('削除申請カウントの更新に失敗しました');
 }

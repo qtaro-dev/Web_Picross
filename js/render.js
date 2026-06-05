@@ -626,11 +626,13 @@ function adminNewsDetailHtml(row, upload=null, draft=null){
   const canDeleteStorage=Boolean(newsImagePathFromUrl(imageUrl) || uploadState.path);
   const uploadLimitMb=Math.floor(NEWS_IMAGE_STORAGE.maxBytes / 1024 / 1024);
   return `<div class="admin-detail"><div class="admin-section-title">${isNew?'お知らせ新規作成':'お知らせ編集'}</div>
-    <div class="admin-edit-grid">
-      <label>タイトル<input id="adminNewsTitle" class="text-input admin-input" value="${escapeHtml(values.title||'')}"></label>
-      <label>公開日時<div class="admin-inline-field"><input id="adminNewsPublishedAt" class="text-input admin-input" type="datetime-local" value="${escapeHtml(datetimeLocalValue(values.published_at))}"><button class="btn btn-slim" type="button" id="setAdminNewsNow">現在日時を入れる</button></div></label>
-      <label>表示順<input id="adminNewsOrder" class="text-input admin-input" type="number" value="${escapeHtml(values.display_order??0)}"></label>
-      <label class="admin-checkbox-label"><input id="adminNewsPublished" type="checkbox" ${values.is_published?'checked':''}>公開する</label>
+    <div class="admin-news-form-head">
+      <label class="admin-news-title-field">タイトル<input id="adminNewsTitle" class="text-input admin-input" value="${escapeHtml(values.title||'')}"></label>
+      <div class="admin-news-meta-grid">
+        <label class="admin-news-published-field">公開日時<div class="admin-inline-field"><input id="adminNewsPublishedAt" class="text-input admin-input" type="datetime-local" value="${escapeHtml(datetimeLocalValue(values.published_at))}"><button class="btn btn-slim admin-news-now-btn" type="button" id="setAdminNewsNow">現在日時を入れる</button></div></label>
+        <label class="admin-news-order-field">表示順<input id="adminNewsOrder" class="text-input admin-input" type="number" value="${escapeHtml(values.display_order??0)}"></label>
+        <label class="admin-checkbox-label admin-news-published-check"><input id="adminNewsPublished" type="checkbox" ${values.is_published?'checked':''}>公開する</label>
+      </div>
     </div>
     <label class="admin-subtitle">本文<textarea id="adminNewsBody" class="text-input admin-textarea admin-news-body">${escapeHtml(values.body||'')}</textarea><span class="admin-field-help">本文はプレーンテキストで表示されます。HTMLタグは使用できません。本文または画像のどちらかが必要です。</span></label>
     <div class="admin-edit-grid">
@@ -658,10 +660,12 @@ function adminNewsDetailHtml(row, upload=null, draft=null){
       ${uploadState.error?`<div class="admin-status is-error">${escapeHtml(uploadState.error)}</div>`:''}
       ${previewUrl?`<figure class="admin-news-preview"><img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(values.image_alt||'')}"><figcaption>${escapeHtml(uploadState.publicUrl?'アップロード済み画像':uploadState.fileName?'保存前プレビュー':'現在の画像')}</figcaption></figure>`:`<div class="admin-news-preview-empty">画像プレビューはありません</div>`}
     </div>
-    <div class="admin-edit-grid">
-      <button class="btn btn-slim" id="draftAdminNews">下書き保存</button>
-      <button class="btn btn-slim" id="publishAdminNewsNow">今すぐ公開</button>
-      ${isNew?'':`<button class="btn btn-slim btn-danger" id="deleteAdminNews">削除</button>`}
+    <div class="admin-news-form-actions">
+      <div class="admin-news-save-actions">
+        <button class="btn btn-slim" id="draftAdminNews">下書き保存</button>
+        <button class="btn btn-slim" id="publishAdminNewsNow">今すぐ公開</button>
+      </div>
+      ${isNew?'':`<button class="btn btn-slim btn-danger admin-news-delete-action" id="deleteAdminNews">削除</button>`}
     </div>
   </div>`;
 }

@@ -22,10 +22,11 @@ as $$
     from public.profiles
     where id = auth.uid()
       and role = 'admin'
+      and coalesce(account_status, 'active') <> 'disabled'
   );
 $$;
 
-comment on function public.is_admin() is 'Checks admin role from profiles. Do not use local admin/admin credentials in production.';
+comment on function public.is_admin() is 'Checks active admin role from profiles. Do not use local admin/admin credentials in production.';
 
 drop policy if exists "profiles_select_public" on public.profiles;
 drop policy if exists "profiles_select_own_or_admin" on public.profiles;
@@ -43,12 +44,13 @@ to authenticated
 with check (id = auth.uid());
 
 drop policy if exists "profiles_update_own_or_admin" on public.profiles;
-create policy "profiles_update_own_or_admin"
+drop policy if exists "profiles_update_admin" on public.profiles;
+create policy "profiles_update_admin"
 on public.profiles
 for update
 to authenticated
-using (id = auth.uid() or public.is_admin())
-with check (id = auth.uid() or public.is_admin());
+using (public.is_admin())
+with check (public.is_admin());
 
 drop policy if exists "puzzles_select_published" on public.puzzles;
 create policy "puzzles_select_published"

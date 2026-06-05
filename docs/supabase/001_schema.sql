@@ -221,6 +221,24 @@ create unique index if not exists account_delete_requests_one_pending_per_user
 on public.account_delete_requests (user_id)
 where status = 'pending';
 
+create or replace function public.sync_account_delete_request_profile_counters()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    update public.profiles
+    set
+      delete_request_count = coalesce(delete_request_count, 0) + 1,
+      last_delete_requested_at = coalesce(new.requested_at, now())
+    where id = new.user_id;
+  end if;
+  return new;
+end;
+$$;
+
 create or replace view public.public_profiles as
 select
   id,
@@ -251,6 +269,11 @@ drop trigger if exists trg_account_delete_requests_set_updated_at on public.acco
 create trigger trg_account_delete_requests_set_updated_at
 before update on public.account_delete_requests
 for each row execute function public.set_updated_at();
+
+drop trigger if exists trg_account_delete_requests_profile_counters on public.account_delete_requests;
+create trigger trg_account_delete_requests_profile_counters
+after insert on public.account_delete_requests
+for each row execute function public.sync_account_delete_request_profile_counters();
 
 comment on table public.profiles is 'Supabase Auth user profile. Local admin/admin is development only and must not be used as production authentication.';
 comment on view public.public_profiles is 'Public-safe profile fields for rankings. Does not expose email, role, account status, counters, or password reset flags.';
