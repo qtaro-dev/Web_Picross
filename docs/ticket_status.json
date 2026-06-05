@@ -1385,6 +1385,15 @@
       "status": "修正済",
       "note": "public.is_admin() に account_status の disabled 除外条件を追加しました。\n初期構築用の 002_rls.sql と、本番DB向けの 009_fix_is_admin_disabled.sql の両方へ同じ判定を反映しました。\naccount_status がNULLの場合は active 相当として扱い、既存ユーザー互換を維持しています。",
       "updatedAt": "2026-06-05T07:43:01.814Z"
+    },
+    {
+      "number": "133",
+      "title": "チケット133：ランキング書き込みのサーバー検証化",
+      "fileName": "133_ranking_records_server_verified_writes.md",
+      "path": "docs/133_ranking_records_server_verified_writes.md",
+      "status": "修正済",
+      "note": "ranking_records の一般ユーザー直接insert/updateポリシーを削除し、管理者更新とservice role経由の保存に限定しました。\n/api/save-ranking-record を追加し、Bearerトークン、対象パズル、検証済みuser_progress、タイム下限を確認してランキングを保存します。\n通常クリア時のランキング保存はクライアント直接upsertではなく、サーバーAPI呼び出しへ変更しました。",
+      "updatedAt": "2026-06-05T08:39:35.746Z"
     }
   ]
 }

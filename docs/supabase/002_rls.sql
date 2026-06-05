@@ -125,19 +125,21 @@ to anon, authenticated
 using (true);
 
 drop policy if exists "ranking_records_insert_own" on public.ranking_records;
-create policy "ranking_records_insert_own"
+drop policy if exists "ranking_records_insert_admin" on public.ranking_records;
+create policy "ranking_records_insert_admin"
 on public.ranking_records
 for insert
 to authenticated
-with check (user_id = auth.uid());
+with check (public.is_admin());
 
 drop policy if exists "ranking_records_update_own_or_admin" on public.ranking_records;
-create policy "ranking_records_update_own_or_admin"
+drop policy if exists "ranking_records_update_admin" on public.ranking_records;
+create policy "ranking_records_update_admin"
 on public.ranking_records
 for update
 to authenticated
-using (user_id = auth.uid() or public.is_admin())
-with check (user_id = auth.uid() or public.is_admin());
+using (public.is_admin())
+with check (public.is_admin());
 
 drop policy if exists "ranking_records_delete_admin" on public.ranking_records;
 create policy "ranking_records_delete_admin"

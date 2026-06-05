@@ -11,6 +11,7 @@ const adminUploadPuzzlesHandler = require('./api/admin-upload-puzzles');
 const adminResetAuthUserHandler = require('./api/admin-reset-auth-user');
 const userChangeEmailHandler = require('./api/user-change-email');
 const resolveLoginEmailHandler = require('./api/resolve-login-email');
+const saveRankingRecordHandler = require('./api/save-ranking-record');
 
 const rootDir = __dirname;
 const port = Number(process.env.PORT || 8000);
@@ -305,6 +306,10 @@ async function handleApi(req, res){
   }
   if(req.method === 'POST' && req.url === '/api/resolve-login-email'){
     await invokeApiHandler(resolveLoginEmailHandler, req, res);
+    return;
+  }
+  if(req.method === 'POST' && req.url === '/api/save-ranking-record'){
+    await invokeApiHandler(saveRankingRecordHandler, req, res);
     return;
   }
   if(req.method === 'GET' && req.url?.startsWith('/api/ranking')){

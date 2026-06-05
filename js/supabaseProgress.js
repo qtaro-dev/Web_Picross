@@ -15,6 +15,12 @@ function playTimeMsFrom(entry){
   return typeof value === 'number' ? Math.max(0, Math.floor(value)) : 0;
 }
 
+async function accessTokenFor(client){
+  const { data, error } = await client.auth.getSession();
+  if(error) throw error;
+  return data?.session?.access_token || '';
+}
+
 function formatRankingRows(rows, profiles, currentUser){
   const profileMap = new Map((profiles || []).map(profile => [profile.id, profile]));
   const visibleRows = (rows || []).filter(row => profileMap.has(row.user_id));
@@ -108,20 +114,34 @@ export async function saveSupabaseGameResult({ user, game, entry, type, hintUsed
     });
   if(historyError) throw historyError;
 
+  let ranking = { saved:false, reason:'not_clear' };
   if(type === 'clear' && user.role !== 'admin'){
-    const { error: rankingError } = await client
-      .from('ranking_records')
-      .upsert({
-        user_id: userId,
-        puzzle_id: puzzleId,
-        difficulty: difficultyKey(game),
-        stage_no: stageNoFor(game),
-        clear_time_ms: progress.best_clear_time_ms,
-      }, { onConflict:'user_id,puzzle_id' });
-    if(rankingError) throw rankingError;
+    ranking = await saveVerifiedRanking(client, {
+      difficulty: difficultyKey(game),
+      stageNo: stageNoFor(game),
+      clearTimeMs: progress.best_clear_time_ms,
+    });
   }
 
-  return { available:true, saved:true, puzzleId, progress };
+  return { available:true, saved:true, puzzleId, progress, ranking };
+}
+
+async function saveVerifiedRanking(client, payload){
+  const token = await accessTokenFor(client);
+  if(!token) return { saved:false, reason:'missing_session' };
+  const response = await fetch('/api/save-ranking-record', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':`Bearer ${token}`,
+    },
+    body:JSON.stringify(payload),
+  });
+  const body = await response.json().catch(()=>({}));
+  if(!response.ok || body.ok === false){
+    throw new Error(body.message || 'ランキング保存に失敗しました。');
+  }
+  return { saved:Boolean(body.saved), reason:body.reason || '', clearTimeMs:body.clearTimeMs };
 }
 
 export async function loadSupabaseRanking({ difficulty, currentUser } = {}){

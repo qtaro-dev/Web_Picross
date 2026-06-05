@@ -1179,8 +1179,8 @@ function saveServerProgress(entry,type='clear'){
     saveSupabaseGameResult({user:stateRef.currentUser, game, entry, type, hintUsedCount}).then(result=>{
       const message=result?.saved ? 'Supabaseへ保存しました' : (result?.reason==='puzzle_not_found' ? 'Supabase保存対象のパズルが見つかりません' : 'Supabase未設定のためローカル保存のみ');
       stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:message};
-    }).catch(()=>{
-      stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:'Supabase保存に失敗しました'};
+    }).catch((error)=>{
+      stateRef.userDataStatus={...(stateRef.userDataStatus||{}), lastSave:new Date().toLocaleTimeString(), lastResult:error?.message||'Supabase保存に失敗しました'};
     });
     return;
   }
