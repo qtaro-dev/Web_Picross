@@ -1423,6 +1423,15 @@
       "updatedAt": "2026-06-05T09:43:53.514Z"
     },
     {
+      "number": "137",
+      "title": "チケット137：難易度別カラー可否の仕様整合",
+      "fileName": "137_difficulty_color_rules_alignment.md",
+      "path": "docs/137_difficulty_color_rules_alignment.md",
+      "status": "保留",
+      "note": "実装方針を再確認するため保留に戻しました。\nBeginner / Easy には既存カラー問題があり、今後もカラー問題を許可する前提です。\n前回のcolor:false化、アップロード拒否、beginner/easyデータのモノクロ化とサイズ補正は取り消しました。",
+      "updatedAt": "2026-06-05T11:26:36.118Z"
+    },
+    {
       "number": "138",
       "title": "チケット138：GitHub公開前提のsecret混入・Supabase公開アクセス監査",
       "fileName": "138_secret_exposure_and_supabase_public_access_audit.md",
