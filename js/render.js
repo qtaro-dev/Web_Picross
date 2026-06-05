@@ -645,7 +645,7 @@ function adminNewsDetailHtml(row, upload=null, draft=null){
       <span class="admin-field-help">画像URLは記事のメイン画像として本文下に表示されます。本文欄へURLやimgタグを貼る必要はありません。</span>
     </div>
     <div class="admin-news-upload">
-      <div class="admin-note">対応形式はPNG / JPG / WebP、上限は${escapeHtml(uploadLimitMb)}MBです。SVGはアップロードできません。画像URL手入力も引き続き利用できます。</div>
+      <div class="admin-note">対応形式はPNG / JPG / WebP、上限は${escapeHtml(uploadLimitMb)}MBです。SVGはアップロードできません。画像URL手入力も引き続き利用できます。${escapeHtml(NEWS_IMAGE_STORAGE.bucket)} は公開バケットのため、下書き保存前や未使用の画像でもURLを知っている人は閲覧できます。誤アップロードや未使用画像はStorageから削除してください。</div>
       ${uploadState.publicUrl?`<div class="admin-status">画像をアップロードしました。保存すると記事に反映されます。この画像は記事のメイン画像として表示されます。</div>`:''}
       <div class="admin-puzzle-file-control">
         <label class="btn btn-slim admin-puzzle-file-button" for="adminNewsImageFile">画像を選択</label>

@@ -1448,6 +1448,15 @@
       "status": "修正済",
       "note": "public_profilesの公開列がid/username/display_nameのみで、emailやrole等を含まないことを確認しました。\nsecurity_invoker=true化は現行RLSでは匿名ランキング表示を壊すため見送り、現状維持理由をREADMEとSQLコメントに明記しました。\n既存DB向けに011_public_profiles_security_invoker.sqlを追加し、安全な公開ビュー定義を再適用できるようにしました。",
       "updatedAt": "2026-06-05T12:22:03.988Z"
+    },
+    {
+      "number": "140",
+      "title": "チケット140：お知らせ画像Storageの公開範囲見直し",
+      "fileName": "140_news_images_storage_visibility_review.md",
+      "path": "docs/140_news_images_storage_visibility_review.md",
+      "status": "修正済",
+      "note": "news-imagesは公開お知らせ画像用のpublic bucketとして継続する方針にしました。\nREADMEと管理者お知らせUIに、URLを知っている人は下書き/未使用画像も閲覧可能であることを明記しました。\n既存DB向けに012_news_images_visibility.sqlを追加し、public readと管理者限定write/deleteポリシーを再適用できるようにしました。",
+      "updatedAt": "2026-06-05T12:42:05.463Z"
     }
   ]
 }
