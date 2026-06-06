@@ -12,7 +12,7 @@
 - `js/editor.js`
 - `js/actions.js`
 - `js/render.js`
-- `docs/006_difficulty_board_rules.md`
+- `docs/tickets/006_difficulty_board_rules.md`
 - `README.md`
 - `docs/ticket_status.json`
 
