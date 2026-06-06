@@ -1493,6 +1493,15 @@
       "status": "修正済",
       "note": "data/*.json の古い番号idと種別不一致idを {difficulty}_{mode}_id{8桁連番} 形式へ整理しました。\n管理アップロードAPI、Supabaseインポートスクリプト、初期スキーマのpuzzle_key補完を同じ命名規則へ統一しました。\n既存Supabase DB向けに、UUIDを変更せずpuzzle_keyだけを更新する 013_normalize_puzzle_keys.sql を追加しました。",
       "updatedAt": "2026-06-06T01:49:29.209+09:00"
+    },
+    {
+      "number": "143",
+      "title": "チケット143：READMEをポートフォリオ向け表紙として再構成する",
+      "fileName": "143_readme_portfolio_restructure.md",
+      "path": "docs/tickets/143_readme_portfolio_restructure.md",
+      "status": "修正済",
+      "note": "READMEを初見向けの短いポートフォリオ表紙へ再構成しました。\n旧READMEの詳細情報は docs/project_details.md へ退避し、ローカル起動、Supabase、管理者機能、エディタ、運用メモの導線をdocs配下へ分けました。\nBuild #0000151へ更新し、READMEのビルド情報と js/config.js を一致させました。",
+      "updatedAt": "2026-06-06T17:34:19.069+09:00"
     }
   ]
 }
